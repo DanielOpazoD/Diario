@@ -33,8 +33,14 @@ const patientListExtractionSchema: Schema = {
   required: ["patients"]
 };
 
+const readEncodedKey = () => {
+  return (typeof import.meta !== 'undefined' && import.meta.env.VITE_API_KEY) ||
+    (typeof import.meta !== 'undefined' && import.meta.env.API_KEY) ||
+    '';
+};
+
 export const validateEnvironment = () => {
-  const key = process.env.API_KEY;
+  const key = readEncodedKey();
   let displayKey = key;
   
   // Try to decode for preview purposes
@@ -53,7 +59,7 @@ export const validateEnvironment = () => {
 
 const getApiKey = (): string => {
   // The key is injected as base64 in vite.config.ts to avoid Netlify secret scanning
-  const encodedKey = process.env.API_KEY;
+  const encodedKey = readEncodedKey();
   
   if (!encodedKey) {
     throw new Error("API Key no configurada. En Netlify, asegura que la variable VITE_API_KEY o API_KEY exista en 'Site Configuration > Environment Variables'.");

@@ -1,8 +1,8 @@
 
-import React, { useState, useMemo, useLayoutEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useLayoutEffect, useRef, useCallback, useEffect } from 'react';
 import { format, isSameDay, differenceInYears } from 'date-fns';
 import { Calendar as CalendarIcon, Search, BarChart2, LogOut, Plus, FileText, Menu, X, CheckSquare, Square, ChevronDown, Cloud, Settings as SettingsIcon, Upload, Download, RefreshCw, Trash2, Filter, Clock } from 'lucide-react';
-import { PatientRecord, ViewMode } from './types';
+import { PatientRecord, ViewMode, DriveFolderPreference } from './types';
 import { generateHandoverReport } from './services/reportService';
 import { uploadFileToDrive, downloadFile } from './services/googleService';
 import { downloadDataAsJson, parseUploadedJson } from './services/storage';
@@ -252,14 +252,30 @@ const AppContent: React.FC = () => {
   
   // Filtering state
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  
+
   // New states for modals
   const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
 
+  const [driveFolderPreference, setDriveFolderPreference] = useState<DriveFolderPreference>(() => {
+    const stored = localStorage.getItem('medidiario_drive_folder');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        console.warn('No se pudo leer la carpeta preferida de Drive', e);
+      }
+    }
+    return { id: null, name: 'MediDiario Backups' } as DriveFolderPreference;
+  });
+
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const localImportInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('medidiario_drive_folder', JSON.stringify(driveFolderPreference));
+  }, [driveFolderPreference]);
 
   // Scroll to top when view changes
   useLayoutEffect(() => {
@@ -356,22 +372,23 @@ const AppContent: React.FC = () => {
   
   const handleGeneratePDF = () => { generateHandoverReport(dailyRecords, currentDate, user?.name || 'Dr.'); addToast('success', 'PDF Generado'); };
 
-  const handleBackupConfirm = async (fileName: string, folderName: string) => {
+  const handleBackupConfirm = async (fileName: string, folder: DriveFolderPreference) => {
     const token = sessionStorage.getItem('google_access_token');
     if (!token) {
       addToast('error', 'No hay sesión de Google activa.');
       return;
     }
     setIsUploading(true);
+    setDriveFolderPreference(folder);
     try {
       const backupData = {
         patients: records,
         generalTasks: generalTasks,
-        patientTypes: patientTypes 
+        patientTypes: patientTypes
       };
       const finalName = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
-      await uploadFileToDrive(JSON.stringify(backupData, null, 2), finalName, token, folderName);
-      addToast('success', `Respaldo guardado en carpeta "${folderName}"`);
+      await uploadFileToDrive(JSON.stringify(backupData, null, 2), finalName, token, folder.name, folder.id);
+      addToast('success', `Respaldo guardado en carpeta "${folder.name}"`);
       setIsBackupModalOpen(false);
     } catch (e) {
       console.error(e);
@@ -432,7 +449,7 @@ const AppContent: React.FC = () => {
       )}
       
       {/* Sidebar */}
-      <aside key="main-sidebar" className={`fixed inset-y-0 left-0 z-50 w-72 glass border-r-0 transform transition-all duration-300 ease-out flex flex-col h-full ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} md:relative md:translate-x-0 md:shadow-none md:bg-white/80 md:dark:bg-gray-900/80 md:backdrop-blur-lg flex-shrink-0`}>
+      <aside key="main-sidebar" className={`fixed inset-y-0 left-0 z-50 w-72 glass border-r-0 transform transition-all duration-300 ease-out flex flex-col h-full ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} md:sticky md:top-0 md:h-screen md:translate-x-0 md:shadow-none md:bg-white/80 md:dark:bg-gray-900/80 md:backdrop-blur-lg flex-shrink-0`}>
         <div className="p-6 flex items-center justify-between"><div className="flex items-center space-x-3"><div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20"><span className="text-lg">M</span></div><h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">MediDiario</h1></div><button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"><X className="w-5 h-5 text-gray-500" /></button></div>
         
         <nav className="px-4 py-2 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
@@ -631,8 +648,23 @@ const AppContent: React.FC = () => {
       {/* Modals */}
       <PatientModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingPatient(null); }} onSave={handleSavePatient} onSaveMultiple={handleSaveMultiplePatients} addToast={addToast} initialData={editingPatient} selectedDate={format(currentDate, 'yyyy-MM-dd')} />
       <ConfirmationModal isOpen={!!patientToDelete} onClose={() => setPatientToDelete(null)} onConfirm={confirmDeletePatient} title="Eliminar Paciente" message="¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer." isDangerous={true} />
-      <BackupModal isOpen={isBackupModalOpen} onClose={() => setIsBackupModalOpen(false)} onConfirm={handleBackupConfirm} defaultFileName={`backup_medidiario_${format(new Date(), 'yyyy-MM-dd')}`} isLoading={isUploading} />
-      <DrivePickerModal isOpen={isDrivePickerOpen} onClose={() => setIsDrivePickerOpen(false)} onSelect={handleDriveFileSelect} isLoadingProp={isUploading} />
+      <BackupModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        onConfirm={handleBackupConfirm}
+        defaultFileName={`backup_medidiario_${format(new Date(), 'yyyy-MM-dd')}`}
+        isLoading={isUploading}
+        preferredFolder={driveFolderPreference}
+        onFolderChange={setDriveFolderPreference}
+      />
+      <DrivePickerModal
+        isOpen={isDrivePickerOpen}
+        onClose={() => setIsDrivePickerOpen(false)}
+        onSelect={handleDriveFileSelect}
+        isLoadingProp={isUploading}
+        preferredFolder={driveFolderPreference}
+        onFolderChange={setDriveFolderPreference}
+      />
     </div>
   );
 };

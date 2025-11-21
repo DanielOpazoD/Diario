@@ -3,8 +3,16 @@
 
 import { AttachedFile } from "../types";
 
+const resolveClientId = () => {
+  if (typeof import.meta !== 'undefined') {
+    return import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+  }
+
+  return '';
+};
+
 // Fallback safe access for Client ID
-const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || '752346610228-e9grkodnhi6lkau35fhuidapovp366id.apps.googleusercontent.com'; 
+const CLIENT_ID = resolveClientId() || '752346610228-e9grkodnhi6lkau35fhuidapovp366id.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file email profile';
 
 let tokenClient: any;
@@ -12,6 +20,15 @@ let gapiInited = false;
 let gisInited = false;
 // Variable global para almacenar el 'reject' de la promesa de login actual
 let activeLoginReject: ((reason?: any) => void) | null = null;
+
+export interface DriveEntry {
+  id: string;
+  name: string;
+  mimeType: string;
+  parents?: string[];
+  modifiedTime?: string;
+  size?: string;
+}
 
 export const checkGoogleConfig = () => {
   return !!CLIENT_ID;
@@ -183,11 +200,19 @@ const findOrCreateFolder = async (folderName: string, accessToken: string, paren
   return createData.id;
 };
 
-export const uploadFileToDrive = async (content: string, filename: string, accessToken: string, folderName: string = "MediDiario") => {
-  let folderId: string | null = null;
-  
+export const uploadFileToDrive = async (
+  content: string,
+  filename: string,
+  accessToken: string,
+  folderName: string = "MediDiario",
+  folderId?: string | null
+) => {
+  let resolvedFolderId: string | null = folderId || null;
+
   try {
-    folderId = await findOrCreateFolder(folderName, accessToken);
+    if (!resolvedFolderId) {
+      resolvedFolderId = await findOrCreateFolder(folderName, accessToken);
+    }
   } catch (e) {
     console.error("Could not resolve folder, uploading to root", e);
   }
@@ -198,8 +223,8 @@ export const uploadFileToDrive = async (content: string, filename: string, acces
     mimeType: 'application/json',
   };
 
-  if (folderId) {
-    metadata.parents = [folderId];
+  if (resolvedFolderId) {
+    metadata.parents = [resolvedFolderId];
   }
 
   const form = new FormData();
@@ -282,39 +307,61 @@ export const deleteFileFromDrive = async (fileId: string, accessToken: string) =
   }
 };
 
-export const listFolders = async (accessToken: string) => {
+const buildParentClause = (parentId?: string) => parentId ? `'${parentId}' in parents` : "'root' in parents";
+
+export const listFolderEntries = async (accessToken: string, parentId?: string) => {
   const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
-  searchUrl.searchParams.append('q', "mimeType='application/vnd.google-apps.folder' and trashed=false");
-  searchUrl.searchParams.append('fields', 'files(id, name)');
-  searchUrl.searchParams.append('orderBy', 'name');
-  searchUrl.searchParams.append('pageSize', '20');
+  const parentClause = buildParentClause(parentId);
+  const filters = [
+    "trashed=false",
+    parentClause,
+    "(mimeType='application/vnd.google-apps.folder' or mimeType='application/json')"
+  ];
+
+  searchUrl.searchParams.append('q', filters.join(' and '));
+  searchUrl.searchParams.append('fields', 'files(id, name, mimeType, parents, modifiedTime, size)');
+  searchUrl.searchParams.append('orderBy', 'mimeType desc, name');
 
   const response = await fetch(searchUrl.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
-  
+
   if (!response.ok) {
-    return { files: [] };
+    throw new Error('Failed to list folder entries');
   }
-  
+
   return await response.json();
 };
 
-export const listFiles = async (accessToken: string) => {
+export const listFolders = async (accessToken: string, parentId?: string) => {
   const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
-  // Filter for JSON files and ensure they are not in trash
-  searchUrl.searchParams.append('q', `mimeType='application/json' and trashed=false`);
-  searchUrl.searchParams.append('fields', 'files(id, name, createdTime, size)');
-  searchUrl.searchParams.append('orderBy', 'createdTime desc');
+  const parentClause = buildParentClause(parentId);
+
+  searchUrl.searchParams.append('q', `${parentClause} and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  searchUrl.searchParams.append('fields', 'files(id, name, parents)');
+  searchUrl.searchParams.append('orderBy', 'name');
+  searchUrl.searchParams.append('pageSize', '50');
 
   const response = await fetch(searchUrl.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
-  
+
   if (!response.ok) {
-    throw new Error('Failed to list files');
+    return { files: [] };
   }
-  
+
+  return await response.json();
+};
+
+export const getFolderMetadata = async (accessToken: string, folderId: string) => {
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents`, {
+    headers: { 'Authorization': 'Bearer ' + accessToken }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to read folder info');
+  }
+
   return await response.json();
 };
 

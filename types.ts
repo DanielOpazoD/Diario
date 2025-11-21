@@ -88,3 +88,8 @@ export interface LogEntry {
   message: string;
   details?: any;
 }
+
+export interface DriveFolderPreference {
+  id: string | null;
+  name: string;
+}
