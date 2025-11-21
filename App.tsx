@@ -449,7 +449,12 @@ const AppContent: React.FC = () => {
       )}
       
       {/* Sidebar */}
-      <aside key="main-sidebar" className={`fixed inset-y-0 left-0 z-50 w-72 glass border-r-0 transform transition-all duration-300 ease-out flex flex-col h-full ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} md:sticky md:top-0 md:h-screen md:translate-x-0 md:shadow-none md:bg-white/80 md:dark:bg-gray-900/80 md:backdrop-blur-lg flex-shrink-0`}>
+      <aside
+        key="main-sidebar"
+        className={`fixed inset-y-0 left-0 z-50 w-72 glass border-r-0 transform transition-all duration-300 ease-out flex flex-col h-full ${
+          isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        } md:translate-x-0 md:bg-white/80 md:dark:bg-gray-900/80 md:backdrop-blur-lg md:h-screen md:z-40 md:border-r md:border-gray-200/60 md:dark:border-gray-800/60 md:shadow-sm flex-shrink-0`}
+      >
         <div className="p-6 flex items-center justify-between"><div className="flex items-center space-x-3"><div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20"><span className="text-lg">M</span></div><h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">MediDiario</h1></div><button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"><X className="w-5 h-5 text-gray-500" /></button></div>
         
         <nav className="px-4 py-2 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
@@ -511,7 +516,7 @@ const AppContent: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col h-full relative bg-gray-50/50 dark:bg-gray-950 overflow-hidden">
+      <main className="flex-1 flex flex-col h-full relative bg-gray-50/50 dark:bg-gray-950 overflow-hidden md:ml-72">
         {/* Header */}
         <header className="shrink-0 sticky top-0 z-30 flex flex-col md:flex-row items-center justify-between px-4 md:px-6 transition-all glass pt-2 pb-2 md:pt-4 md:pb-3 gap-2 md:gap-0 shadow-sm border-b border-gray-200/50 dark:border-gray-800/50">
           <div className="flex items-center w-full md:w-auto justify-between md:justify-start">

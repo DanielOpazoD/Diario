@@ -54,10 +54,10 @@ const DrivePickerModal: React.FC<DrivePickerModalProps> = ({
   const [currentFolder, setCurrentFolder] = useState<DriveFolderPreference>(preferredFolder.id ? preferredFolder : ROOT_FOLDER);
   const [breadcrumbs, setBreadcrumbs] = useState<DriveFolderPreference[]>([ROOT_FOLDER]);
 
-  const token = useMemo(() => sessionStorage.getItem('google_access_token'), []);
-
   const loadFolder = useCallback(async (target: DriveFolderPreference) => {
-    if (!token) {
+    const activeToken = sessionStorage.getItem('google_access_token');
+
+    if (!activeToken) {
       setError('No hay sesión de Google activa.');
       return;
     }
@@ -67,8 +67,8 @@ const DrivePickerModal: React.FC<DrivePickerModalProps> = ({
 
     try {
       const [data, trail] = await Promise.all([
-        listFolderEntries(token, target.id && target.id !== 'root' ? target.id : undefined),
-        buildBreadcrumbTrail(token, target),
+        listFolderEntries(activeToken, target.id && target.id !== 'root' ? target.id : undefined),
+        buildBreadcrumbTrail(activeToken, target),
       ]);
 
       setEntries(data.files || []);
@@ -80,7 +80,7 @@ const DrivePickerModal: React.FC<DrivePickerModalProps> = ({
     } finally {
       setIsLoadingList(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
