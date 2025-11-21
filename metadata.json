@@ -1,0 +1,5 @@
+{
+  "name": "MediDiario AI",
+  "description": "Gestor inteligente de pacientes diarios con soporte para Policlínico, Hospitalizados y Extras. Incluye análisis de notas clínicas con IA y exportación de datos.",
+  "requestFramePermissions": []
+}
