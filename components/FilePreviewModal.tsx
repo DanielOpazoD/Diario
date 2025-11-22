@@ -35,6 +35,12 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
   const isImage = useMemo(() => file?.mimeType.startsWith('image/'), [file]);
   const isPDF = useMemo(() => file?.mimeType === 'application/pdf', [file]);
+  const previewUrl = useMemo(() => {
+    if (!file) return '';
+    if (isImage) return `https://drive.google.com/uc?export=view&id=${file.id}`;
+    if (isPDF) return `https://drive.google.com/file/d/${file.id}/preview`;
+    return file.driveUrl;
+  }, [file, isImage, isPDF]);
 
   if (!file || !isOpen) return null;
 
@@ -102,8 +108,15 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
         </div>
 
         <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-gray-50 dark:bg-black/20">
-          {isImage && <img src={file.driveUrl} alt={file.name} className="max-w-full max-h-full object-contain rounded-lg shadow-lg" />}
-          {isPDF && <iframe src={`${file.driveUrl}#view=FitH`} className="w-full h-full border-0 rounded-lg" />}
+          {isImage && (
+            <img
+              src={previewUrl}
+              alt={file.name}
+              className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+              loading="lazy"
+            />
+          )}
+          {isPDF && <iframe src={previewUrl} className="w-full h-full border-0 rounded-lg" />}
           {!isImage && !isPDF && (
             <div className="flex flex-col items-center gap-2 text-gray-400">
               {getFileIcon()}
