@@ -394,13 +394,26 @@ export const listFolderEntries = async (accessToken: string, parentId?: string) 
   searchUrl.searchParams.append('q', filters.join(' and '));
   searchUrl.searchParams.append('fields', 'files(id, name, mimeType, parents, modifiedTime, size)');
   searchUrl.searchParams.append('orderBy', 'mimeType desc, name');
+  searchUrl.searchParams.append('pageSize', '100');
+  searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
+  searchUrl.searchParams.append('supportsAllDrives', 'true');
+  searchUrl.searchParams.append('spaces', 'drive');
 
   const response = await fetch(searchUrl.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
 
   if (!response.ok) {
-    throw new Error('Failed to list folder entries');
+    let message = 'Failed to list folder entries';
+    try {
+      const errorBody = await response.json();
+      message = errorBody?.error?.message || message;
+    } catch (e) {
+      // ignore parse errors
+    }
+    const err: any = new Error(message);
+    err.status = response.status;
+    throw err;
   }
 
   return await response.json();
@@ -414,6 +427,9 @@ export const listFolders = async (accessToken: string, parentId?: string) => {
   searchUrl.searchParams.append('fields', 'files(id, name, parents)');
   searchUrl.searchParams.append('orderBy', 'name');
   searchUrl.searchParams.append('pageSize', '50');
+  searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
+  searchUrl.searchParams.append('supportsAllDrives', 'true');
+  searchUrl.searchParams.append('spaces', 'drive');
 
   const response = await fetch(searchUrl.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
@@ -427,7 +443,7 @@ export const listFolders = async (accessToken: string, parentId?: string) => {
 };
 
 export const getFolderMetadata = async (accessToken: string, folderId: string) => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents`, {
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents&supportsAllDrives=true`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
 
@@ -439,7 +455,7 @@ export const getFolderMetadata = async (accessToken: string, folderId: string) =
 };
 
 export const downloadFile = async (fileId: string, accessToken: string) => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
   
@@ -451,7 +467,7 @@ export const downloadFile = async (fileId: string, accessToken: string) => {
 };
 
 export const downloadFileAsBase64 = async (fileId: string, accessToken: string): Promise<string> => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
 
