@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { format, isSameDay, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckSquare, Square, Calendar, ArrowRight, AlertCircle, Clock, Sticker, Plus, Trash2 } from 'lucide-react';
+import Button from './Button';
 import { PatientRecord, PendingTask, GeneralTask } from '../types';
 import useAppStore from '../stores/useAppStore';
 
@@ -19,6 +20,7 @@ interface EnrichedTask extends PendingTask {
 const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
   const [newGeneralTask, setNewGeneralTask] = useState('');
+  const quickAddRef = useRef<HTMLInputElement>(null);
   
   // Access store
   const records = useAppStore(state => state.records);
@@ -59,6 +61,24 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
     if (filter === 'all') return allPatientTasks;
     return allPatientTasks.filter(t => filter === 'pending' ? !t.isCompleted : t.isCompleted);
   }, [allPatientTasks, filter]);
+
+  const pendingPatientTasks = useMemo(
+    () => allPatientTasks.filter(t => !t.isCompleted).length,
+    [allPatientTasks]
+  );
+
+  const pendingGeneralTasks = useMemo(
+    () => generalTasks.filter(task => !task.isCompleted).length,
+    [generalTasks]
+  );
+
+  const todayPending = useMemo(
+    () => {
+      const today = new Date(new Date().setHours(0, 0, 0, 0));
+      return allPatientTasks.filter(t => !t.isCompleted && isSameDay(new Date(t.date + 'T00:00:00'), today)).length;
+    },
+    [allPatientTasks]
+  );
 
   const groupedTasks = useMemo(() => {
     const today = new Date(new Date().setHours(0,0,0,0));
@@ -104,7 +124,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
         </div>
         <div className="space-y-2">
            {tasks.map(task => (
-             <div key={task.id} className="group bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/50 hover:shadow-md transition-all">
+             <div key={task.id} className="group bg-white/95 dark:bg-gray-800/90 p-3 rounded-card shadow-card border border-gray-100 dark:border-gray-700/50 hover:shadow-elevated transition-all">
                   <div className="flex justify-between items-start mb-1">
                     <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 flex items-center uppercase">
                       <Calendar className="w-3 h-3 mr-1" />
@@ -127,12 +147,31 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-20 h-[calc(100vh-120px)] flex flex-col">
-       <div className="flex items-center justify-between mb-6 px-2">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Centro de Tareas</h2>
-          <div className="flex bg-gray-200 dark:bg-gray-700 p-1 rounded-xl">
+    <div className="max-w-6xl mx-auto pb-16 h-[calc(100vh-120px)] flex flex-col">
+       <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/85 dark:bg-gray-900/65 shadow-md backdrop-blur-sm px-4 py-3 mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Centro de tareas</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">Prioriza tu día</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{pendingPatientTasks} tareas de pacientes • {pendingGeneralTasks} notas generales</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Hoy: {todayPending} pendientes directos</p>
+            </div>
+            <div className="flex flex-wrap gap-1.5 justify-end">
+              <Button variant="secondary" size="sm" className="rounded-pill" onClick={() => setFilter('pending')}>
+                Ver pendientes
+              </Button>
+              <Button size="sm" className="rounded-pill" onClick={() => quickAddRef.current?.focus()}>
+                Nueva nota rápida
+              </Button>
+            </div>
+          </div>
+       </div>
+
+       <div className="flex items-center justify-between mb-4 px-1.5">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Agrupa por estado</h2>
+          <div className="flex bg-gray-200/70 dark:bg-gray-700/70 p-1 rounded-pill shadow-sm">
             {(['pending', 'all', 'completed'] as const).map(f => (
-              <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${filter === f ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>{f === 'pending' ? 'Pendientes' : f === 'all' ? 'Todas' : 'Listas'}</button>
+              <button key={f} onClick={() => setFilter(f)} className={`px-2.5 py-1.5 rounded-pill text-[11px] font-bold uppercase transition-all ${filter === f ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>{f === 'pending' ? 'Pendientes' : f === 'all' ? 'Todas' : 'Listas'}</button>
             ))}
           </div>
        </div>
@@ -141,7 +180,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
           {/* LEFT: Patient Context Tasks */}
           <div className="lg:col-span-7 overflow-y-auto pr-2 custom-scrollbar">
              {filteredPatientTasks.length === 0 && (
-               <div className="text-center py-20 opacity-50 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
+               <div className="text-center py-20 opacity-50 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-panel">
                  <CheckSquare className="w-12 h-12 mx-auto text-gray-300 mb-2" />
                  <p className="text-sm font-medium">Sin tareas de pacientes</p>
                </div>
@@ -157,7 +196,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
           </div>
 
           {/* RIGHT: General Tasks (Sticky Note Style) */}
-          <div className="lg:col-span-5 flex flex-col bg-yellow-50/50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30 rounded-3xl p-5 h-full overflow-hidden relative shadow-inner">
+          <div className="lg:col-span-5 flex flex-col bg-yellow-50/60 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30 rounded-panel p-5 h-full overflow-hidden relative shadow-soft">
              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-yellow-200/50 to-transparent rounded-bl-full pointer-events-none"></div>
              
              <div className="flex items-center gap-2 mb-4 text-yellow-800 dark:text-yellow-500">
@@ -166,13 +205,14 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
              </div>
 
              <div className="relative mb-4">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
+                  ref={quickAddRef}
                   value={newGeneralTask}
                   onChange={e => setNewGeneralTask(e.target.value)}
                   onKeyDown={handleAddGeneralTask}
-                  placeholder="Escribe y presiona Enter..." 
-                  className="w-full bg-white dark:bg-gray-800 border-none shadow-sm rounded-xl py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
+                  placeholder="Escribe y presiona Enter..."
+                  className="w-full bg-white dark:bg-gray-800 border border-yellow-100/60 dark:border-yellow-900/40 shadow-soft rounded-card py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-yellow-500 outline-none"
                 />
                 <Plus className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
              </div>
@@ -184,7 +224,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
                    </div>
                 )}
                 {generalTasks.sort((a, b) => b.createdAt - a.createdAt).map(task => (
-                   <div key={task.id} className={`group flex items-start p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 transition-all ${task.isCompleted ? 'border-gray-300 opacity-60' : 'border-yellow-400 hover:translate-x-1'}`}>
+                   <div key={task.id} className={`group flex items-start p-3 bg-white/95 dark:bg-gray-800/90 rounded-card shadow-card border-l-4 transition-all ${task.isCompleted ? 'border-gray-300 opacity-60' : 'border-yellow-400 hover:translate-x-1'}`}>
                       <button onClick={() => toggleGeneralTaskAction(task.id)} className="mt-0.5 flex-shrink-0 text-gray-300 hover:text-yellow-500 transition-colors">
                          {task.isCompleted ? <CheckSquare className="w-4 h-4 text-gray-400" /> : <Square className="w-4 h-4" />}
                       </button>

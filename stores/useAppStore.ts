@@ -41,6 +41,7 @@ const initialTasks = loadGeneralTasksFromLocal();
 const storedUser = localStorage.getItem('medidiario_user');
 const storedTheme = localStorage.getItem('medidiario_theme') as 'light' | 'dark';
 const storedSecurity = localStorage.getItem('medidiario_security');
+const storedPreferences = localStorage.getItem('medidiario_preferences');
 
 const getInitialSecuritySettings = (): SecuritySettings => {
   const defaults: SecuritySettings = {
@@ -64,6 +65,29 @@ const getInitialSecuritySettings = (): SecuritySettings => {
 };
 
 const initialSecurity = getInitialSecuritySettings();
+
+const getInitialPreferences = () => {
+  const defaults = {
+    highlightPendingPatients: true,
+    compactStats: true,
+  };
+
+  if (storedPreferences) {
+    try {
+      const parsed = JSON.parse(storedPreferences);
+      return {
+        highlightPendingPatients: typeof parsed.highlightPendingPatients === 'boolean' ? parsed.highlightPendingPatients : defaults.highlightPendingPatients,
+        compactStats: typeof parsed.compactStats === 'boolean' ? parsed.compactStats : defaults.compactStats,
+      };
+    } catch (e) {
+      console.error('Error parsing stored preferences', e);
+    }
+  }
+
+  return defaults;
+};
+
+const initialPreferences = getInitialPreferences();
 
 const useAppStore = create<AppStore>()(
   devtools(
@@ -90,6 +114,8 @@ const useAppStore = create<AppStore>()(
       patientTypes: getInitialPatientTypes(),
       securityPin: initialSecurity.pin,
       autoLockMinutes: initialSecurity.autoLockMinutes,
+      highlightPendingPatients: initialPreferences.highlightPendingPatients,
+      compactStats: initialPreferences.compactStats,
     }),
     { name: 'MediDiarioStore' }
   )
@@ -120,6 +146,10 @@ useAppStore.subscribe((state) => {
     localStorage.setItem('medidiario_security', JSON.stringify({
       pin: state.securityPin,
       autoLockMinutes: state.autoLockMinutes,
+    }));
+    localStorage.setItem('medidiario_preferences', JSON.stringify({
+      highlightPendingPatients: state.highlightPendingPatients,
+      compactStats: state.compactStats,
     }));
 
     console.log(' [AutoSave] Estado sincronizado con LocalStorage');

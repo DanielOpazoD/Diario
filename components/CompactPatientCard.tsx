@@ -33,6 +33,7 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
   const [isExpanded, setIsExpanded] = useState(false);
   const updatePatient = useAppStore(state => state.updatePatient);
   const patientTypes = useAppStore(state => state.patientTypes);
+  const highlightPendingPatients = useAppStore(state => state.highlightPendingPatients);
 
   const tasks = patient.pendingTasks || [];
   const pendingCount = tasks.filter(t => !t.isCompleted).length;
@@ -50,7 +51,9 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
   };
 
   return (
-    <div className="group bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700/50 overflow-hidden transition-all duration-200 hover:shadow-md mb-3">
+    <div
+      className={`group bg-white/95 dark:bg-gray-800/90 rounded-card shadow-card border overflow-hidden transition-all duration-200 hover:shadow-elevated mb-3 ${highlightPendingPatients && pendingCount > 0 ? 'border-amber-200 dark:border-amber-700/60 ring-1 ring-amber-200/70 dark:ring-amber-600/40' : 'border-gray-200 dark:border-gray-700/50'}`}
+    >
       <div
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex flex-row items-stretch cursor-pointer min-h-[76px]"
@@ -58,7 +61,7 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
         <div className={`w-1.5 shrink-0 bg-${coreColor}-500`}></div>
 
         <div className="flex-1 flex items-center p-3 gap-3 relative overflow-hidden">
-          <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-sm font-bold bg-${coreColor}-50 text-${coreColor}-600 dark:bg-${coreColor}-900/20 dark:text-${coreColor}-400 uppercase shadow-sm border border-${coreColor}-100 dark:border-${coreColor}-800/50`}>
+          <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-sm font-bold bg-${coreColor}-50 text-${coreColor}-600 dark:bg-${coreColor}-900/20 dark:text-${coreColor}-400 uppercase shadow-soft border border-${coreColor}-100 dark:border-${coreColor}-800/50`}>
             {patient.name.substring(0, 2)}
           </div>
 
@@ -72,11 +75,11 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
 
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className={`text-[10px] uppercase font-bold px-1.5 rounded-md bg-${coreColor}-50 text-${coreColor}-700 dark:bg-${coreColor}-900/30 dark:text-${coreColor}-300 border border-${coreColor}-100 dark:border-${coreColor}-800`}>
+                <span className={`text-[10px] uppercase font-bold px-1.5 rounded-control bg-${coreColor}-50 text-${coreColor}-700 dark:bg-${coreColor}-900/30 dark:text-${coreColor}-300 border border-${coreColor}-100 dark:border-${coreColor}-800`}>
                   {patient.type}
                 </span>
                 {patient.entryTime && (
-                  <span className="flex items-center text-xs font-mono gap-0.5 bg-gray-100 dark:bg-gray-700 px-1 rounded">
+                  <span className="flex items-center text-xs font-mono gap-0.5 bg-gray-100 dark:bg-gray-700 px-2 rounded-control">
                     <Clock className="w-2.5 h-2.5" />
                     {patient.entryTime}
                   </span>
@@ -114,20 +117,20 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
         <div className="px-4 pb-4 pt-1 border-t border-dashed border-gray-200 dark:border-gray-700/50 bg-gray-50/30 dark:bg-gray-800/50 animate-slide-down">
           <div className="mt-3 flex flex-wrap justify-between items-start gap-3">
             <div className="flex flex-wrap gap-2 text-[11px] text-gray-500 uppercase tracking-wide font-medium">
-              <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-100 dark:border-gray-600 shadow-sm">RUT: {patient.rut}</span>
-              {patient.birthDate && <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-100 dark:border-gray-600 shadow-sm">{ageDisplay || format(parseLocalYMD(patient.birthDate), 'yyyy')}</span>}
-              {patient.exitTime && <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-100 dark:border-gray-600 shadow-sm">Salida: {patient.exitTime}</span>}
+              <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-control border border-gray-100 dark:border-gray-600 shadow-soft">RUT: {patient.rut}</span>
+              {patient.birthDate && <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-control border border-gray-100 dark:border-gray-600 shadow-soft">{ageDisplay || format(parseLocalYMD(patient.birthDate), 'yyyy')}</span>}
+              {patient.exitTime && <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-control border border-gray-100 dark:border-gray-600 shadow-soft">Salida: {patient.exitTime}</span>}
             </div>
             <div className="flex gap-2 ml-auto w-full sm:w-auto justify-end">
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(patient); }}
-                className="flex-1 sm:flex-none justify-center text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-2 rounded-lg transition-colors shadow-sm border border-blue-100 dark:border-blue-800"
+                className="flex-1 sm:flex-none justify-center text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-2 rounded-card transition-colors shadow-soft border border-blue-100 dark:border-blue-800"
               >
                 Editar Ficha
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(patient.id); }}
-                className="flex-1 sm:flex-none justify-center text-xs font-bold text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 px-3 py-2 rounded-lg transition-colors flex items-center gap-1 shadow-sm border border-red-100 dark:border-red-800"
+                className="flex-1 sm:flex-none justify-center text-xs font-bold text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 px-3 py-2 rounded-card transition-colors flex items-center gap-1 shadow-soft border border-red-100 dark:border-red-800"
               >
                 <Trash2 className="w-3 h-3"/> Borrar
               </button>
@@ -139,7 +142,7 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
               <div className="text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center gap-1">
                 <FileText className="w-3 h-3"/> Nota Clínica
               </div>
-              <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm border-l-4 border-l-blue-400 dark:border-l-blue-500">
+              <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed bg-white dark:bg-gray-900 p-3 rounded-card border border-gray-200 dark:border-gray-700 shadow-soft border-l-4 border-l-blue-400 dark:border-l-blue-500">
                 {patient.clinicalNote}
               </div>
             </div>
@@ -155,7 +158,7 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
                   <div
                     key={task.id}
                     onClick={() => handleToggleTask(task.id)}
-                    className="flex items-center gap-3 cursor-pointer group p-2.5 rounded-lg bg-white dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 shadow-sm hover:border-blue-300 transition-all"
+                    className="flex items-center gap-3 cursor-pointer group p-2.5 rounded-card bg-white dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 shadow-soft hover:border-blue-300 transition-all"
                   >
                     {task.isCompleted
                       ? <CheckSquare className="w-5 h-5 text-green-500 flex-shrink-0"/>

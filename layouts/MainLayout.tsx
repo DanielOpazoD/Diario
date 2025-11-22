@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { BarChart2, Calendar as CalendarIcon, CheckSquare, Cloud, Download, LogOut, Menu, RefreshCw, Search, Settings as SettingsIcon, Upload, X } from 'lucide-react';
 import DateNavigator from '../components/DateNavigator';
-import Button from '../components/Button';
 import { ViewMode, PatientRecord, User } from '../types';
 import { downloadDataAsJson } from '../services/storage';
 
@@ -13,7 +12,6 @@ interface MainLayoutProps {
   records: PatientRecord[];
   onDateChange: (date: Date) => void;
   onOpenNewPatient: () => void;
-  onGenerateReport: () => void;
   onOpenBackupModal: () => void;
   onOpenDrivePicker: () => void;
   onLogout: () => void;
@@ -30,7 +28,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   records,
   onDateChange,
   onOpenNewPatient,
-  onGenerateReport,
   onOpenBackupModal,
   onOpenDrivePicker,
   onLogout,
@@ -261,25 +258,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-3 hidden md:flex">
-            {viewMode === 'daily' && (
-              <>
-                <Button
-                  variant="secondary"
-                  onClick={onGenerateReport}
-                  className="shadow-sm border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:shadow-md"
-                >
-                  Reporte Turno
-                </Button>
-                <Button onClick={onOpenNewPatient} className="shadow-md hover:shadow-lg">
-                  Nuevo Paciente
-                </Button>
-              </>
-            )}
-          </div>
+          <div className="flex items-center gap-3 hidden md:flex" />
         </header>
 
-        <div ref={contentRef} className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-6 relative scroll-smooth">
+        <div
+          ref={contentRef}
+          className="flex-1 overflow-y-auto custom-scrollbar px-3 md:px-6 pt-2 md:pt-3 pb-4 md:pb-6 relative scroll-smooth"
+        >
           {children}
         </div>
       </main>
