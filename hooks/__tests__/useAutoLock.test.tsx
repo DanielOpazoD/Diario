@@ -1,6 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
-import { vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import useAutoLock from '../useAutoLock';
+
+type AutoLockProps = { securityPin: string | null; autoLockMinutes: number };
 
 describe('useAutoLock', () => {
   beforeEach(() => {
@@ -12,7 +14,7 @@ describe('useAutoLock', () => {
   });
 
   it('bloquea por defecto cuando existe PIN y se desbloquea al llamar unlock', () => {
-    const { result } = renderHook((props) => useAutoLock(props), {
+    const { result } = renderHook(({ securityPin, autoLockMinutes }: AutoLockProps) => useAutoLock({ securityPin, autoLockMinutes }), {
       initialProps: { securityPin: '1234', autoLockMinutes: 5 }
     });
 
@@ -26,7 +28,7 @@ describe('useAutoLock', () => {
   });
 
   it('activa el autolock tras inactividad', () => {
-    const { result } = renderHook((props) => useAutoLock(props), {
+    const { result } = renderHook(({ securityPin, autoLockMinutes }: AutoLockProps) => useAutoLock({ securityPin, autoLockMinutes }), {
       initialProps: { securityPin: '1234', autoLockMinutes: 0.001 }
     });
 
@@ -42,7 +44,7 @@ describe('useAutoLock', () => {
   });
 
   it('desbloquea cuando se elimina el PIN', () => {
-    const { result, rerender } = renderHook((props) => useAutoLock(props), {
+    const { result, rerender } = renderHook(({ securityPin, autoLockMinutes }: AutoLockProps) => useAutoLock({ securityPin, autoLockMinutes }), {
       initialProps: { securityPin: '1234', autoLockMinutes: 5 }
     });
 
