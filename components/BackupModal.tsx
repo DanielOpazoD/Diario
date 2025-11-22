@@ -14,7 +14,7 @@ interface BackupModalProps {
   onFolderChange: (folder: DriveFolderPreference) => void;
 }
 
-const ROOT_FOLDER: DriveFolderPreference = { id: 'root', name: 'Mi unidad' };
+const ROOT_FOLDER: DriveFolderPreference = { id: 'root', name: 'Mi unidad', driveId: null };
 
 const buildBreadcrumbTrail = async (token: string, folder: DriveFolderPreference) => {
   if (!folder.id || folder.id === 'root') return [ROOT_FOLDER];
@@ -25,7 +25,7 @@ const buildBreadcrumbTrail = async (token: string, folder: DriveFolderPreference
 
   while (currentId && guard < 10) {
     const meta = await getFolderMetadata(token, currentId);
-    path.unshift({ id: meta.id, name: meta.name });
+    path.unshift({ id: meta.id, name: meta.name, driveId: meta.driveId });
     const parentId = meta.parents?.[0];
     if (!parentId || parentId === 'root') {
       path.unshift(ROOT_FOLDER);

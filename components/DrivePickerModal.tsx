@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Cloud, X, FileJson, Clock, Loader, Download, Search, Folder, ChevronRight, CheckCircle2 } from 'lucide-react';
 import Button from './Button';
-import { listFolderEntries, getFolderMetadata, DriveEntry, getActiveAccessToken } from '../services/googleService';
+import { listFolderEntries, getFolderMetadata, DriveEntry, getActiveAccessToken, clearStoredToken } from '../services/googleService';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DriveFolderPreference } from '../types';
@@ -15,7 +15,7 @@ interface DrivePickerModalProps {
   onFolderChange: (folder: DriveFolderPreference) => void;
 }
 
-const ROOT_FOLDER: DriveFolderPreference = { id: 'root', name: 'Mi unidad' };
+const ROOT_FOLDER: DriveFolderPreference = { id: 'root', name: 'Mi unidad', driveId: null };
 
 const buildBreadcrumbTrail = async (token: string, folder: DriveFolderPreference) => {
   if (!folder.id || folder.id === 'root') return [ROOT_FOLDER];
@@ -26,7 +26,7 @@ const buildBreadcrumbTrail = async (token: string, folder: DriveFolderPreference
 
   while (currentId && guard < 10) {
     const meta = await getFolderMetadata(token, currentId);
-    path.unshift({ id: meta.id, name: meta.name });
+    path.unshift({ id: meta.id, name: meta.name, driveId: meta.driveId });
     const parentId = meta.parents?.[0];
     if (!parentId || parentId === 'root') {
       path.unshift(ROOT_FOLDER);
@@ -66,17 +66,41 @@ const DrivePickerModal: React.FC<DrivePickerModalProps> = ({
     setError('');
 
     try {
+      const metadata = target.id && target.id !== 'root' ? await getFolderMetadata(activeToken, target.id) : null;
+      const driveAwareTarget: DriveFolderPreference = metadata?.driveId
+        ? { ...target, driveId: metadata.driveId }
+        : target;
+
       const [data, trail] = await Promise.all([
-        listFolderEntries(activeToken, target.id && target.id !== 'root' ? target.id : undefined),
-        buildBreadcrumbTrail(activeToken, target),
+        listFolderEntries(
+          activeToken,
+          driveAwareTarget.id && driveAwareTarget.id !== 'root' ? driveAwareTarget.id : undefined,
+          driveAwareTarget.driveId
+        ),
+        buildBreadcrumbTrail(activeToken, driveAwareTarget),
       ]);
 
       setEntries(data.files || []);
-      setCurrentFolder(target.id ? target : ROOT_FOLDER);
+      setCurrentFolder(driveAwareTarget.id ? driveAwareTarget : ROOT_FOLDER);
       setBreadcrumbs(trail);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setError('Error al cargar archivos o carpetas de Drive.');
+
+      const normalizedMessage = (e?.message || '').toLowerCase();
+
+      if (e?.status === 401 || e?.status === 403) {
+        clearStoredToken();
+        setError('La sesión de Google expiró o no es válida. Vuelve a iniciar sesión.');
+      } else if (e?.status === 404 && target.id) {
+        setError('La carpeta seleccionada ya no existe. Volviendo a Mi unidad.');
+        setCurrentFolder(ROOT_FOLDER);
+        setBreadcrumbs([ROOT_FOLDER]);
+        await loadFolder(ROOT_FOLDER);
+      } else if (normalizedMessage.includes('invalid value')) {
+        setError('Drive rechazó la consulta de esta carpeta. Intenta con otra carpeta o revisa los permisos del archivo.');
+      } else {
+        setError(e?.message || 'Error al cargar archivos o carpetas de Drive.');
+      }
     } finally {
       setIsLoadingList(false);
     }
@@ -91,7 +115,7 @@ const DrivePickerModal: React.FC<DrivePickerModalProps> = ({
   }, [isOpen, preferredFolder, loadFolder]);
 
   const folders = entries.filter((entry) => entry.mimeType === 'application/vnd.google-apps.folder');
-  const files = entries.filter((entry) => entry.mimeType === 'application/json');
+  const files = entries.filter((entry) => entry.mimeType === 'application/json' || entry.name.toLowerCase().endsWith('.json'));
 
   const visibleFiles = useMemo(() => {
     if (!searchQuery) return files;

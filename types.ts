@@ -92,4 +92,5 @@ export interface LogEntry {
 export interface DriveFolderPreference {
   id: string | null;
   name: string;
+  driveId?: string | null;
 }
