@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Cloud, X, Folder, FileText, Loader, FolderPlus, ChevronRight, CheckCircle2 } from 'lucide-react';
 import Button from './Button';
-import { getFolderMetadata, listFolders, DriveEntry } from '../services/googleService';
+import { getFolderMetadata, listFolders, DriveEntry, ensureAccessToken } from '../services/googleService';
 import { DriveFolderPreference } from '../types';
 
 interface BackupModalProps {
@@ -61,11 +61,7 @@ const BackupModal: React.FC<BackupModalProps> = ({
   const [error, setError] = useState('');
 
   const loadFolder = useCallback(async (target: DriveFolderPreference) => {
-    const token = sessionStorage.getItem('google_access_token');
-    if (!token) {
-      setError('No hay sesión de Google activa.');
-      return;
-    }
+    const token = await ensureAccessToken();
 
     setIsLoadingFolders(true);
     setError('');

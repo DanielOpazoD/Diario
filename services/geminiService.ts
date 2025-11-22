@@ -34,8 +34,8 @@ const patientListExtractionSchema: Schema = {
 };
 
 const readEncodedKey = () => {
-  return (typeof import.meta !== 'undefined' && import.meta.env.VITE_API_KEY) ||
-    (typeof import.meta !== 'undefined' && import.meta.env.API_KEY) ||
+  return (typeof import.meta !== 'undefined' && (import.meta.env.VITE_API_KEY || import.meta.env.API_KEY)) ||
+    (typeof process !== 'undefined' && (process as any).env?.API_KEY) ||
     '';
 };
 

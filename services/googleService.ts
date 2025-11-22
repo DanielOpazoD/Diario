@@ -18,6 +18,66 @@ const SCOPES = 'https://www.googleapis.com/auth/drive.file email profile';
 let tokenClient: any;
 let gapiInited = false;
 let gisInited = false;
+// Helper to reuse an existing token or silently refresh it when expired
+const requestNewAccessToken = (prompt: 'consent' | '' = ''): Promise<string> => {
+  if (!tokenClient) {
+    return Promise.reject('Google API no está inicializada. Recarga la página.');
+  }
+
+  return new Promise((resolve, reject) => {
+    tokenClient.callback = (resp: any) => {
+      if (resp.error) {
+        reject(resp.error);
+        return;
+      }
+
+      sessionStorage.setItem('google_access_token', resp.access_token);
+      resolve(resp.access_token);
+    };
+
+    try {
+      tokenClient.requestAccessToken({ prompt });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+export const ensureAccessToken = async (): Promise<string> => {
+  const cached = sessionStorage.getItem('google_access_token');
+  if (cached) return cached;
+
+  return await requestNewAccessToken('consent');
+};
+
+const authorizedFetch = async (input: RequestInfo | URL, init: RequestInit = {}, token?: string) => {
+  let activeToken = token || sessionStorage.getItem('google_access_token');
+
+  if (!activeToken) {
+    activeToken = await requestNewAccessToken('consent');
+  }
+
+  const buildHeaders = (bearer: string) => ({
+    ...(init.headers || {}),
+    'Authorization': 'Bearer ' + bearer,
+  });
+
+  const makeRequest = (bearer: string) => fetch(input, {
+    ...init,
+    headers: buildHeaders(bearer)
+  });
+
+  let response = await makeRequest(activeToken);
+
+  if (response.status === 401) {
+    // Token expired: try silent refresh and retry once
+    const refreshed = await requestNewAccessToken('');
+    sessionStorage.setItem('google_access_token', refreshed);
+    response = await makeRequest(refreshed);
+  }
+
+  return response;
+};
 // Variable global para almacenar el 'reject' de la promesa de login actual
 let activeLoginReject: ((reason?: any) => void) | null = null;
 
@@ -168,7 +228,7 @@ const findOrCreateFolder = async (folderName: string, accessToken: string, paren
   searchUrl.searchParams.append('q', query);
   searchUrl.searchParams.append('fields', 'files(id, name)');
 
-  const searchRes = await fetch(searchUrl.toString(), {
+  const searchRes = await authorizedFetch(searchUrl.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
   const searchData = await searchRes.json();
@@ -187,14 +247,14 @@ const findOrCreateFolder = async (folderName: string, accessToken: string, paren
     createMetadata.parents = [parentId];
   }
 
-  const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+  const createRes = await authorizedFetch('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
-    headers: { 
+    headers: {
       'Authorization': 'Bearer ' + accessToken,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(createMetadata)
-  });
+  }, accessToken);
 
   const createData = await createRes.json();
   return createData.id;
@@ -231,11 +291,11 @@ export const uploadFileToDrive = async (
   form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
   form.append('file', file);
 
-  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+  const response = await authorizedFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
     method: 'POST',
     headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
     body: form,
-  });
+  }, accessToken);
 
   return await response.json();
 };
@@ -267,11 +327,11 @@ export const uploadFileForPatient = async (
   form.append('file', file);
 
   // 3. Upload
-  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,createdTime,webViewLink,thumbnailLink', {
+  const response = await authorizedFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,createdTime,webViewLink,thumbnailLink', {
     method: 'POST',
     headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
     body: form,
-  });
+  }, accessToken);
 
   if (!response.ok) {
     const err = await response.json();
@@ -293,14 +353,14 @@ export const uploadFileForPatient = async (
 
 export const deleteFileFromDrive = async (fileId: string, accessToken: string) => {
   // We use 'trash' instead of delete to be safe
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+  const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
     method: 'PATCH',
-    headers: { 
+    headers: {
       'Authorization': 'Bearer ' + accessToken,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ trashed: true })
-  });
+  }, accessToken);
 
   if (!response.ok) {
     throw new Error("Error deleting file from Drive");
@@ -322,9 +382,9 @@ export const listFolderEntries = async (accessToken: string, parentId?: string) 
   searchUrl.searchParams.append('fields', 'files(id, name, mimeType, parents, modifiedTime, size)');
   searchUrl.searchParams.append('orderBy', 'mimeType desc, name');
 
-  const response = await fetch(searchUrl.toString(), {
+  const response = await authorizedFetch(searchUrl.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
+  }, accessToken);
 
   if (!response.ok) {
     throw new Error('Failed to list folder entries');
@@ -342,9 +402,9 @@ export const listFolders = async (accessToken: string, parentId?: string) => {
   searchUrl.searchParams.append('orderBy', 'name');
   searchUrl.searchParams.append('pageSize', '50');
 
-  const response = await fetch(searchUrl.toString(), {
+  const response = await authorizedFetch(searchUrl.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
+  }, accessToken);
 
   if (!response.ok) {
     return { files: [] };
@@ -354,9 +414,9 @@ export const listFolders = async (accessToken: string, parentId?: string) => {
 };
 
 export const getFolderMetadata = async (accessToken: string, folderId: string) => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents`, {
+  const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
+  }, accessToken);
 
   if (!response.ok) {
     throw new Error('Failed to read folder info');
@@ -366,9 +426,9 @@ export const getFolderMetadata = async (accessToken: string, folderId: string) =
 };
 
 export const downloadFile = async (fileId: string, accessToken: string) => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+  const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
+  }, accessToken);
   
   if (!response.ok) {
     throw new Error('Failed to download file');
@@ -378,9 +438,9 @@ export const downloadFile = async (fileId: string, accessToken: string) => {
 };
 
 export const downloadFileAsBase64 = async (fileId: string, accessToken: string): Promise<string> => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+  const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
+  }, accessToken);
 
   if (!response.ok) {
     throw new Error('Failed to download file content');
@@ -402,9 +462,9 @@ export const downloadFileAsBase64 = async (fileId: string, accessToken: string):
 
 export const getUserInfo = async (accessToken: string) => {
    try {
-     const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+     const response = await authorizedFetch('https://www.googleapis.com/oauth2/v3/userinfo', {
        headers: { 'Authorization': `Bearer ${accessToken}` }
-     });
+     }, accessToken);
      if (!response.ok) {
        throw new Error(`Failed to fetch user info: ${response.statusText}`);
      }
