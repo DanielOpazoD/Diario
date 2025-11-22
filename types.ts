@@ -54,6 +54,12 @@ export interface PatientRecord {
   createdAt: number;
 }
 
+export interface EncryptedPatientRecord {
+  id: string;
+  iv: string;
+  data: string;
+}
+
 export interface AIAnalysisResult {
   structuredDiagnosis: string;
   extractedTasks: string[];
