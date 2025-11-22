@@ -45,7 +45,7 @@ const AppContent: React.FC = () => {
   const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
+  const [isLocked, setIsLocked] = useState(() => Boolean(securityPin));
   const [driveFolderPreference, setDriveFolderPreference] = useState<DriveFolderPreference>(() => {
     const stored = localStorage.getItem('medidiario_drive_folder');
     if (stored) {
@@ -117,7 +117,10 @@ const AppContent: React.FC = () => {
   }, [securityPin, autoLockMinutes, isLocked]);
 
   useEffect(() => {
-    if (!securityPin) {
+    if (securityPin) {
+      setIsLocked(true);
+      lastActivityRef.current = Date.now();
+    } else {
       setIsLocked(false);
     }
   }, [securityPin]);
