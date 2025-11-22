@@ -94,3 +94,8 @@ export interface DriveFolderPreference {
   name: string;
   driveId?: string | null;
 }
+
+export interface SecuritySettings {
+  pin: string | null;
+  autoLockMinutes: number;
+}

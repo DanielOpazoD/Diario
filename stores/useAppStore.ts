@@ -4,7 +4,7 @@ import { createPatientSlice, PatientSlice } from './slices/patientSlice';
 import { createTaskSlice, TaskSlice } from './slices/taskSlice';
 import { createUserSlice, UserSlice } from './slices/userSlice';
 import { createSettingsSlice, SettingsSlice, defaultPatientTypes } from './slices/settingsSlice';
-import { ToastMessage } from '../types';
+import { SecuritySettings, ToastMessage } from '../types';
 import { 
   loadRecordsFromLocal, 
   loadGeneralTasksFromLocal, 
@@ -40,6 +40,30 @@ const initialRecords = loadRecordsFromLocal();
 const initialTasks = loadGeneralTasksFromLocal();
 const storedUser = localStorage.getItem('medidiario_user');
 const storedTheme = localStorage.getItem('medidiario_theme') as 'light' | 'dark';
+const storedSecurity = localStorage.getItem('medidiario_security');
+
+const getInitialSecuritySettings = (): SecuritySettings => {
+  const defaults: SecuritySettings = {
+    pin: null,
+    autoLockMinutes: 5,
+  };
+
+  if (storedSecurity) {
+    try {
+      const parsed = JSON.parse(storedSecurity);
+      return {
+        pin: typeof parsed.pin === 'string' ? parsed.pin : null,
+        autoLockMinutes: typeof parsed.autoLockMinutes === 'number' ? parsed.autoLockMinutes : defaults.autoLockMinutes,
+      };
+    } catch (e) {
+      console.error('Error parsing stored security settings', e);
+    }
+  }
+
+  return defaults;
+};
+
+const initialSecurity = getInitialSecuritySettings();
 
 const useAppStore = create<AppStore>()(
   devtools(
@@ -64,6 +88,8 @@ const useAppStore = create<AppStore>()(
       user: storedUser ? JSON.parse(storedUser) : null,
       theme: storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
       patientTypes: getInitialPatientTypes(),
+      securityPin: initialSecurity.pin,
+      autoLockMinutes: initialSecurity.autoLockMinutes,
     }),
     { name: 'MediDiarioStore' }
   )
@@ -91,7 +117,11 @@ useAppStore.subscribe((state) => {
     }
     localStorage.setItem('medidiario_theme', state.theme);
     localStorage.setItem('medidiario_patient_types', JSON.stringify(state.patientTypes));
-    
+    localStorage.setItem('medidiario_security', JSON.stringify({
+      pin: state.securityPin,
+      autoLockMinutes: state.autoLockMinutes,
+    }));
+
     console.log(' [AutoSave] Estado sincronizado con LocalStorage');
   }, 2000);
 });

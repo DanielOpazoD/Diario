@@ -20,6 +20,7 @@ import MainLayout from './layouts/MainLayout';
 import DailyView from './features/daily/DailyView';
 import SearchView from './features/search/SearchView';
 import StatsView from './features/stats/StatsView';
+import LockScreen from './components/LockScreen';
 
 const toTitleCase = (str: string) => {
   return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -32,6 +33,8 @@ const AppContent: React.FC = () => {
   const records = useAppStore(state => state.records);
   const generalTasks = useAppStore(state => state.generalTasks);
   const patientTypes = useAppStore(state => state.patientTypes);
+  const securityPin = useAppStore(state => state.securityPin);
+  const autoLockMinutes = useAppStore(state => state.autoLockMinutes);
   const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient } = useAppStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -42,6 +45,7 @@ const AppContent: React.FC = () => {
   const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
+  const [isLocked, setIsLocked] = useState(() => Boolean(securityPin));
   const [driveFolderPreference, setDriveFolderPreference] = useState<DriveFolderPreference>(() => {
     const stored = localStorage.getItem('medidiario_drive_folder');
     if (stored) {
@@ -55,6 +59,7 @@ const AppContent: React.FC = () => {
   });
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
+  const lastActivityRef = useRef(Date.now());
 
   useEffect(() => {
     localStorage.setItem('medidiario_drive_folder', JSON.stringify(driveFolderPreference));
@@ -74,6 +79,51 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     restoreStoredToken();
   }, []);
+
+  useEffect(() => {
+    const updateActivity = () => {
+      if (!isLocked) {
+        lastActivityRef.current = Date.now();
+      }
+    };
+
+    window.addEventListener('mousemove', updateActivity);
+    window.addEventListener('keydown', updateActivity);
+    window.addEventListener('mousedown', updateActivity);
+    window.addEventListener('touchstart', updateActivity);
+
+    return () => {
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('mousedown', updateActivity);
+      window.removeEventListener('touchstart', updateActivity);
+    };
+  }, [isLocked]);
+
+  useEffect(() => {
+    if (!securityPin || autoLockMinutes <= 0) {
+      setIsLocked(false);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const elapsedMinutes = (Date.now() - lastActivityRef.current) / 60000;
+      if (!isLocked && elapsedMinutes >= autoLockMinutes) {
+        setIsLocked(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [securityPin, autoLockMinutes, isLocked]);
+
+  useEffect(() => {
+    if (securityPin) {
+      setIsLocked(true);
+      lastActivityRef.current = Date.now();
+    } else {
+      setIsLocked(false);
+    }
+  }, [securityPin]);
 
   const dailyRecords = useMemo(
     () => records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), currentDate)),
@@ -200,6 +250,18 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleUnlock = (pinAttempt: string) => {
+    if (pinAttempt === securityPin) {
+      setIsLocked(false);
+      lastActivityRef.current = Date.now();
+      addToast('success', 'Sesión desbloqueada');
+      return true;
+    }
+
+    addToast('error', 'PIN incorrecto');
+    return false;
+  };
+
   const handleNavigation = useCallback((view: ViewMode) => {
     setViewMode(view);
   }, []);
@@ -210,6 +272,9 @@ const AppContent: React.FC = () => {
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">
       <Toast />
       <DebugConsole />
+      {isLocked && securityPin && (
+        <LockScreen onUnlock={handleUnlock} autoLockMinutes={autoLockMinutes} />
+      )}
 
       <MainLayout
         viewMode={viewMode}
