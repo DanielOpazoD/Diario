@@ -4,7 +4,7 @@ import { format, isSameDay, differenceInYears } from 'date-fns';
 import { Calendar as CalendarIcon, Search, BarChart2, LogOut, Plus, FileText, Menu, X, CheckSquare, Square, ChevronDown, Cloud, Settings as SettingsIcon, Upload, Download, RefreshCw, Trash2, Filter, Clock } from 'lucide-react';
 import { PatientRecord, ViewMode, DriveFolderPreference } from './types';
 import { generateHandoverReport } from './services/reportService';
-import { uploadFileToDrive, downloadFile } from './services/googleService';
+import { uploadFileToDrive, downloadFile, ensureAccessToken } from './services/googleService';
 import { downloadDataAsJson, parseUploadedJson } from './services/storage';
 import Button from './components/Button';
 import PatientModal from './components/PatientModal';
@@ -373,9 +373,9 @@ const AppContent: React.FC = () => {
   const handleGeneratePDF = () => { generateHandoverReport(dailyRecords, currentDate, user?.name || 'Dr.'); addToast('success', 'PDF Generado'); };
 
   const handleBackupConfirm = async (fileName: string, folder: DriveFolderPreference) => {
-    const token = sessionStorage.getItem('google_access_token');
+    const token = await ensureAccessToken().catch(() => null);
     if (!token) {
-      addToast('error', 'No hay sesión de Google activa.');
+      addToast('error', 'No hay sesión de Google activa o expiró la sesión.');
       return;
     }
     setIsUploading(true);
@@ -399,7 +399,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleDriveFileSelect = async (fileId: string) => {
-    const token = sessionStorage.getItem('google_access_token');
+    const token = await ensureAccessToken().catch(() => null);
     if (!token) return;
     
     setIsUploading(true);
