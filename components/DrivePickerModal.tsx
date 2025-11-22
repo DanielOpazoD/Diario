@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Cloud, X, FileJson, Clock, Loader, Download, Search, Folder, ChevronRight, CheckCircle2 } from 'lucide-react';
 import Button from './Button';
-import { listFolderEntries, getFolderMetadata, DriveEntry, getActiveAccessToken } from '../services/googleService';
+import { listFolderEntries, getFolderMetadata, DriveEntry, getActiveAccessToken, clearStoredToken } from '../services/googleService';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DriveFolderPreference } from '../types';
@@ -74,9 +74,20 @@ const DrivePickerModal: React.FC<DrivePickerModalProps> = ({
       setEntries(data.files || []);
       setCurrentFolder(target.id ? target : ROOT_FOLDER);
       setBreadcrumbs(trail);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setError('Error al cargar archivos o carpetas de Drive.');
+
+      if (e?.status === 401 || e?.status === 403) {
+        clearStoredToken();
+        setError('La sesión de Google expiró o no es válida. Vuelve a iniciar sesión.');
+      } else if (e?.status === 404 && target.id) {
+        setError('La carpeta seleccionada ya no existe. Volviendo a Mi unidad.');
+        setCurrentFolder(ROOT_FOLDER);
+        setBreadcrumbs([ROOT_FOLDER]);
+        await loadFolder(ROOT_FOLDER);
+      } else {
+        setError('Error al cargar archivos o carpetas de Drive.');
+      }
     } finally {
       setIsLoadingList(false);
     }
