@@ -14,12 +14,71 @@ const resolveClientId = () => {
 // Fallback safe access for Client ID
 const CLIENT_ID = resolveClientId() || '752346610228-e9grkodnhi6lkau35fhuidapovp366id.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file email profile';
+const TOKEN_STORAGE_KEY = 'medidiario_google_token';
+
+interface StoredToken {
+  accessToken: string;
+  expiresAt?: number;
+}
 
 let tokenClient: any;
 let gapiInited = false;
 let gisInited = false;
 // Variable global para almacenar el 'reject' de la promesa de login actual
 let activeLoginReject: ((reason?: any) => void) | null = null;
+
+const persistGoogleToken = (token: string, expiresIn?: number) => {
+  try {
+    sessionStorage.setItem('google_access_token', token);
+
+    const payload: StoredToken = { accessToken: token };
+
+    if (expiresIn) {
+      payload.expiresAt = Date.now() + expiresIn * 1000;
+    }
+
+    localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(payload));
+  } catch (error) {
+    console.warn('No se pudo guardar el token de Google en almacenamiento persistente', error);
+  }
+};
+
+export const restoreStoredToken = (): string | null => {
+  // Priorizar el token en memoria de la sesión si existe
+  const active = sessionStorage.getItem('google_access_token');
+  if (active) return active;
+
+  const raw = localStorage.getItem(TOKEN_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as StoredToken;
+
+    if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      return null;
+    }
+
+    if (parsed.accessToken) {
+      sessionStorage.setItem('google_access_token', parsed.accessToken);
+      return parsed.accessToken;
+    }
+  } catch (error) {
+    console.warn('No se pudo leer el token almacenado de Google', error);
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  }
+
+  return null;
+};
+
+export const getActiveAccessToken = () => {
+  return restoreStoredToken();
+};
+
+export const clearStoredToken = () => {
+  sessionStorage.removeItem('google_access_token');
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+};
 
 export interface DriveEntry {
   id: string;
@@ -137,6 +196,7 @@ export const handleGoogleLogin = (): Promise<string> => {
       if (resp.error !== undefined) {
         reject(resp);
       }
+      persistGoogleToken(resp.access_token, resp.expires_in);
       resolve(resp.access_token);
     };
 

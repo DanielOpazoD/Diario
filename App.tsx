@@ -4,7 +4,7 @@ import { format, isSameDay, differenceInYears } from 'date-fns';
 import { Calendar as CalendarIcon, Search, BarChart2, LogOut, Plus, FileText, Menu, X, CheckSquare, Square, ChevronDown, Cloud, Settings as SettingsIcon, Upload, Download, RefreshCw, Trash2, Filter, Clock } from 'lucide-react';
 import { PatientRecord, ViewMode, DriveFolderPreference } from './types';
 import { generateHandoverReport } from './services/reportService';
-import { uploadFileToDrive, downloadFile } from './services/googleService';
+import { uploadFileToDrive, downloadFile, getActiveAccessToken, restoreStoredToken, clearStoredToken } from './services/googleService';
 import { downloadDataAsJson, parseUploadedJson } from './services/storage';
 import Button from './components/Button';
 import PatientModal from './components/PatientModal';
@@ -289,6 +289,10 @@ const AppContent: React.FC = () => {
     addLog('info', 'App', 'Iniciando Aplicación', envStatus);
   }, [addLog]);
 
+  useEffect(() => {
+    restoreStoredToken();
+  }, []);
+
   const dailyRecords = useMemo(() => records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), currentDate)), [records, currentDate]);
   
   // Filtered Daily Records based on active Type filter
@@ -309,8 +313,8 @@ const AppContent: React.FC = () => {
 
   const filteredRecords = useMemo(() => { if (!searchQuery) return []; const lower = searchQuery.toLowerCase(); return records.filter(r => r.name.toLowerCase().includes(lower) || r.rut.includes(lower) || r.diagnosis.toLowerCase().includes(lower)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); }, [records, searchQuery]);
   
-  const handleLogout = () => { 
-      sessionStorage.removeItem('google_access_token');
+  const handleLogout = () => {
+      clearStoredToken();
       logout();
   };
   
@@ -373,7 +377,7 @@ const AppContent: React.FC = () => {
   const handleGeneratePDF = () => { generateHandoverReport(dailyRecords, currentDate, user?.name || 'Dr.'); addToast('success', 'PDF Generado'); };
 
   const handleBackupConfirm = async (fileName: string, folder: DriveFolderPreference) => {
-    const token = sessionStorage.getItem('google_access_token');
+    const token = getActiveAccessToken();
     if (!token) {
       addToast('error', 'No hay sesión de Google activa.');
       return;
@@ -399,7 +403,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleDriveFileSelect = async (fileId: string) => {
-    const token = sessionStorage.getItem('google_access_token');
+    const token = getActiveAccessToken();
     if (!token) return;
     
     setIsUploading(true);
