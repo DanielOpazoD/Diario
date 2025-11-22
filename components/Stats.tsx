@@ -5,7 +5,7 @@ import { endOfMonth, eachDayOfInterval, format, isSameDay, isWithinInterval, add
 import { es } from 'date-fns/locale';
 import { Filter, Clock, TrendingUp } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
-import { PatientType } from '../types';
+import { PatientTypeConfig } from '../types';
 
 interface StatsProps {
   currentDate: Date;
@@ -14,6 +14,13 @@ interface StatsProps {
 const Stats: React.FC<StatsProps> = ({ currentDate }) => {
   const records = useAppStore(state => state.records);
   const patientTypes = useAppStore(state => state.patientTypes);
+
+  const typeConfigByLabel = useMemo(() => {
+    return patientTypes.reduce<Record<string, PatientTypeConfig>>((acc, type) => {
+      acc[type.label.toLowerCase()] = type;
+      return acc;
+    }, {});
+  }, [patientTypes]);
   
   const [startDate, setStartDate] = useState(format(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(endOfMonth(currentDate), 'yyyy-MM-dd'));
@@ -86,13 +93,15 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
     relevantTypes.forEach(t => hoursByType[t] = 0);
 
     rangeRecords.forEach(r => {
+       const config = typeConfigByLabel[r.type.toLowerCase()];
+
        // REGLA DE NEGOCIO:
        // Policlínico = 30 min fijo por paciente
-       if (r.type === PatientType.POLICLINICO) {
+       if (config?.id === 'policlinico') {
           hoursByType[r.type] += 30;
-       } 
+       }
        // Turno = Diferencia entre entrada y salida
-       else if (r.type === PatientType.TURNO) {
+       else if (config?.id === 'turno') {
           if (r.entryTime && r.exitTime) {
             const [startH, startM] = r.entryTime.split(':').map(Number);
             const [endH, endM] = r.exitTime.split(':').map(Number);
@@ -102,7 +111,7 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
           }
        }
        // Hospitalizado = NO SUMA TIEMPO (0)
-       else if (r.type === PatientType.HOSPITALIZADO) {
+       else if (config?.id === 'hospitalizado') {
           // hoursByType[r.type] += 0;
        }
        // Otros (Extra) = Asumimos 0 o cálculo genérico si hay horas?
@@ -112,7 +121,8 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
     const formattedHours: Record<string, string> = {};
     // Filter out Hospitalized from the visual hours report as requested
     Object.keys(hoursByType).forEach(k => {
-       if (k !== PatientType.HOSPITALIZADO) {
+       const config = typeConfigByLabel[k.toLowerCase()];
+       if (config?.id !== 'hospitalizado') {
           formattedHours[k] = (hoursByType[k] / 60).toFixed(1);
        }
     });

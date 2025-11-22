@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon, Lock, Timer } from 'lucide-react';
+import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon, Lock, Timer, Pencil, Check, X } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
 import Button from './Button';
 import { PatientTypeConfig } from '../types';
@@ -24,6 +24,9 @@ const Settings: React.FC = () => {
   const patientTypes = useAppStore(state => state.patientTypes);
   const addPatientType = useAppStore(state => state.addPatientType);
   const removePatientType = useAppStore(state => state.removePatientType);
+  const setPatientTypes = useAppStore(state => state.setPatientTypes);
+  const records = useAppStore(state => state.records);
+  const setRecords = useAppStore(state => state.setRecords);
   const addToast = useAppStore(state => state.addToast);
   const securityPin = useAppStore(state => state.securityPin);
   const autoLockMinutes = useAppStore(state => state.autoLockMinutes);
@@ -35,6 +38,8 @@ const Settings: React.FC = () => {
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [lockMinutes, setLockMinutes] = useState(autoLockMinutes);
+  const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
+  const [editedLabel, setEditedLabel] = useState('');
 
   useEffect(() => {
     setLockMinutes(autoLockMinutes);
@@ -58,6 +63,50 @@ const Settings: React.FC = () => {
     addPatientType(newType);
     setNewTypeLabel('');
     addToast('success', 'Tipo de ingreso agregado');
+  };
+
+  const handleEditType = (type: PatientTypeConfig) => {
+    setEditingTypeId(type.id);
+    setEditedLabel(type.label);
+  };
+
+  const handleSaveType = (type: PatientTypeConfig) => {
+    const trimmedLabel = editedLabel.trim();
+
+    if (!trimmedLabel) {
+      addToast('error', 'El nombre es requerido');
+      return;
+    }
+
+    const duplicate = patientTypes.some(
+      t => t.id !== type.id && t.label.toLowerCase() === trimmedLabel.toLowerCase()
+    );
+
+    if (duplicate) {
+      addToast('error', 'Ya existe un tipo con este nombre');
+      return;
+    }
+
+    const updatedTypes = patientTypes.map(t =>
+      t.id === type.id ? { ...t, label: trimmedLabel } : t
+    );
+
+    const updatedRecords = records.map(record =>
+      record.type.toLowerCase() === type.label.toLowerCase()
+        ? { ...record, type: trimmedLabel }
+        : record
+    );
+
+    setPatientTypes(updatedTypes);
+    setRecords(updatedRecords);
+    setEditingTypeId(null);
+    setEditedLabel('');
+    addToast('success', 'Nombre de tipo actualizado');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTypeId(null);
+    setEditedLabel('');
   };
 
   const handleSavePin = () => {
@@ -219,23 +268,59 @@ const Settings: React.FC = () => {
            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Tipos de Ingreso</h3>
            <p className="text-xs text-gray-500 mb-4">Define las categorías para clasificar a tus pacientes.</p>
            
-           <div className="space-y-3 mb-6 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-              {patientTypes.map(type => (
-                 <div key={type.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-3">
+              <div className="space-y-3 mb-6 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                 {patientTypes.map(type => (
+                    <div key={type.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-3 flex-1">
                        <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide border ${type.colorClass}`}>
-                          {type.label}
+                          {editingTypeId === type.id ? editedLabel || type.label : type.label}
                        </span>
-                       {type.label === 'Turno' && <span className="text-[10px] text-gray-400">(Hora activa)</span>}
+                       {type.id === 'turno' && <span className="text-[10px] text-gray-400">(Hora activa)</span>}
                     </div>
-                    {!type.isDefault && (
-                       <button 
-                         onClick={() => removePatientType(type.id)}
-                         className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                       >
-                          <Trash2 className="w-4 h-4" />
-                       </button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {editingTypeId === type.id ? (
+                        <>
+                          <input
+                            value={editedLabel}
+                            onChange={e => setEditedLabel(e.target.value)}
+                            className="px-2 py-1 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
+                          />
+                          <button
+                            onClick={() => handleSaveType(type)}
+                            className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                            aria-label="Guardar nombre"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/40 rounded-lg transition-colors"
+                            aria-label="Cancelar edición"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEditType(type)}
+                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                            aria-label="Editar nombre"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          {!type.isDefault && (
+                            <button
+                              onClick={() => removePatientType(type.id)}
+                              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              aria-label="Eliminar tipo"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
                  </div>
               ))}
            </div>
