@@ -1,9 +1,7 @@
-import React, { useState, useMemo, useLayoutEffect, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useLayoutEffect, useCallback, useEffect } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { ViewMode, PatientRecord, DriveFolderPreference } from './types';
-import { generateHandoverReport } from './services/reportService';
-import { uploadFileToDrive, downloadFile, getActiveAccessToken, restoreStoredToken, clearStoredToken } from './services/googleService';
-import { parseUploadedJson } from './services/storage';
+import { restoreStoredToken } from './services/googleService';
 import PatientModal from './components/PatientModal';
 import Settings from './components/Settings';
 import Login from './components/Login';
@@ -21,10 +19,10 @@ import DailyView from './features/daily/DailyView';
 import SearchView from './features/search/SearchView';
 import StatsView from './features/stats/StatsView';
 import LockScreen from './components/LockScreen';
-
-const toTitleCase = (str: string) => {
-  return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-};
+import useDriveFolderPreference from './hooks/useDriveFolderPreference';
+import useAutoLock from './hooks/useAutoLock';
+import useActivityTracker from './hooks/useActivityTracker';
+import { createAppActions } from './services/appActions';
 
 const AppContent: React.FC = () => {
   const { addLog } = useLogger();
@@ -45,25 +43,17 @@ const AppContent: React.FC = () => {
   const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
-  const [isLocked, setIsLocked] = useState(() => Boolean(securityPin));
-  const [driveFolderPreference, setDriveFolderPreference] = useState<DriveFolderPreference>(() => {
-    const stored = localStorage.getItem('medidiario_drive_folder');
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch (e) {
-        console.warn('No se pudo leer la carpeta preferida de Drive', e);
-      }
-    }
-    return { id: null, name: 'MediDiario Backups' } as DriveFolderPreference;
+
+  const { driveFolderPreference, setDriveFolderPreference } = useDriveFolderPreference();
+
+  const mainScrollRef = React.useRef<HTMLDivElement>(null);
+
+  const { isLocked, unlock, recordActivity } = useAutoLock({
+    securityPin,
+    autoLockMinutes,
   });
 
-  const mainScrollRef = useRef<HTMLDivElement>(null);
-  const lastActivityRef = useRef(Date.now());
-
-  useEffect(() => {
-    localStorage.setItem('medidiario_drive_folder', JSON.stringify(driveFolderPreference));
-  }, [driveFolderPreference]);
+  useActivityTracker(isLocked, recordActivity);
 
   useLayoutEffect(() => {
     if (mainScrollRef.current) {
@@ -80,95 +70,41 @@ const AppContent: React.FC = () => {
     restoreStoredToken();
   }, []);
 
-  useEffect(() => {
-    const updateActivity = () => {
-      if (!isLocked) {
-        lastActivityRef.current = Date.now();
-      }
-    };
-
-    window.addEventListener('mousemove', updateActivity);
-    window.addEventListener('keydown', updateActivity);
-    window.addEventListener('mousedown', updateActivity);
-    window.addEventListener('touchstart', updateActivity);
-
-    return () => {
-      window.removeEventListener('mousemove', updateActivity);
-      window.removeEventListener('keydown', updateActivity);
-      window.removeEventListener('mousedown', updateActivity);
-      window.removeEventListener('touchstart', updateActivity);
-    };
-  }, [isLocked]);
-
-  useEffect(() => {
-    if (!securityPin || autoLockMinutes <= 0) {
-      setIsLocked(false);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      const elapsedMinutes = (Date.now() - lastActivityRef.current) / 60000;
-      if (!isLocked && elapsedMinutes >= autoLockMinutes) {
-        setIsLocked(true);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [securityPin, autoLockMinutes, isLocked]);
-
-  useEffect(() => {
-    if (securityPin) {
-      setIsLocked(true);
-      lastActivityRef.current = Date.now();
-    } else {
-      setIsLocked(false);
-    }
-  }, [securityPin]);
-
   const dailyRecords = useMemo(
     () => records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), currentDate)),
     [records, currentDate]
   );
 
+
+  const appActions = useMemo(() => createAppActions({
+    addPatient,
+    updatePatient,
+    deletePatient,
+    addToast,
+    setRecords,
+    setGeneralTasks,
+    generalTasks,
+    patientTypes,
+    records,
+    user,
+    logout,
+  }), [addPatient, updatePatient, deletePatient, addToast, setRecords, setGeneralTasks, generalTasks, patientTypes, records, user, logout]);
+
   const handleLogout = () => {
-    clearStoredToken();
-    logout();
+    appActions.logoutUser();
   };
 
   const handleSavePatient = (patientData: any) => {
-    const formattedData = {
-      ...patientData,
-      name: toTitleCase(patientData.name)
-    };
-
-    if (editingPatient) {
-      updatePatient({ ...formattedData, id: editingPatient.id, createdAt: editingPatient.createdAt });
-      addToast('success', 'Paciente actualizado');
-    } else {
-      const newPatient: PatientRecord = { ...formattedData, id: crypto.randomUUID(), createdAt: Date.now() };
-      addPatient(newPatient);
-      addToast('success', 'Nuevo paciente registrado');
-    }
+    appActions.savePatient(patientData, editingPatient);
     setEditingPatient(null);
   };
 
   const handleSaveMultiplePatients = (patientsData: any[]) => {
-    patientsData.forEach(p => {
-      const newPatient: PatientRecord = {
-        ...p,
-        id: crypto.randomUUID(),
-        createdAt: Date.now(),
-        pendingTasks: p.pendingTasks || []
-      };
-      addPatient(newPatient);
-    });
-    addToast('success', `${patientsData.length} pacientes registrados`);
+    appActions.saveMultiplePatients(patientsData);
   };
 
   const confirmDeletePatient = () => {
-    if (patientToDelete) {
-      deletePatient(patientToDelete);
-      addToast('info', 'Registro eliminado');
+    if (appActions.deletePatientById(patientToDelete)) {
       setPatientToDelete(null);
     }
   };
@@ -177,83 +113,26 @@ const AppContent: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    try {
-      const importedRecords = await parseUploadedJson(file);
-      setRecords(importedRecords);
-      addToast('success', 'Base de datos local restaurada');
-    } catch (err) {
-      console.error(err);
-      addToast('error', 'Error al leer el archivo');
-    } finally {
-      setIsUploading(false);
-      e.target.value = '';
-    }
+    await appActions.importLocalBackup(file, setIsUploading);
+    e.target.value = '';
   };
 
   const handleGeneratePDF = () => {
-    generateHandoverReport(dailyRecords, currentDate, user?.name || 'Dr.');
-    addToast('success', 'PDF Generado');
+    appActions.generatePdfReport(dailyRecords, currentDate);
   };
 
   const handleBackupConfirm = async (fileName: string, folder: DriveFolderPreference) => {
-    const token = getActiveAccessToken();
-    if (!token) {
-      addToast('error', 'No hay sesión de Google activa.');
-      return;
-    }
-    setIsUploading(true);
     setDriveFolderPreference(folder);
-    try {
-      const backupData = {
-        patients: records,
-        generalTasks: generalTasks,
-        patientTypes: patientTypes
-      };
-      const finalName = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
-      await uploadFileToDrive(JSON.stringify(backupData, null, 2), finalName, token, folder.name, folder.id);
-      addToast('success', `Respaldo guardado en carpeta "${folder.name}"`);
-      setIsBackupModalOpen(false);
-    } catch (err) {
-      console.error(err);
-      addToast('error', 'Error al subir a Drive');
-    } finally {
-      setIsUploading(false);
-    }
+    await appActions.backupToDrive(fileName, folder, setIsUploading, () => setIsBackupModalOpen(false));
   };
 
   const handleDriveFileSelect = async (fileId: string) => {
-    const token = getActiveAccessToken();
-    if (!token) return;
-
-    setIsUploading(true);
-    try {
-      const data = await downloadFile(fileId, token);
-
-      if (data.patients && Array.isArray(data.patients)) {
-        setRecords(data.patients);
-        if (data.generalTasks) setGeneralTasks(data.generalTasks);
-        addToast('success', 'Respaldo restaurado exitosamente');
-        setIsDrivePickerOpen(false);
-      } else if (Array.isArray(data)) {
-        setRecords(data);
-        addToast('success', 'Respaldo (formato antiguo) restaurado');
-        setIsDrivePickerOpen(false);
-      } else {
-        throw new Error('Formato de archivo no reconocido');
-      }
-    } catch (err) {
-      console.error(err);
-      addToast('error', 'Error al restaurar desde Drive');
-    } finally {
-      setIsUploading(false);
-    }
+    await appActions.restoreBackupFromDrive(fileId, setIsUploading, () => setIsDrivePickerOpen(false));
   };
 
   const handleUnlock = (pinAttempt: string) => {
     if (pinAttempt === securityPin) {
-      setIsLocked(false);
-      lastActivityRef.current = Date.now();
+      unlock();
       addToast('success', 'Sesión desbloqueada');
       return true;
     }
