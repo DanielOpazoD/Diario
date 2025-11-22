@@ -36,6 +36,7 @@ const patientListExtractionSchema: Schema = {
 const readEncodedKey = () => {
   return (typeof import.meta !== 'undefined' && import.meta.env.VITE_API_KEY) ||
     (typeof import.meta !== 'undefined' && import.meta.env.API_KEY) ||
+    (typeof localStorage !== 'undefined' && localStorage.getItem('medidiario_api_key')) ||
     '';
 };
 
