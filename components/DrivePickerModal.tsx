@@ -15,7 +15,7 @@ interface DrivePickerModalProps {
   onFolderChange: (folder: DriveFolderPreference) => void;
 }
 
-const ROOT_FOLDER: DriveFolderPreference = { id: 'root', name: 'Mi unidad' };
+const ROOT_FOLDER: DriveFolderPreference = { id: 'root', name: 'Mi unidad', driveId: null };
 
 const buildBreadcrumbTrail = async (token: string, folder: DriveFolderPreference) => {
   if (!folder.id || folder.id === 'root') return [ROOT_FOLDER];
@@ -26,7 +26,7 @@ const buildBreadcrumbTrail = async (token: string, folder: DriveFolderPreference
 
   while (currentId && guard < 10) {
     const meta = await getFolderMetadata(token, currentId);
-    path.unshift({ id: meta.id, name: meta.name });
+    path.unshift({ id: meta.id, name: meta.name, driveId: meta.driveId });
     const parentId = meta.parents?.[0];
     if (!parentId || parentId === 'root') {
       path.unshift(ROOT_FOLDER);
@@ -66,13 +66,22 @@ const DrivePickerModal: React.FC<DrivePickerModalProps> = ({
     setError('');
 
     try {
+      const metadata = target.id && target.id !== 'root' ? await getFolderMetadata(activeToken, target.id) : null;
+      const driveAwareTarget: DriveFolderPreference = metadata?.driveId
+        ? { ...target, driveId: metadata.driveId }
+        : target;
+
       const [data, trail] = await Promise.all([
-        listFolderEntries(activeToken, target.id && target.id !== 'root' ? target.id : undefined),
-        buildBreadcrumbTrail(activeToken, target),
+        listFolderEntries(
+          activeToken,
+          driveAwareTarget.id && driveAwareTarget.id !== 'root' ? driveAwareTarget.id : undefined,
+          driveAwareTarget.driveId
+        ),
+        buildBreadcrumbTrail(activeToken, driveAwareTarget),
       ]);
 
       setEntries(data.files || []);
-      setCurrentFolder(target.id ? target : ROOT_FOLDER);
+      setCurrentFolder(driveAwareTarget.id ? driveAwareTarget : ROOT_FOLDER);
       setBreadcrumbs(trail);
     } catch (e: any) {
       console.error(e);

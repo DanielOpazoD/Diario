@@ -101,6 +101,7 @@ export interface DriveEntry {
   parents?: string[];
   modifiedTime?: string;
   size?: string;
+  driveId?: string;
 }
 
 export const checkGoogleConfig = () => {
@@ -383,7 +384,13 @@ export const deleteFileFromDrive = async (fileId: string, accessToken: string) =
 
 const buildParentClause = (parentId?: string) => parentId ? `'${parentId}' in parents` : "'root' in parents";
 
-const buildListUrl = (parentId?: string, relaxed?: boolean) => {
+interface ListOptions {
+  relaxed?: boolean;
+  corpora?: string;
+  driveId?: string;
+}
+
+const buildListUrl = (parentId?: string, options?: ListOptions) => {
   const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
   const parentClause = buildParentClause(parentId);
   const filters = [
@@ -397,11 +404,18 @@ const buildListUrl = (parentId?: string, relaxed?: boolean) => {
   searchUrl.searchParams.append('supportsAllDrives', 'true');
   searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
 
-  if (!relaxed) {
+  if (options?.corpora) {
+    searchUrl.searchParams.append('corpora', options.corpora);
+  }
+
+  if (options?.driveId) {
+    searchUrl.searchParams.append('driveId', options.driveId);
+  }
+
+  if (!options?.relaxed) {
     // Prefer richer listing hints, but be ready to fall back if Drive rejects any parameter combo
     searchUrl.searchParams.append('spaces', 'drive');
     searchUrl.searchParams.append('orderBy', 'mimeType desc, name');
-    searchUrl.searchParams.append('corpora', 'allDrives');
   }
 
   return searchUrl;
@@ -428,21 +442,35 @@ const fetchListUrl = async (url: URL, accessToken: string) => {
   return await response.json();
 };
 
-export const listFolderEntries = async (accessToken: string, parentId?: string) => {
-  try {
-    return await fetchListUrl(buildListUrl(parentId), accessToken);
-  } catch (err: any) {
-    // Some Drive configurations (notably certain shared drives) reject "spaces" or "orderBy" combinations with "Invalid Value".
-    const message = (err?.message || '').toLowerCase();
-    if (message.includes('invalid value') || err?.status === 400) {
-      try {
-        return await fetchListUrl(buildListUrl(parentId, true), accessToken);
-      } catch (fallbackErr) {
-        throw fallbackErr;
+const isInvalidValueError = (err: any) => {
+  const message = (err?.message || '').toLowerCase();
+  return message.includes('invalid value') || err?.status === 400;
+};
+
+export const listFolderEntries = async (accessToken: string, parentId?: string, driveId?: string | null) => {
+  const driveScope = driveId || undefined;
+  const attempts = [
+    buildListUrl(parentId, { corpora: driveScope ? 'drive' : 'allDrives', driveId: driveScope, relaxed: !!driveScope }),
+    buildListUrl(parentId, { relaxed: true }),
+    driveScope ? buildListUrl(parentId, { corpora: 'drive', driveId: driveScope, relaxed: true }) : null,
+    buildListUrl(parentId, { corpora: 'user', relaxed: true }),
+  ].filter(Boolean) as URL[];
+
+  let lastError: any = null;
+
+  for (const url of attempts) {
+    try {
+      return await fetchListUrl(url, accessToken);
+    } catch (err: any) {
+      lastError = err;
+      if (!isInvalidValueError(err)) {
+        throw err;
       }
     }
-    throw err;
   }
+
+  if (lastError) throw lastError;
+  throw new Error('No se pudo obtener el listado de Drive');
 };
 
 export const listFolders = async (accessToken: string, parentId?: string) => {
@@ -469,7 +497,7 @@ export const listFolders = async (accessToken: string, parentId?: string) => {
 };
 
 export const getFolderMetadata = async (accessToken: string, folderId: string) => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents&supportsAllDrives=true`, {
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents,driveId,mimeType&supportsAllDrives=true`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
 
