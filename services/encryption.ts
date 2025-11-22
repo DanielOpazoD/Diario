@@ -47,7 +47,7 @@ export const deriveKeyFromPin = async (pin: string, salt?: Uint8Array) => {
     },
     keyMaterial,
     { name: 'AES-GCM', length: 256 },
-    false,
+    true,
     ['encrypt', 'decrypt']
   );
 
