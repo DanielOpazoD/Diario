@@ -400,7 +400,16 @@ export const listFolderEntries = async (accessToken: string, parentId?: string) 
   });
 
   if (!response.ok) {
-    throw new Error('Failed to list folder entries');
+    let message = 'Failed to list folder entries';
+    try {
+      const errorBody = await response.json();
+      message = errorBody?.error?.message || message;
+    } catch (e) {
+      // ignore parse errors
+    }
+    const err: any = new Error(message);
+    err.status = response.status;
+    throw err;
   }
 
   return await response.json();
