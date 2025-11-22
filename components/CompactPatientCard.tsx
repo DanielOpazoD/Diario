@@ -29,7 +29,7 @@ interface CompactPatientCardProps {
   onDelete: (id: string) => void;
 }
 
-const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit, onDelete }) => {
+const CompactPatientCardComponent: React.FC<CompactPatientCardProps> = ({ patient, onEdit, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const updatePatient = useAppStore(state => state.updatePatient);
   const patientTypes = useAppStore(state => state.patientTypes);
@@ -176,5 +176,15 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
     </div>
   );
 };
+
+const CompactPatientCard = React.memo(
+  CompactPatientCardComponent,
+  (prev, next) => {
+    const prevPending = prev.patient.pendingTasks?.length || 0;
+    const nextPending = next.patient.pendingTasks?.length || 0;
+
+    return prev.patient.id === next.patient.id && prevPending === nextPending;
+  }
+);
 
 export default CompactPatientCard;

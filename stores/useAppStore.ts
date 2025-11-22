@@ -156,4 +156,11 @@ useAppStore.subscribe((state) => {
   }, 2000);
 });
 
+export const usePatientRecords = () => useAppStore((state) => state.records);
+export const usePatientById = (id: string) =>
+  useAppStore(
+    (state) => state.records.find((record) => record.id === id),
+    (prev, next) => prev?.id === next?.id
+  );
+
 export default useAppStore;
