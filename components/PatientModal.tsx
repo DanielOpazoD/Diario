@@ -263,15 +263,16 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
              
              {!initialData && (
                <>
-                 <Button 
-                    variant="secondary" 
-                    size="sm" 
-                    onClick={() => multiFileInputRef.current?.click()} 
+                 <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => multiFileInputRef.current?.click()}
                     isLoading={isScanningMulti}
                     icon={<Users className="w-4 h-4" />}
-                    className="hidden sm:flex"
+                    className="flex items-center justify-center sm:flex"
                   >
-                    Lista
+                    <span className="hidden sm:inline">Lista</span>
+                    <span className="sm:hidden">Lista</span>
                  </Button>
                  <Button 
                     variant="secondary" 
