@@ -151,19 +151,19 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
   };
 
   return (
-    <div className="space-y-6 md:space-y-10 animate-fade-in pb-20 pt-2 max-w-6xl mx-auto">
-      <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/90 dark:bg-gray-900/70 shadow-elevated backdrop-blur-sm p-panel">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-6 md:space-y-8 animate-fade-in pb-16 pt-2 max-w-6xl mx-auto">
+      <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/85 dark:bg-gray-900/65 shadow-md backdrop-blur-sm px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Contexto</p>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">Estadísticas del mes</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{records.length} registros totales • {monthTotal} en el mes actual</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">Estadísticas del mes</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{records.length} registros totales • {monthTotal} en el mes actual</p>
           </div>
-          <div className="flex flex-wrap gap-2 justify-end">
-            <Button variant="secondary" className="rounded-pill px-4" onClick={resetToCurrentMonth}>
+          <div className="flex flex-wrap gap-1.5 justify-end">
+            <Button variant="secondary" size="sm" className="rounded-pill" onClick={resetToCurrentMonth}>
               Mes actual
             </Button>
-            <Button className="rounded-pill px-4" onClick={setLastSevenDays}>
+            <Button size="sm" className="rounded-pill" onClick={setLastSevenDays}>
               Últimos 7 días
             </Button>
           </div>

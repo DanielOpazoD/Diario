@@ -147,31 +147,31 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-20 h-[calc(100vh-120px)] flex flex-col">
-       <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/90 dark:bg-gray-900/70 shadow-elevated backdrop-blur-sm p-panel mb-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="max-w-6xl mx-auto pb-16 h-[calc(100vh-120px)] flex flex-col">
+       <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/85 dark:bg-gray-900/65 shadow-md backdrop-blur-sm px-4 py-3 mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Centro de tareas</p>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">Prioriza tu día</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{pendingPatientTasks} tareas de pacientes • {pendingGeneralTasks} notas generales</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Hoy: {todayPending} pendientes directos</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">Prioriza tu día</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{pendingPatientTasks} tareas de pacientes • {pendingGeneralTasks} notas generales</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Hoy: {todayPending} pendientes directos</p>
             </div>
-            <div className="flex flex-wrap gap-2 justify-end">
-              <Button variant="secondary" className="rounded-pill px-4" onClick={() => setFilter('pending')}>
+            <div className="flex flex-wrap gap-1.5 justify-end">
+              <Button variant="secondary" size="sm" className="rounded-pill" onClick={() => setFilter('pending')}>
                 Ver pendientes
               </Button>
-              <Button className="rounded-pill px-4" onClick={() => quickAddRef.current?.focus()}>
+              <Button size="sm" className="rounded-pill" onClick={() => quickAddRef.current?.focus()}>
                 Nueva nota rápida
               </Button>
             </div>
           </div>
        </div>
 
-       <div className="flex items-center justify-between mb-6 px-2">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Agrupa por estado</h2>
-          <div className="flex bg-gray-200/70 dark:bg-gray-700/70 p-1 rounded-pill shadow-soft">
+       <div className="flex items-center justify-between mb-4 px-1.5">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Agrupa por estado</h2>
+          <div className="flex bg-gray-200/70 dark:bg-gray-700/70 p-1 rounded-pill shadow-sm">
             {(['pending', 'all', 'completed'] as const).map(f => (
-              <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-pill text-xs font-bold uppercase transition-all ${filter === f ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-soft' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>{f === 'pending' ? 'Pendientes' : f === 'all' ? 'Todas' : 'Listas'}</button>
+              <button key={f} onClick={() => setFilter(f)} className={`px-2.5 py-1.5 rounded-pill text-[11px] font-bold uppercase transition-all ${filter === f ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>{f === 'pending' ? 'Pendientes' : f === 'all' ? 'Todas' : 'Listas'}</button>
             ))}
           </div>
        </div>

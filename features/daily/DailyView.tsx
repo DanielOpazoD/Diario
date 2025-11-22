@@ -58,26 +58,26 @@ const DailyView: React.FC<DailyViewProps> = ({
 
   return (
     <div className="h-full flex flex-col max-w-5xl mx-auto">
-      <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/90 dark:bg-gray-900/70 shadow-elevated backdrop-blur-sm p-panel mb-4 animate-fade-in">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/85 dark:bg-gray-900/65 shadow-md backdrop-blur-sm px-4 py-3 mb-3 animate-fade-in">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Agenda diaria</p>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">
               {format(currentDate, "EEEE d 'de' MMMM", { locale: es })}
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
               {dailyRecords.length} pacientes • {pendingTasks} tareas abiertas
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 justify-end">
+          <div className="flex flex-wrap gap-1.5 justify-end">
             <Button
               variant="secondary"
+              size="sm"
               onClick={onGenerateReport}
-              className="rounded-pill px-4"
             >
               Reporte de turno
             </Button>
-            <Button onClick={onAddPatient} className="rounded-pill px-4">
+            <Button onClick={onAddPatient} size="sm" className="rounded-pill">
               Nuevo paciente
             </Button>
           </div>
@@ -94,20 +94,20 @@ const DailyView: React.FC<DailyViewProps> = ({
       </div>
 
       {visibleRecords.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-center flex-1">
-          <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800/50 rounded-full flex items-center justify-center mb-6 animate-pulse">
-            {activeFilter === 'all' ? <CalendarIcon className="w-10 h-10 opacity-50" /> : <Filter className="w-10 h-10 opacity-50"/>}
+        <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-center flex-1">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800/50 rounded-full flex items-center justify-center mb-4">
+            {activeFilter === 'all' ? <CalendarIcon className="w-8 h-8 opacity-50" /> : <Filter className="w-8 h-8 opacity-50"/>}
           </div>
-          <h3 className="text-xl font-bold text-gray-600 dark:text-gray-300 mb-2">
+          <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-1">
             {activeFilter === 'all' ? 'Sin pacientes hoy' : `Sin pacientes en ${activeFilter}`}
           </h3>
-          <p className="max-w-xs mx-auto mb-6 text-sm">
+          <p className="max-w-xs mx-auto mb-4 text-sm">
             {activeFilter === 'all'
               ? `No hay ingresos para el ${format(currentDate, "dd-MM-yyyy")}.`
               : 'Intenta seleccionar otro filtro o agrega un nuevo paciente.'}
           </p>
           {activeFilter === 'all' && (
-            <Button onClick={onAddPatient} icon={<Plus className="w-4 h-4" />}>Agregar Primer Paciente</Button>
+            <Button onClick={onAddPatient} size="sm" icon={<Plus className="w-4 h-4" />}>Agregar Primer Paciente</Button>
           )}
         </div>
       ) : (

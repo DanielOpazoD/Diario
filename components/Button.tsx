@@ -18,21 +18,21 @@ const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0.5';
+    'inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed';
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base'
+    sm: 'px-2.5 py-1.5 text-xs',
+    md: 'px-3.5 py-1.5 text-sm',
+    lg: 'px-5 py-2.5 text-base'
   };
 
   const variants = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-card border border-blue-500/20 active:shadow-soft',
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-500/20',
     secondary:
-      'bg-white/90 dark:bg-gray-800/80 border border-gray-300/80 dark:border-gray-600 text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-soft',
-    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-card border border-red-500/20 active:shadow-soft',
+      'bg-white/85 dark:bg-gray-800/75 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm',
+    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm border border-red-500/20',
     ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300',
-    ai: 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-elevated border border-transparent'
+    ai: 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-md border border-transparent'
   };
 
   return (
