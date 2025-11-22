@@ -35,6 +35,10 @@ export interface AttachedFile {
   uploadedAt: number;
   driveUrl: string;
   thumbnailLink?: string;
+  tags?: string[];
+  description?: string;
+  category?: 'lab' | 'imaging' | 'report' | 'prescription' | 'other';
+  isStarred?: boolean;
 }
 
 export interface PatientRecord {
