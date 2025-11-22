@@ -35,12 +35,20 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
   const isImage = useMemo(() => file?.mimeType.startsWith('image/'), [file]);
   const isPDF = useMemo(() => file?.mimeType === 'application/pdf', [file]);
+  const isOfficeDoc = useMemo(
+    () =>
+      !!file?.mimeType.match(
+        /(msword|officedocument\.wordprocessingml|powerpoint|officedocument\.presentationml|excel|spreadsheetml)/i,
+      ),
+    [file],
+  );
+
   const previewUrl = useMemo(() => {
     if (!file) return '';
     if (isImage) return `https://drive.google.com/uc?export=view&id=${file.id}`;
-    if (isPDF) return `https://drive.google.com/file/d/${file.id}/preview`;
+    if (isPDF || isOfficeDoc) return `https://drive.google.com/file/d/${file.id}/preview`;
     return file.driveUrl;
-  }, [file, isImage, isPDF]);
+  }, [file, isImage, isOfficeDoc, isPDF]);
 
   if (!file || !isOpen) return null;
 
@@ -116,8 +124,10 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
               loading="lazy"
             />
           )}
-          {isPDF && <iframe src={previewUrl} className="w-full h-full border-0 rounded-lg" />}
-          {!isImage && !isPDF && (
+          {(isPDF || isOfficeDoc) && (
+            <iframe src={previewUrl} className="w-full h-full border-0 rounded-lg" />
+          )}
+          {!isImage && !isPDF && !isOfficeDoc && (
             <div className="flex flex-col items-center gap-2 text-gray-400">
               {getFileIcon()}
               <p className="text-sm">Previsualización no disponible</p>
