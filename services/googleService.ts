@@ -362,7 +362,11 @@ export const uploadFileForPatient = async (
     size: parseInt(data.size),
     uploadedAt: new Date(data.createdTime).getTime(),
     driveUrl: data.webViewLink,
-    thumbnailLink: data.thumbnailLink
+    thumbnailLink: data.thumbnailLink,
+    tags: [],
+    description: '',
+    category: 'other',
+    isStarred: false
   };
 };
 
