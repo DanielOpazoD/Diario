@@ -261,7 +261,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           <div className="flex items-center gap-3 hidden md:flex" />
         </header>
 
-        <div ref={contentRef} className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-6 relative scroll-smooth">
+        <div
+          ref={contentRef}
+          className="flex-1 overflow-y-auto custom-scrollbar px-3 md:px-6 pt-2 md:pt-3 pb-4 md:pb-6 relative scroll-smooth"
+        >
           {children}
         </div>
       </main>
