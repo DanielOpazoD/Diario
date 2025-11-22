@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon, ShieldCheck } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
 import Button from './Button';
 import { PatientTypeConfig } from '../types';
@@ -23,9 +23,12 @@ const Settings: React.FC = () => {
   const addPatientType = useAppStore(state => state.addPatientType);
   const removePatientType = useAppStore(state => state.removePatientType);
   const addToast = useAppStore(state => state.addToast);
+  const enableSecurity = useAppStore(state => state.enableSecurity);
+  const securityEnabled = useAppStore(state => state.securityEnabled);
 
   const [newTypeLabel, setNewTypeLabel] = useState('');
   const [selectedColor, setSelectedColor] = useState(AVAILABLE_COLORS[0]);
+  const [isSecuring, setIsSecuring] = useState(false);
 
   const handleAddType = () => {
     if (!newTypeLabel.trim()) {
@@ -47,6 +50,25 @@ const Settings: React.FC = () => {
     addToast('success', 'Tipo de ingreso agregado');
   };
 
+  const handleConfigurePin = async () => {
+    const pin = window.prompt('Configura un PIN (mínimo 4 dígitos):');
+    if (!pin || pin.length < 4) {
+      addToast('error', 'PIN inválido. Debe tener al menos 4 caracteres.');
+      return;
+    }
+
+    try {
+      setIsSecuring(true);
+      await enableSecurity(pin);
+      addToast('success', 'Capa de seguridad activada y datos cifrados.');
+    } catch (error) {
+      console.error(error);
+      addToast('error', 'No se pudo activar la seguridad. Intenta nuevamente.');
+    } finally {
+      setIsSecuring(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto pb-20 animate-fade-in pt-2">
       <div className="flex items-center gap-3 mb-6 md:mb-8 px-2">
@@ -60,7 +82,7 @@ const Settings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
+
         {/* Theme Settings */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Apariencia</h3>
@@ -78,7 +100,34 @@ const Settings: React.FC = () => {
              >
                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'}`} />
              </button>
+         </div>
+        </div>
+
+        {/* Security Settings */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Seguridad</h3>
+          <p className="text-xs text-gray-500 mb-4">Protege tus registros con cifrado AES-GCM derivado de tu PIN.</p>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700 mb-3">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-xl border ${securityEnabled ? 'border-emerald-300 bg-emerald-50/70 dark:border-emerald-700 dark:bg-emerald-900/20' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/80'}`}>
+                <ShieldCheck className={`w-5 h-5 ${securityEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-300'}`} />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Cifrado Local</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {securityEnabled ? 'Activo: los registros se guardan cifrados.' : 'Inactivo: los registros se guardan en texto plano.'}
+                </p>
+              </div>
+            </div>
+            <Button onClick={handleConfigurePin} disabled={isSecuring} size="sm">
+              {isSecuring ? 'Guardando...' : securityEnabled ? 'Actualizar PIN' : 'Configurar PIN'}
+            </Button>
           </div>
+
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+            El cifrado es opcional y mantiene compatibilidad con respaldos antiguos en texto plano. Si pierdes el PIN, deberás restaurar un respaldo sin cifrar.
+          </p>
         </div>
 
         {/* Patient Types Config */}

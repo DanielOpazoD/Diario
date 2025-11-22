@@ -5,12 +5,22 @@ import { createTaskSlice, TaskSlice } from './slices/taskSlice';
 import { createUserSlice, UserSlice } from './slices/userSlice';
 import { createSettingsSlice, SettingsSlice, defaultPatientTypes } from './slices/settingsSlice';
 import { ToastMessage } from '../types';
-import { 
-  loadRecordsFromLocal, 
-  loadGeneralTasksFromLocal, 
-  saveRecordsToLocal, 
-  saveGeneralTasksToLocal 
+import {
+  loadRecordsFromLocal,
+  loadGeneralTasksFromLocal,
+  saveRecordsToLocal,
+  saveGeneralTasksToLocal,
+  CACHED_KEY_KEY,
+  SECURITY_ENABLED_KEY,
+  SECURITY_SALT_KEY
 } from '../services/storage';
+import {
+  deriveKeyFromPin,
+  deserializeSalt,
+  exportKeyToBase64,
+  importKeyFromBase64,
+  serializeSalt
+} from '../services/encryption';
 
 // UI Slice directly here for simplicity
 interface UiSlice {
@@ -19,7 +29,15 @@ interface UiSlice {
   removeToast: (id: string) => void;
 }
 
-type AppStore = PatientSlice & TaskSlice & UserSlice & SettingsSlice & UiSlice;
+interface SecuritySlice {
+  securityEnabled: boolean;
+  encryptionKey: CryptoKey | null;
+  encryptionSalt: string | null;
+  enableSecurity: (pin: string) => Promise<void>;
+  setEncryptionKey: (key: CryptoKey | null, saltOverride?: string | null) => void;
+}
+
+type AppStore = PatientSlice & TaskSlice & UserSlice & SettingsSlice & UiSlice & SecuritySlice;
 
 // Helper to safely parse types and avoid "null" string issues
 const getInitialPatientTypes = () => {
@@ -36,10 +54,11 @@ const getInitialPatientTypes = () => {
 };
 
 // Load initial state
-const initialRecords = loadRecordsFromLocal();
 const initialTasks = loadGeneralTasksFromLocal();
 const storedUser = localStorage.getItem('medidiario_user');
 const storedTheme = localStorage.getItem('medidiario_theme') as 'light' | 'dark';
+const initialSecurityEnabled = localStorage.getItem(SECURITY_ENABLED_KEY) === 'true';
+const storedSalt = localStorage.getItem(SECURITY_SALT_KEY);
 
 const useAppStore = create<AppStore>()(
   devtools(
@@ -59,11 +78,39 @@ const useAppStore = create<AppStore>()(
       })),
 
       // Overwrite initial state with loaded data if available
-      records: initialRecords,
+      records: [],
       generalTasks: initialTasks,
       user: storedUser ? JSON.parse(storedUser) : null,
       theme: storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
       patientTypes: getInitialPatientTypes(),
+      securityEnabled: initialSecurityEnabled,
+      encryptionKey: null,
+      encryptionSalt: storedSalt || null,
+
+      enableSecurity: async (pin: string) => {
+        try {
+          const saltBytes = get().encryptionSalt ? deserializeSalt(get().encryptionSalt as string) : undefined;
+          const { key, salt } = await deriveKeyFromPin(pin, saltBytes);
+          const serializedSalt = serializeSalt(salt);
+          const exportedKey = await exportKeyToBase64(key);
+
+          sessionStorage.setItem(CACHED_KEY_KEY, exportedKey);
+          await saveRecordsToLocal(get().records, {
+            securityEnabled: true,
+            encryptionKey: key,
+            encryptionSalt: serializedSalt
+          });
+
+          set({ securityEnabled: true, encryptionKey: key, encryptionSalt: serializedSalt });
+        } catch (error) {
+          console.error('Error enabling security', error);
+          throw error;
+        }
+      },
+      setEncryptionKey: (key, saltOverride) => {
+        const currentSalt = get().encryptionSalt;
+        set({ encryptionKey: key, encryptionSalt: saltOverride ?? currentSalt });
+      }
     }),
     { name: 'MediDiarioStore' }
   )
@@ -74,6 +121,27 @@ if (useAppStore.getState().theme === 'dark') {
   document.documentElement.classList.add('dark');
 }
 
+const bootstrapData = async () => {
+  const cachedKey = sessionStorage.getItem(CACHED_KEY_KEY);
+  if (cachedKey) {
+    try {
+      const importedKey = await importKeyFromBase64(cachedKey);
+      useAppStore.getState().setEncryptionKey(importedKey);
+    } catch (error) {
+      console.error('No se pudo restaurar la llave de cifrado', error);
+    }
+  }
+
+  try {
+    const records = await loadRecordsFromLocal(useAppStore.getState().encryptionKey);
+    useAppStore.getState().setRecords(records);
+  } catch (error) {
+    console.error('No se pudo cargar la data local', error);
+  }
+};
+
+void bootstrapData();
+
 // --- Auto-Save Middleware (Subscriber) ---
 let saveTimeout: any;
 
@@ -81,9 +149,13 @@ useAppStore.subscribe((state) => {
   if (saveTimeout) clearTimeout(saveTimeout);
 
   saveTimeout = setTimeout(() => {
-    saveRecordsToLocal(state.records);
+  void saveRecordsToLocal(state.records, {
+      securityEnabled: state.securityEnabled,
+      encryptionKey: state.encryptionKey,
+      encryptionSalt: state.encryptionSalt
+    }).catch((error) => console.error('Error al guardar datos cifrados', error));
     saveGeneralTasksToLocal(state.generalTasks);
-    
+
     if (state.user) {
       localStorage.setItem('medidiario_user', JSON.stringify(state.user));
     } else {

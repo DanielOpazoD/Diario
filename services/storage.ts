@@ -1,32 +1,109 @@
 
-import { PatientRecord, GeneralTask } from '../types';
+import { PatientRecord, GeneralTask, EncryptedPatientRecord } from '../types';
+import {
+  decryptPatientRecord,
+  encryptPatientRecord,
+  importKeyFromBase64
+} from './encryption';
 
 const STORAGE_KEY = 'medidiario_data_v1';
 const GENERAL_TASKS_KEY = 'medidiario_general_tasks_v1';
+export const ENCRYPTED_STORAGE_KEY = 'medidiario_data_secure_v1';
+export const SECURITY_ENABLED_KEY = 'medidiario_security_enabled';
+export const SECURITY_SALT_KEY = 'medidiario_security_salt';
+export const CACHED_KEY_KEY = 'medidiario_cached_key';
 
-export const saveRecordsToLocal = (records: PatientRecord[]) => {
+export interface EncryptedBackupPayload {
+  encrypted: true;
+  salt: string;
+  records: EncryptedPatientRecord[];
+}
+
+const cleanPatientRecord = (record: any): PatientRecord => ({
+  ...record,
+  attachedFiles: Array.isArray(record.attachedFiles) ? record.attachedFiles : [],
+  pendingTasks: Array.isArray(record.pendingTasks) ? record.pendingTasks : []
+});
+
+export const saveRecordsToLocal = async (
+  records: PatientRecord[],
+  options?: { securityEnabled?: boolean; encryptionKey?: CryptoKey | null; encryptionSalt?: string | null }
+) => {
   try {
+    if (options?.securityEnabled && options.encryptionKey && options.encryptionSalt) {
+      const encryptedRecords = await Promise.all(
+        records.map(async (record) => ({
+          id: record.id,
+          ...(await encryptPatientRecord(record, options.encryptionKey as CryptoKey))
+        }))
+      );
+
+      const payload: EncryptedBackupPayload = {
+        encrypted: true,
+        salt: options.encryptionSalt,
+        records: encryptedRecords
+      };
+
+      localStorage.setItem(SECURITY_ENABLED_KEY, 'true');
+      localStorage.setItem(SECURITY_SALT_KEY, options.encryptionSalt);
+      localStorage.setItem(ENCRYPTED_STORAGE_KEY, JSON.stringify(payload));
+      localStorage.removeItem(STORAGE_KEY);
+      return;
+    } else if (options?.securityEnabled) {
+      console.warn('Security is enabled but no encryption key is available. Skipping save to avoid datos en texto plano.');
+      return;
+    }
+
+    localStorage.setItem(SECURITY_ENABLED_KEY, 'false');
+    localStorage.removeItem(SECURITY_SALT_KEY);
+    localStorage.removeItem(ENCRYPTED_STORAGE_KEY);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   } catch (e) {
     console.error("Error saving to local storage", e);
   }
 };
 
-export const loadRecordsFromLocal = (): PatientRecord[] => {
+export const loadRecordsFromLocal = async (key?: CryptoKey | null): Promise<PatientRecord[]> => {
   try {
+    const isSecure = localStorage.getItem(SECURITY_ENABLED_KEY) === 'true';
+
+    if (isSecure) {
+      const encryptedData = localStorage.getItem(ENCRYPTED_STORAGE_KEY);
+      const cachedKey = sessionStorage.getItem(CACHED_KEY_KEY);
+
+      if (!encryptedData) return [];
+
+      const parsed = JSON.parse(encryptedData) as EncryptedBackupPayload;
+      if (!parsed.encrypted || !Array.isArray(parsed.records)) return [];
+
+      const workingKey = key
+        ? key
+        : cachedKey
+          ? await importKeyFromBase64(cachedKey)
+          : null;
+
+      if (!workingKey) return [];
+
+      const decryptedRecords: PatientRecord[] = [];
+      for (const record of parsed.records) {
+        try {
+          const decrypted = await decryptPatientRecord(record, workingKey);
+          decryptedRecords.push(cleanPatientRecord(decrypted));
+        } catch (error) {
+          console.error('Failed to decrypt record', error);
+        }
+      }
+
+      return decryptedRecords;
+    }
+
     const data = localStorage.getItem(STORAGE_KEY);
     if (!data) return [];
-    
+
     const parsed = JSON.parse(data);
     if (!Array.isArray(parsed)) return [];
 
-    // Ensure backward compatibility by defaulting arrays
-    // This fixes the "Cannot read properties of undefined (reading 'map')" error
-    return parsed.map((r: any) => ({
-      ...r,
-      attachedFiles: Array.isArray(r.attachedFiles) ? r.attachedFiles : [],
-      pendingTasks: Array.isArray(r.pendingTasks) ? r.pendingTasks : []
-    }));
+    return parsed.map(cleanPatientRecord);
   } catch (e) {
     console.error("Error loading from local storage", e);
     return [];
@@ -69,6 +146,10 @@ export const parseUploadedJson = (file: File): Promise<PatientRecord[]> => {
       try {
         const result = event.target?.result as string;
         const parsed = JSON.parse(result);
+        if (parsed?.encrypted && Array.isArray(parsed.records)) {
+          reject(new Error('El archivo está cifrado. Desbloquéalo ingresando tu PIN en Configuración.'));
+          return;
+        }
         if (Array.isArray(parsed)) {
           // Ensure backward compatibility on imported data
           const cleaned = parsed.map((p: any) => ({
