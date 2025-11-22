@@ -33,6 +33,7 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
   const [isExpanded, setIsExpanded] = useState(false);
   const updatePatient = useAppStore(state => state.updatePatient);
   const patientTypes = useAppStore(state => state.patientTypes);
+  const highlightPendingPatients = useAppStore(state => state.highlightPendingPatients);
 
   const tasks = patient.pendingTasks || [];
   const pendingCount = tasks.filter(t => !t.isCompleted).length;
@@ -50,7 +51,9 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
   };
 
   return (
-    <div className="group bg-white/95 dark:bg-gray-800/90 rounded-card shadow-card border border-gray-200 dark:border-gray-700/50 overflow-hidden transition-all duration-200 hover:shadow-elevated mb-3">
+    <div
+      className={`group bg-white/95 dark:bg-gray-800/90 rounded-card shadow-card border overflow-hidden transition-all duration-200 hover:shadow-elevated mb-3 ${highlightPendingPatients && pendingCount > 0 ? 'border-amber-200 dark:border-amber-700/60 ring-1 ring-amber-200/70 dark:ring-amber-600/40' : 'border-gray-200 dark:border-gray-700/50'}`}
+    >
       <div
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex flex-row items-stretch cursor-pointer min-h-[76px]"
