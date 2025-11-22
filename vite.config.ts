@@ -7,10 +7,11 @@ import { Buffer } from 'buffer';
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, (process as any).cwd(), '');
-  
+
   // Obfuscate API Key to avoid Netlify build secret scanner (AIza...)
-  const rawKey = env.VITE_API_KEY || env.API_KEY || '';
+  const rawKey = env.VITE_API_KEY || env.API_KEY || env.GEMINI_API_KEY || '';
   const encodedKey = Buffer.from(rawKey).toString('base64');
+  const googleClientId = env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || '';
 
   return {
     plugins: [
@@ -135,8 +136,10 @@ export default defineConfig(({ mode }) => {
     define: {
       // We inject the encoded key to prevent the "Secrets scanning detected" build error
       'process.env.API_KEY': JSON.stringify(encodedKey),
+      'import.meta.env.VITE_API_KEY': JSON.stringify(encodedKey),
       // Fallback to empty string if undefined to avoid undefined substitution
-      'process.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(env.VITE_GOOGLE_CLIENT_ID || ''),
+      'process.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
+      'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
     },
     server: {
       host: true,

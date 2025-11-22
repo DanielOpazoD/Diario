@@ -13,12 +13,20 @@ const resolveClientId = () => {
 
 // Fallback safe access for Client ID
 const CLIENT_ID = resolveClientId() || '752346610228-e9grkodnhi6lkau35fhuidapovp366id.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file email profile';
+const SCOPES = [
+  'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'openid'
+].join(' ');
 const TOKEN_STORAGE_KEY = 'medidiario_google_token';
+const TOKEN_VERSION = 'v2';
 
 interface StoredToken {
   accessToken: string;
   expiresAt?: number;
+  version?: string;
 }
 
 let tokenClient: any;
@@ -31,7 +39,7 @@ const persistGoogleToken = (token: string, expiresIn?: number) => {
   try {
     sessionStorage.setItem('google_access_token', token);
 
-    const payload: StoredToken = { accessToken: token };
+    const payload: StoredToken = { accessToken: token, version: TOKEN_VERSION };
 
     if (expiresIn) {
       payload.expiresAt = Date.now() + expiresIn * 1000;
@@ -53,6 +61,12 @@ export const restoreStoredToken = (): string | null => {
 
   try {
     const parsed = JSON.parse(raw) as StoredToken;
+
+    if (!parsed.version || parsed.version !== TOKEN_VERSION) {
+      sessionStorage.removeItem('google_access_token');
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      return null;
+    }
 
     if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -374,8 +388,7 @@ export const listFolderEntries = async (accessToken: string, parentId?: string) 
   const parentClause = buildParentClause(parentId);
   const filters = [
     "trashed=false",
-    parentClause,
-    "(mimeType='application/vnd.google-apps.folder' or mimeType='application/json')"
+    parentClause
   ];
 
   searchUrl.searchParams.append('q', filters.join(' and '));
