@@ -383,7 +383,7 @@ export const deleteFileFromDrive = async (fileId: string, accessToken: string) =
 
 const buildParentClause = (parentId?: string) => parentId ? `'${parentId}' in parents` : "'root' in parents";
 
-export const listFolderEntries = async (accessToken: string, parentId?: string) => {
+const buildListUrl = (parentId?: string, relaxed?: boolean) => {
   const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
   const parentClause = buildParentClause(parentId);
   const filters = [
@@ -393,13 +393,22 @@ export const listFolderEntries = async (accessToken: string, parentId?: string) 
 
   searchUrl.searchParams.append('q', filters.join(' and '));
   searchUrl.searchParams.append('fields', 'files(id, name, mimeType, parents, modifiedTime, size)');
-  searchUrl.searchParams.append('orderBy', 'mimeType desc, name');
   searchUrl.searchParams.append('pageSize', '100');
-  searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
   searchUrl.searchParams.append('supportsAllDrives', 'true');
-  searchUrl.searchParams.append('spaces', 'drive');
+  searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
 
-  const response = await fetch(searchUrl.toString(), {
+  if (!relaxed) {
+    // Prefer richer listing hints, but be ready to fall back if Drive rejects any parameter combo
+    searchUrl.searchParams.append('spaces', 'drive');
+    searchUrl.searchParams.append('orderBy', 'mimeType desc, name');
+    searchUrl.searchParams.append('corpora', 'allDrives');
+  }
+
+  return searchUrl;
+};
+
+const fetchListUrl = async (url: URL, accessToken: string) => {
+  const response = await fetch(url.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
 
@@ -417,6 +426,23 @@ export const listFolderEntries = async (accessToken: string, parentId?: string) 
   }
 
   return await response.json();
+};
+
+export const listFolderEntries = async (accessToken: string, parentId?: string) => {
+  try {
+    return await fetchListUrl(buildListUrl(parentId), accessToken);
+  } catch (err: any) {
+    // Some Drive configurations (notably certain shared drives) reject "spaces" or "orderBy" combinations with "Invalid Value".
+    const message = (err?.message || '').toLowerCase();
+    if (message.includes('invalid value') || err?.status === 400) {
+      try {
+        return await fetchListUrl(buildListUrl(parentId, true), accessToken);
+      } catch (fallbackErr) {
+        throw fallbackErr;
+      }
+    }
+    throw err;
+  }
 };
 
 export const listFolders = async (accessToken: string, parentId?: string) => {

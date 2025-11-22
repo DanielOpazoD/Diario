@@ -77,6 +77,8 @@ const DrivePickerModal: React.FC<DrivePickerModalProps> = ({
     } catch (e: any) {
       console.error(e);
 
+      const normalizedMessage = (e?.message || '').toLowerCase();
+
       if (e?.status === 401 || e?.status === 403) {
         clearStoredToken();
         setError('La sesión de Google expiró o no es válida. Vuelve a iniciar sesión.');
@@ -85,6 +87,8 @@ const DrivePickerModal: React.FC<DrivePickerModalProps> = ({
         setCurrentFolder(ROOT_FOLDER);
         setBreadcrumbs([ROOT_FOLDER]);
         await loadFolder(ROOT_FOLDER);
+      } else if (normalizedMessage.includes('invalid value')) {
+        setError('Drive rechazó la consulta de esta carpeta. Intenta con otra carpeta o revisa los permisos del archivo.');
       } else {
         setError(e?.message || 'Error al cargar archivos o carpetas de Drive.');
       }
