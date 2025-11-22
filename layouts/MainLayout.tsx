@@ -183,6 +183,38 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               <input type="file" ref={localImportInputRef} onChange={onLocalImport} accept=".json" className="hidden" />
             </div>
 
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                onClick={() => window.open('https://mail.google.com', '_blank', 'noopener,noreferrer')}
+                className="flex items-center justify-center px-2 py-2 text-xs font-semibold text-red-600 bg-white border border-red-100 hover:border-red-200 hover:shadow-sm rounded-lg transition-all"
+                title="Abrir Gmail"
+              >
+                <svg viewBox="0 0 48 48" className="w-4 h-4 mr-1" aria-hidden="true">
+                  <path
+                    fill="#EA4335"
+                    d="M6 39V11.25L18 21.5l12-10.25L42 11v28H6z"
+                  />
+                  <path fill="#FBBC04" d="M6 11.25V39l12-12.75z" />
+                  <path fill="#34A853" d="M42 39V11l-12 15.25z" />
+                  <path fill="#C5221F" d="M30 11.25H18L24 16z" />
+                </svg>
+                Gmail
+              </button>
+
+              <button
+                onClick={() => window.open('https://drive.google.com', '_blank', 'noopener,noreferrer')}
+                className="flex items-center justify-center px-2 py-2 text-xs font-semibold text-blue-700 bg-white border border-blue-100 hover:border-blue-200 hover:shadow-sm rounded-lg transition-all"
+                title="Abrir Google Drive"
+              >
+                <svg viewBox="0 0 48 48" className="w-4 h-4 mr-1" aria-hidden="true">
+                  <path fill="#0F9D58" d="m10.4 34.6 7.7-13.3H36l-7.8 13.3z" />
+                  <path fill="#4285F4" d="M36 34.6h-9.6l7.8-13.3L44 21z" />
+                  <path fill="#F4B400" d="m20.7 8 7.7 13.3h-15L6 21z" />
+                </svg>
+                Drive
+              </button>
+            </div>
+
             <button
               onClick={onLogout}
               className="w-full flex items-center justify-center px-3 py-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors mt-2"
