@@ -8,6 +8,10 @@ export interface SettingsSlice {
   addPatientType: (config: PatientTypeConfig) => void;
   removePatientType: (id: string) => void;
   setPatientTypes: (types: PatientTypeConfig[]) => void;
+  securityPin: string | null;
+  autoLockMinutes: number;
+  setSecurityPin: (pin: string | null) => void;
+  setAutoLockMinutes: (minutes: number) => void;
 }
 
 export const defaultPatientTypes: PatientTypeConfig[] = [
@@ -19,11 +23,15 @@ export const defaultPatientTypes: PatientTypeConfig[] = [
 
 export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   patientTypes: defaultPatientTypes,
+  securityPin: null,
+  autoLockMinutes: 5,
   setPatientTypes: (types) => set({ patientTypes: types }),
-  addPatientType: (config) => set((state) => ({ 
-    patientTypes: [...state.patientTypes, config] 
+  addPatientType: (config) => set((state) => ({
+    patientTypes: [...state.patientTypes, config]
   })),
   removePatientType: (id) => set((state) => ({
     patientTypes: state.patientTypes.filter(t => t.id !== id)
   })),
+  setSecurityPin: (pin) => set({ securityPin: pin }),
+  setAutoLockMinutes: (minutes) => set({ autoLockMinutes: minutes }),
 });

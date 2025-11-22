@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon, Lock, Timer } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
 import Button from './Button';
 import { PatientTypeConfig } from '../types';
@@ -16,6 +16,8 @@ const AVAILABLE_COLORS = [
   'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800',
 ];
 
+const AUTO_LOCK_OPTIONS = [0, 1, 3, 5, 10, 15, 30];
+
 const Settings: React.FC = () => {
   const theme = useAppStore(state => state.theme);
   const toggleTheme = useAppStore(state => state.toggleTheme);
@@ -23,9 +25,20 @@ const Settings: React.FC = () => {
   const addPatientType = useAppStore(state => state.addPatientType);
   const removePatientType = useAppStore(state => state.removePatientType);
   const addToast = useAppStore(state => state.addToast);
+  const securityPin = useAppStore(state => state.securityPin);
+  const autoLockMinutes = useAppStore(state => state.autoLockMinutes);
+  const setSecurityPin = useAppStore(state => state.setSecurityPin);
+  const setAutoLockMinutes = useAppStore(state => state.setAutoLockMinutes);
 
   const [newTypeLabel, setNewTypeLabel] = useState('');
   const [selectedColor, setSelectedColor] = useState(AVAILABLE_COLORS[0]);
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [lockMinutes, setLockMinutes] = useState(autoLockMinutes);
+
+  useEffect(() => {
+    setLockMinutes(autoLockMinutes);
+  }, [autoLockMinutes]);
 
   const handleAddType = () => {
     if (!newTypeLabel.trim()) {
@@ -47,6 +60,36 @@ const Settings: React.FC = () => {
     addToast('success', 'Tipo de ingreso agregado');
   };
 
+  const handleSavePin = () => {
+    if (newPin.length < 4) {
+      addToast('error', 'El PIN debe tener al menos 4 dígitos');
+      return;
+    }
+
+    if (newPin !== confirmPin) {
+      addToast('error', 'Los PIN ingresados no coinciden');
+      return;
+    }
+
+    setSecurityPin(newPin);
+    setNewPin('');
+    setConfirmPin('');
+    addToast('success', 'PIN de bloqueo actualizado');
+  };
+
+  const handleRemovePin = () => {
+    setSecurityPin(null);
+    setNewPin('');
+    setConfirmPin('');
+    addToast('info', 'Bloqueo con PIN desactivado');
+  };
+
+  const handleAutoLockChange = (minutes: number) => {
+    setLockMinutes(minutes);
+    setAutoLockMinutes(minutes);
+    addToast('info', minutes > 0 ? 'Tiempo de bloqueo actualizado' : 'Bloqueo automático desactivado');
+  };
+
   return (
     <div className="max-w-4xl mx-auto pb-20 animate-fade-in pt-2">
       <div className="flex items-center gap-3 mb-6 md:mb-8 px-2">
@@ -60,7 +103,7 @@ const Settings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
+
         {/* Theme Settings */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Apariencia</h3>
@@ -78,6 +121,96 @@ const Settings: React.FC = () => {
              >
                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'}`} />
              </button>
+          </div>
+        </div>
+
+        {/* Security Settings */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50 col-span-1 md:col-span-2">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-2xl">
+                <Lock className="w-6 h-6 text-purple-600 dark:text-purple-300" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Seguridad y Bloqueo</h3>
+                <p className="text-xs text-gray-500">Configura el PIN y el tiempo de bloqueo automático.</p>
+              </div>
+            </div>
+            <span className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border ${securityPin ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-200 dark:border-green-800/50' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-800/50'}`}>
+              <Lock className="w-4 h-4" />
+              {securityPin ? 'PIN activo' : 'PIN desactivado'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nuevo PIN</label>
+                <input
+                  type="password"
+                  value={newPin}
+                  onChange={e => setNewPin(e.target.value)}
+                  placeholder="Mínimo 4 dígitos"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Confirmar PIN</label>
+                <input
+                  type="password"
+                  value={confirmPin}
+                  onChange={e => setConfirmPin(e.target.value)}
+                  placeholder="Repite tu PIN"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={handleSavePin}
+                  disabled={!newPin || !confirmPin}
+                  icon={<Lock className="w-4 h-4" />}
+                  size="sm"
+                >
+                  Guardar PIN
+                </Button>
+                {securityPin && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleRemovePin}
+                    icon={<Trash2 className="w-4 h-4" />}
+                  >
+                    Quitar PIN
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Tiempo de bloqueo</label>
+              <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-200">
+                  <Timer className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <select
+                    value={lockMinutes}
+                    onChange={(e) => handleAutoLockChange(Number(e.target.value))}
+                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500"
+                  >
+                    {AUTO_LOCK_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>
+                        {opt === 0 ? 'Nunca (desactivado)' : `${opt} ${opt === 1 ? 'minuto' : 'minutos'}`}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-2">
+                    El bloqueo automático requiere tener un PIN activo.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
