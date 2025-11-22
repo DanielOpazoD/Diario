@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Filter, Plus } from 'lucide-react';
 import Button from '../../components/Button';
 import CompactPatientCard from '../../components/CompactPatientCard';
@@ -13,6 +14,7 @@ interface DailyViewProps {
   onAddPatient: () => void;
   onEditPatient: (patient: PatientRecord) => void;
   onDeletePatient: (patientId: string) => void;
+  onGenerateReport: () => void;
 }
 
 const DailyView: React.FC<DailyViewProps> = ({
@@ -22,6 +24,7 @@ const DailyView: React.FC<DailyViewProps> = ({
   onAddPatient,
   onEditPatient,
   onDeletePatient,
+  onGenerateReport,
 }) => {
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
@@ -48,8 +51,39 @@ const DailyView: React.FC<DailyViewProps> = ({
     [dailyRecords, activeFilter]
   );
 
+  const pendingTasks = useMemo(
+    () => dailyRecords.reduce((acc, record) => acc + (record.pendingTasks?.filter(t => !t.isCompleted).length || 0), 0),
+    [dailyRecords]
+  );
+
   return (
     <div className="h-full flex flex-col max-w-5xl mx-auto">
+      <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/90 dark:bg-gray-900/70 shadow-elevated backdrop-blur-sm p-panel mb-4 animate-fade-in">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Agenda diaria</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+              {format(currentDate, "EEEE d 'de' MMMM", { locale: es })}
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+              {dailyRecords.length} pacientes • {pendingTasks} tareas abiertas
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 justify-end">
+            <Button
+              variant="secondary"
+              onClick={onGenerateReport}
+              className="rounded-pill px-4"
+            >
+              Reporte de turno
+            </Button>
+            <Button onClick={onAddPatient} className="rounded-pill px-4">
+              Nuevo paciente
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div className="animate-fade-in">
         <FilterBar
           activeFilter={activeFilter}

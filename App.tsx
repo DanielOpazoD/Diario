@@ -284,7 +284,6 @@ const AppContent: React.FC = () => {
         records={records}
         onDateChange={setCurrentDate}
         onOpenNewPatient={() => { setEditingPatient(null); setIsModalOpen(true); }}
-        onGenerateReport={handleGeneratePDF}
         onOpenBackupModal={() => setIsBackupModalOpen(true)}
         onOpenDrivePicker={() => setIsDrivePickerOpen(true)}
         onLogout={handleLogout}
@@ -299,6 +298,7 @@ const AppContent: React.FC = () => {
             onAddPatient={() => { setEditingPatient(null); setIsModalOpen(true); }}
             onEditPatient={(patient) => { setEditingPatient(patient); setIsModalOpen(true); }}
             onDeletePatient={(id) => setPatientToDelete(id)}
+            onGenerateReport={handleGeneratePDF}
           />
         )}
 
