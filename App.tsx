@@ -34,9 +34,10 @@ const AppContent: React.FC = () => {
   const records = useAppStore(state => state.records);
   const generalTasks = useAppStore(state => state.generalTasks);
   const patientTypes = useAppStore(state => state.patientTypes);
+  const recordHistory = useAppStore(state => state.recordHistory);
   const securityPin = useAppStore(state => state.securityPin);
   const autoLockMinutes = useAppStore(state => state.autoLockMinutes);
-  const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient } = useAppStore();
+  const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient, revertToPreviousVersion } = useAppStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
@@ -97,6 +98,15 @@ const AppContent: React.FC = () => {
   const handleLogout = () => {
     clearStoredToken();
     logout();
+  };
+
+  const handleRevertVersion = () => {
+    const restored = revertToPreviousVersion();
+    if (restored) {
+      addToast('info', 'Versión anterior restaurada');
+    } else {
+      addToast('error', 'No hay versiones previas disponibles');
+    }
   };
 
   const handleSavePatient = (patientData: any) => {
@@ -261,6 +271,8 @@ const AppContent: React.FC = () => {
             onEditPatient={(patient) => { setEditingPatient(patient); setIsModalOpen(true); }}
             onDeletePatient={(id) => setPatientToDelete(id)}
             onGenerateReport={handleGeneratePDF}
+            onRevertPatient={handleRevertVersion}
+            canRevertPatient={recordHistory.length > 1}
           />
         )}
 

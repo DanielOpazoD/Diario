@@ -1,8 +1,10 @@
 
-import { PatientRecord, GeneralTask } from '../types';
+import { PatientRecord, GeneralTask, RecordSnapshot } from '../types';
 
 const STORAGE_KEY = 'medidiario_data_v1';
 const GENERAL_TASKS_KEY = 'medidiario_general_tasks_v1';
+const RECORD_HISTORY_KEY = 'medidiario_record_versions_v1';
+export const SNAPSHOT_LIMIT = 5;
 
 export const saveRecordsToLocal = (records: PatientRecord[]) => {
   try {
@@ -48,6 +50,44 @@ export const loadGeneralTasksFromLocal = (): GeneralTask[] => {
   } catch (e) {
     return [];
   }
+};
+
+export const saveRecordHistoryToLocal = (history: RecordSnapshot[]) => {
+  try {
+    localStorage.setItem(RECORD_HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.error('Error saving record history', e);
+  }
+};
+
+export const loadRecordHistoryFromLocal = (): RecordSnapshot[] => {
+  try {
+    const data = localStorage.getItem(RECORD_HISTORY_KEY);
+    if (!data) return [];
+
+    const parsed = JSON.parse(data);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((snapshot: any) => ({
+        timestamp: typeof snapshot.timestamp === 'number' ? snapshot.timestamp : Date.now(),
+        records: Array.isArray(snapshot.records) ? snapshot.records : [],
+      }))
+      .filter((snapshot: RecordSnapshot) => Array.isArray(snapshot.records));
+  } catch (e) {
+    console.error('Error loading record history', e);
+    return [];
+  }
+};
+
+export const pushSnapshotWithLimit = (
+  history: RecordSnapshot[],
+  snapshot: RecordSnapshot,
+  limit: number = SNAPSHOT_LIMIT
+): RecordSnapshot[] => {
+  const updatedHistory = [...history, snapshot];
+  if (updatedHistory.length <= limit) return updatedHistory;
+  return updatedHistory.slice(updatedHistory.length - limit);
 };
 
 export const downloadDataAsJson = (records: PatientRecord[]) => {

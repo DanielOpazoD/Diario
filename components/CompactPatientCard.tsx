@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, differenceInYears } from 'date-fns';
-import { CheckSquare, Square, ChevronDown, Clock, FileText, Trash2 } from 'lucide-react';
+import { CheckSquare, Square, ChevronDown, Clock, FileText, Trash2, RotateCcw } from 'lucide-react';
 import { PatientRecord } from '../types';
 import useAppStore from '../stores/useAppStore';
 
@@ -27,9 +27,11 @@ interface CompactPatientCardProps {
   patient: PatientRecord;
   onEdit: (p: PatientRecord) => void;
   onDelete: (id: string) => void;
+  onRevert: () => void;
+  canRevert: boolean;
 }
 
-const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit, onDelete }) => {
+const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit, onDelete, onRevert, canRevert }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const updatePatient = useAppStore(state => state.updatePatient);
   const patientTypes = useAppStore(state => state.patientTypes);
@@ -122,6 +124,17 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
               {patient.exitTime && <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-control border border-gray-100 dark:border-gray-600 shadow-soft">Salida: {patient.exitTime}</span>}
             </div>
             <div className="flex gap-2 ml-auto w-full sm:w-auto justify-end">
+              <button
+                onClick={(e) => { e.stopPropagation(); onRevert(); }}
+                disabled={!canRevert}
+                className={`flex-1 sm:flex-none justify-center text-xs font-bold px-3 py-2 rounded-card transition-colors flex items-center gap-1 shadow-soft border ${
+                  canRevert
+                    ? 'text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 border-amber-100 dark:border-amber-800'
+                    : 'text-gray-400 bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                }`}
+              >
+                <RotateCcw className="w-3 h-3"/> Revertir
+              </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(patient); }}
                 className="flex-1 sm:flex-none justify-center text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-2 rounded-card transition-colors shadow-soft border border-blue-100 dark:border-blue-800"
