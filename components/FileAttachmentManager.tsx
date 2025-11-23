@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   Upload,
   File,
@@ -44,6 +44,9 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [selectedFile, setSelectedFile] = useState<AttachedFile | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<'all' | AttachedFile['category']>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
+  const [showStarredOnly, setShowStarredOnly] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -176,9 +179,8 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     }
   };
 
-  const openPreview = (file: AttachedFile) => {
+  const handleSelectFile = (file: AttachedFile) => {
     setSelectedFile(file);
-    setIsPreviewOpen(true);
   };
 
   const handleFileUpdate = (updatedFile: AttachedFile) => {
@@ -194,12 +196,42 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
   const displayName = (name: string) => name.replace(/^\d{4}-\d{2}-\d{2}_/, '');
 
-  const renderGrid = () => (
+  const availableTags = useMemo(
+    () => Array.from(new Set(files.flatMap((file) => file.tags || []))),
+    [files],
+  );
+
+  const filteredFiles = useMemo(
+    () =>
+      files.filter((file) => {
+        const matchCategory = categoryFilter === 'all' || file.category === categoryFilter;
+        const matchTag = tagFilter === 'all' || (file.tags && file.tags.includes(tagFilter));
+        const matchStarred = !showStarredOnly || file.isStarred;
+        return matchCategory && matchTag && matchStarred;
+      }),
+    [categoryFilter, files, showStarredOnly, tagFilter],
+  );
+
+  const starredFiles = useMemo(() => files.filter((file) => file.isStarred), [files]);
+
+  useEffect(() => {
+    if (selectedFile && !files.find((file) => file.id === selectedFile.id)) {
+      setSelectedFile(null);
+    }
+  }, [files, selectedFile]);
+
+  useEffect(() => {
+    if (!selectedFile && filteredFiles.length > 0) {
+      setSelectedFile(filteredFiles[0]);
+    }
+  }, [filteredFiles, selectedFile]);
+
+  const renderGrid = (items: AttachedFile[]) => (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {files.map((file) => (
+      {items.map((file) => (
         <div
           key={file.id}
-          onClick={() => openPreview(file)}
+          onClick={() => handleSelectFile(file)}
           className="group relative aspect-square rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 cursor-pointer transition-all hover:shadow-lg"
         >
           {file.thumbnailLink ? (
@@ -236,12 +268,12 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     </div>
   );
 
-  const renderList = () => (
+  const renderList = (items: AttachedFile[]) => (
     <div className="space-y-2">
-      {files.map((file) => (
+      {items.map((file) => (
         <div
           key={file.id}
-          onClick={() => openPreview(file)}
+          onClick={() => handleSelectFile(file)}
           className="group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg hover:shadow-md transition-all cursor-pointer"
         >
           <div className="relative">
@@ -352,56 +384,184 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
           </div>
         </div>
 
-        <div
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`
-            relative flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed transition-all cursor-pointer mb-2
-            ${
-              isDragging
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-            }
-          `}
-        >
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            multiple
-            onChange={handleFileInputChange}
-          />
+      <div className="flex flex-wrap items-center gap-3 text-xs">
+        <div className="flex items-center gap-2">
+          <label className="text-gray-500 dark:text-gray-300">Categoría</label>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
+            className="border rounded-lg px-2 py-1 text-xs bg-white dark:bg-gray-800 dark:border-gray-700"
+          >
+            <option value="all">Todas</option>
+            <option value="lab">Laboratorio</option>
+            <option value="imaging">Imagenología</option>
+            <option value="report">Informe</option>
+            <option value="prescription">Receta</option>
+            <option value="other">Otro</option>
+          </select>
+        </div>
 
-          {isUploading ? (
-            <div className="text-center space-y-2">
-              <Loader className="w-8 h-8 text-blue-500 animate-spin mx-auto" />
-              <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Subiendo archivos ({uploadProgress}%)...</p>
-            </div>
-          ) : (
-            <div className="text-center pointer-events-none space-y-1">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto">
-                <Upload className="w-5 h-5" />
+        <div className="flex items-center gap-2">
+          <label className="text-gray-500 dark:text-gray-300">Etiqueta</label>
+          <select
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            className="border rounded-lg px-2 py-1 text-xs bg-white dark:bg-gray-800 dark:border-gray-700"
+          >
+            <option value="all">Todas</option>
+            {availableTags.map((tag) => (
+              <option key={tag} value={tag}>
+                {tag}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          onClick={() => setShowStarredOnly((prev) => !prev)}
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-[11px] transition-colors ${
+            showStarredOnly
+              ? 'bg-yellow-50 border-yellow-300 text-yellow-800 dark:bg-yellow-900/40 dark:border-yellow-700 dark:text-yellow-100'
+              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
+          }`}
+        >
+          <Star className={`w-4 h-4 ${showStarredOnly ? 'fill-yellow-400 text-yellow-500' : 'text-gray-400'}`} />
+          Solo destacados
+        </button>
+      </div>
+
+      <div className="flex-1 grid lg:grid-cols-3 gap-4 min-h-0">
+        <div className="lg:col-span-2 overflow-y-auto custom-scrollbar space-y-4">
+          <div
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`
+              relative flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed transition-all cursor-pointer mb-2
+              ${
+                isDragging
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }
+            `}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              multiple
+              onChange={handleFileInputChange}
+            />
+
+            {isUploading ? (
+              <div className="text-center space-y-2">
+                <Loader className="w-8 h-8 text-blue-500 animate-spin mx-auto" />
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Subiendo archivos ({uploadProgress}%)...</p>
               </div>
-              <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                {isDragging ? 'Suelta los archivos aquí' : 'Subir archivos adjuntos'}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">Arrastra o haz clic (PDF, IMG, DOC)</p>
+            ) : (
+              <div className="text-center pointer-events-none space-y-1">
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                  {isDragging ? 'Suelta los archivos aquí' : 'Subir archivos adjuntos'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Arrastra o haz clic (PDF, IMG, DOC)</p>
+              </div>
+            )}
+          </div>
+
+          {starredFiles.length > 0 && (
+            <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 space-y-2">
+              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-100 text-xs font-semibold uppercase">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-500" /> Destacados del paciente
+              </div>
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                {starredFiles.map((file) => (
+                  <button
+                    key={file.id}
+                    onClick={() => handleSelectFile(file)}
+                    className="min-w-[140px] text-left bg-white/80 dark:bg-amber-900/50 border border-amber-200 dark:border-amber-700 rounded-lg p-2 shadow-sm hover:shadow-md transition"
+                  >
+                    <p className="text-xs font-bold text-gray-800 dark:text-amber-50 truncate">{displayName(file.name)}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-amber-100/80 truncate">
+                      {file.category ? `${file.category} • ` : ''}
+                      {formatDate(file.uploadedAt)}
+                    </p>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
+
+          {files.length === 0 && !isUploading && (
+            <div className="text-center py-8 text-gray-400 text-xs border rounded-xl border-gray-100 dark:border-gray-800 border-dashed">
+              No hay archivos adjuntos.
+            </div>
+          )}
+
+          {files.length > 0 && filteredFiles.length === 0 && (
+            <div className="text-center py-6 text-gray-400 text-xs border rounded-xl border-gray-100 dark:border-gray-800">
+              No hay adjuntos que coincidan con los filtros seleccionados.
+            </div>
+          )}
+
+          {filteredFiles.length > 0 && (viewMode === 'grid' ? renderGrid(filteredFiles) : renderList(filteredFiles))}
+        </div>
+
+        <div className="hidden lg:flex flex-col gap-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-3 overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-semibold">Visor integrado</p>
+              <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Imágenes y PDFs</p>
+            </div>
+            <button
+              onClick={() => setIsPreviewOpen(true)}
+              disabled={!selectedFile}
+              className="text-xs px-2 py-1 rounded-lg border text-blue-600 border-blue-200 dark:border-blue-800 dark:text-blue-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Abrir detalle
+            </button>
+          </div>
+
+          <div className="flex-1 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden">
+            {!selectedFile && <p className="text-xs text-gray-400">Selecciona un archivo para previsualizar</p>}
+
+            {selectedFile && (
+              <div className="w-full h-full flex items-center justify-center p-1">
+                {selectedFile.mimeType.startsWith('image/') && (
+                  <img
+                    src={`https://drive.google.com/uc?export=view&id=${selectedFile.id}`}
+                    alt={selectedFile.name}
+                    className="max-w-full max-h-full object-contain rounded-md shadow"
+                  />
+                )}
+                {selectedFile.mimeType === 'application/pdf' && (
+                  <iframe
+                    src={`https://drive.google.com/file/d/${selectedFile.id}/preview`}
+                    className="w-full h-full border-0 rounded-md"
+                    title={selectedFile.name}
+                  />
+                )}
+                {!selectedFile.mimeType.startsWith('image/') && selectedFile.mimeType !== 'application/pdf' && (
+                  <div className="text-center text-xs text-gray-500 dark:text-gray-400 space-y-2">
+                    <p>Tipo no previsualizable. Usa "Abrir detalle" para más opciones.</p>
+                    <button
+                      onClick={() => window.open(selectedFile.driveUrl, '_blank')}
+                      className="text-blue-600 dark:text-blue-300 underline"
+                    >
+                      Abrir en Drive
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {files.length === 0 && !isUploading && (
-          <div className="text-center py-8 text-gray-400 text-xs border rounded-xl border-gray-100 dark:border-gray-800 border-dashed">
-            No hay archivos adjuntos.
-          </div>
-        )}
-
-        {files.length > 0 && (viewMode === 'grid' ? renderGrid() : renderList())}
       </div>
 
       <div className="flex items-center gap-2 text-[10px] text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg">
