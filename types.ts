@@ -6,6 +6,25 @@ export enum PatientType {
   TURNO = 'Turno',
 }
 
+export interface BookmarkCategory {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface Bookmark {
+  id: string;
+  title: string;
+  url: string;
+  icon?: string;
+  note?: string;
+  categoryId?: string;
+  isFavorite?: boolean;
+  createdAt: number;
+  order: number;
+}
+
 export interface PatientTypeConfig {
   id: string;
   label: string; // The text stored in the record (e.g. "Hospitalizado")
@@ -76,7 +95,7 @@ export interface User {
   avatar: string;
 }
 
-export type ViewMode = 'daily' | 'search' | 'stats' | 'settings' | 'tasks';
+export type ViewMode = 'daily' | 'search' | 'stats' | 'settings' | 'tasks' | 'bookmarks';
 
 export interface ToastMessage {
   id: string;

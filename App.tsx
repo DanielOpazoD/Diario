@@ -20,6 +20,7 @@ import MainLayout from './layouts/MainLayout';
 import DailyView from './features/daily/DailyView';
 import SearchView from './features/search/SearchView';
 import StatsView from './features/stats/StatsView';
+import BookmarksView from './features/bookmarks/BookmarksView';
 import LockScreen from './components/LockScreen';
 import useAutoLock from './hooks/useAutoLock';
 
@@ -34,9 +35,11 @@ const AppContent: React.FC = () => {
   const records = useAppStore(state => state.records);
   const generalTasks = useAppStore(state => state.generalTasks);
   const patientTypes = useAppStore(state => state.patientTypes);
+  const bookmarks = useAppStore(state => state.bookmarks);
+  const bookmarkCategories = useAppStore(state => state.categories);
   const securityPin = useAppStore(state => state.securityPin);
   const autoLockMinutes = useAppStore(state => state.autoLockMinutes);
-  const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient } = useAppStore();
+  const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient, setBookmarks, setCategories } = useAppStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
@@ -172,7 +175,9 @@ const AppContent: React.FC = () => {
       const backupData = {
         patients: records,
         generalTasks: generalTasks,
-        patientTypes: patientTypes
+        patientTypes: patientTypes,
+        bookmarks,
+        bookmarkCategories
       };
       const finalName = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
       await uploadFileToDrive(JSON.stringify(backupData, null, 2), finalName, token, folder.name, folder.id);
@@ -197,6 +202,8 @@ const AppContent: React.FC = () => {
       if (data.patients && Array.isArray(data.patients)) {
         setRecords(data.patients);
         if (data.generalTasks) setGeneralTasks(data.generalTasks);
+        if (data.bookmarks) setBookmarks(data.bookmarks);
+        if (data.bookmarkCategories) setCategories(data.bookmarkCategories);
         addToast('success', 'Respaldo restaurado exitosamente');
         setIsDrivePickerOpen(false);
       } else if (Array.isArray(data)) {
@@ -278,6 +285,8 @@ const AppContent: React.FC = () => {
         )}
 
         {viewMode === 'settings' && <Settings />}
+
+        {viewMode === 'bookmarks' && <BookmarksView />}
       </MainLayout>
 
       <PatientModal
