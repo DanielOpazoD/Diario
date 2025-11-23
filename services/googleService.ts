@@ -2,6 +2,17 @@
 // Service to handle Google Auth and Drive API
 
 import { AttachedFile } from "../types";
+import {
+  createFolder,
+  downloadFileAsBase64 as driveDownloadBase64,
+  downloadFileContent as driveDownloadContent,
+  getFileMetadata,
+  getUserInfo as driveUserInfo,
+  listFiles,
+  listFilesWithRetry,
+  markFileAsTrashed,
+  uploadMultipart,
+} from './api/endpoints/drive';
 
 const resolveClientId = () => {
   if (typeof import.meta !== 'undefined') {
@@ -230,49 +241,35 @@ export const handleGoogleLogin = (): Promise<string> => {
 };
 
 const findOrCreateFolder = async (folderName: string, accessToken: string, parentId?: string): Promise<string> => {
-  // 1. Search for the folder
-  const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
-  // Ensure we escape single quotes in folder name to prevent query injection/errors
   const safeName = folderName.replace(/'/g, "\\'");
-  
-  let query = `mimeType='application/vnd.google-apps.folder' and name='${safeName}' and trashed=false`;
+
+  const searchQuery = [`mimeType='application/vnd.google-apps.folder'`, `name='${safeName}'`, 'trashed=false'];
   if (parentId) {
-    query += ` and '${parentId}' in parents`;
+    searchQuery.push(`'${parentId}' in parents`);
   }
 
-  searchUrl.searchParams.append('q', query);
-  searchUrl.searchParams.append('fields', 'files(id, name)');
-
-  const searchRes = await fetch(searchUrl.toString(), {
-    headers: { 'Authorization': 'Bearer ' + accessToken }
+  const existing = await listFiles(accessToken, {
+    q: searchQuery.join(' and '),
+    fields: 'files(id, name)',
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
   });
-  const searchData = await searchRes.json();
 
-  if (searchData.files && searchData.files.length > 0) {
-    return searchData.files[0].id;
+  if (existing.data.files && existing.data.files.length > 0) {
+    return existing.data.files[0].id;
   }
 
-  // 2. Create if not exists
   const createMetadata: any = {
     name: folderName,
     mimeType: 'application/vnd.google-apps.folder'
   };
-  
+
   if (parentId) {
     createMetadata.parents = [parentId];
   }
 
-  const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
-    method: 'POST',
-    headers: { 
-      'Authorization': 'Bearer ' + accessToken,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(createMetadata)
-  });
-
-  const createData = await createRes.json();
-  return createData.id;
+  const created = await createFolder(accessToken, createMetadata);
+  return created.data.id;
 };
 
 export const uploadFileToDrive = async (
@@ -302,17 +299,8 @@ export const uploadFileToDrive = async (
     metadata.parents = [resolvedFolderId];
   }
 
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-  form.append('file', file);
-
-  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-    method: 'POST',
-    headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
-    body: form,
-  });
-
-  return await response.json();
+  const response = await uploadMultipart(accessToken, { metadata, file });
+  return response.data;
 };
 
 export const uploadFileForPatient = async (
@@ -337,23 +325,11 @@ export const uploadFileForPatient = async (
     parents: [patientFolderId]
   };
 
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-  form.append('file', file);
-
-  // 3. Upload
-  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,createdTime,webViewLink,thumbnailLink', {
-    method: 'POST',
-    headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
-    body: form,
+  const { data } = await uploadMultipart(accessToken, {
+    metadata,
+    file,
+    fields: 'id,name,mimeType,size,createdTime,webViewLink,thumbnailLink',
   });
-
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error?.message || "Error uploading file");
-  }
-
-  const data = await response.json();
   
   return {
     id: data.id,
@@ -367,19 +343,7 @@ export const uploadFileForPatient = async (
 };
 
 export const deleteFileFromDrive = async (fileId: string, accessToken: string) => {
-  // We use 'trash' instead of delete to be safe
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
-    method: 'PATCH',
-    headers: { 
-      'Authorization': 'Bearer ' + accessToken,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ trashed: true })
-  });
-
-  if (!response.ok) {
-    throw new Error("Error deleting file from Drive");
-  }
+  await markFileAsTrashed(accessToken, fileId);
 };
 
 const buildParentClause = (parentId?: string) => parentId ? `'${parentId}' in parents` : "'root' in parents";
@@ -390,56 +354,35 @@ interface ListOptions {
   driveId?: string;
 }
 
-const buildListUrl = (parentId?: string, options?: ListOptions) => {
-  const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
+const buildListQuery = (parentId?: string, options?: ListOptions) => {
   const parentClause = buildParentClause(parentId);
   const filters = [
     "trashed=false",
     parentClause
   ];
 
-  searchUrl.searchParams.append('q', filters.join(' and '));
-  searchUrl.searchParams.append('fields', 'files(id, name, mimeType, parents, modifiedTime, size)');
-  searchUrl.searchParams.append('pageSize', '100');
-  searchUrl.searchParams.append('supportsAllDrives', 'true');
-  searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
+  const params: any = {
+    q: filters.join(' and '),
+    fields: 'files(id, name, mimeType, parents, modifiedTime, size)',
+    pageSize: 100,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+  };
 
   if (options?.corpora) {
-    searchUrl.searchParams.append('corpora', options.corpora);
+    params.corpora = options.corpora;
   }
 
   if (options?.driveId) {
-    searchUrl.searchParams.append('driveId', options.driveId);
+    params.driveId = options.driveId;
   }
 
   if (!options?.relaxed) {
-    // Prefer richer listing hints, but be ready to fall back if Drive rejects any parameter combo
-    searchUrl.searchParams.append('spaces', 'drive');
-    searchUrl.searchParams.append('orderBy', 'mimeType desc, name');
+    params.spaces = 'drive';
+    params.orderBy = 'mimeType desc, name';
   }
 
-  return searchUrl;
-};
-
-const fetchListUrl = async (url: URL, accessToken: string) => {
-  const response = await fetch(url.toString(), {
-    headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
-
-  if (!response.ok) {
-    let message = 'Failed to list folder entries';
-    try {
-      const errorBody = await response.json();
-      message = errorBody?.error?.message || message;
-    } catch (e) {
-      // ignore parse errors
-    }
-    const err: any = new Error(message);
-    err.status = response.status;
-    throw err;
-  }
-
-  return await response.json();
+  return params;
 };
 
 const isInvalidValueError = (err: any) => {
@@ -450,17 +393,18 @@ const isInvalidValueError = (err: any) => {
 export const listFolderEntries = async (accessToken: string, parentId?: string, driveId?: string | null) => {
   const driveScope = driveId || undefined;
   const attempts = [
-    buildListUrl(parentId, { corpora: driveScope ? 'drive' : 'allDrives', driveId: driveScope, relaxed: !!driveScope }),
-    buildListUrl(parentId, { relaxed: true }),
-    driveScope ? buildListUrl(parentId, { corpora: 'drive', driveId: driveScope, relaxed: true }) : null,
-    buildListUrl(parentId, { corpora: 'user', relaxed: true }),
-  ].filter(Boolean) as URL[];
+    buildListQuery(parentId, { corpora: driveScope ? 'drive' : 'allDrives', driveId: driveScope, relaxed: !!driveScope }),
+    buildListQuery(parentId, { relaxed: true }),
+    driveScope ? buildListQuery(parentId, { corpora: 'drive', driveId: driveScope, relaxed: true }) : null,
+    buildListQuery(parentId, { corpora: 'user', relaxed: true }),
+  ].filter(Boolean) as any[];
 
   let lastError: any = null;
 
   for (const url of attempts) {
     try {
-      return await fetchListUrl(url, accessToken);
+      const response = await listFilesWithRetry(accessToken, url, undefined);
+      return response.data;
     } catch (err: any) {
       lastError = err;
       if (!isInvalidValueError(err)) {
@@ -474,84 +418,37 @@ export const listFolderEntries = async (accessToken: string, parentId?: string, 
 };
 
 export const listFolders = async (accessToken: string, parentId?: string) => {
-  const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
   const parentClause = buildParentClause(parentId);
-
-  searchUrl.searchParams.append('q', `${parentClause} and mimeType='application/vnd.google-apps.folder' and trashed=false`);
-  searchUrl.searchParams.append('fields', 'files(id, name, parents)');
-  searchUrl.searchParams.append('orderBy', 'name');
-  searchUrl.searchParams.append('pageSize', '50');
-  searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
-  searchUrl.searchParams.append('supportsAllDrives', 'true');
-  searchUrl.searchParams.append('spaces', 'drive');
-
-  const response = await fetch(searchUrl.toString(), {
-    headers: { 'Authorization': 'Bearer ' + accessToken }
+  const response = await listFiles(accessToken, {
+    q: `${parentClause} and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: 'files(id, name, parents)',
+    orderBy: 'name',
+    pageSize: 50,
+    includeItemsFromAllDrives: true,
+    supportsAllDrives: true,
+    spaces: 'drive',
   });
 
-  if (!response.ok) {
-    return { files: [] };
-  }
-
-  return await response.json();
+  return response.data;
 };
 
 export const getFolderMetadata = async (accessToken: string, folderId: string) => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents,driveId,mimeType&supportsAllDrives=true`, {
-    headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to read folder info');
-  }
-
-  return await response.json();
+  const response = await getFileMetadata(accessToken, folderId, 'id,name,parents,driveId,mimeType');
+  return response.data;
 };
 
 export const downloadFile = async (fileId: string, accessToken: string) => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
-    headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to download file');
-  }
-  
-  return await response.json();
+  return await driveDownloadContent(accessToken, fileId);
 };
 
 export const downloadFileAsBase64 = async (fileId: string, accessToken: string): Promise<string> => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
-    headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to download file content');
-  }
-
-  const blob = await response.blob();
-  
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      // Remove "data:mime/type;base64," prefix
-      resolve(result.split(',')[1]);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+  return driveDownloadBase64(accessToken, fileId);
 };
 
 export const getUserInfo = async (accessToken: string) => {
    try {
-     const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-       headers: { 'Authorization': `Bearer ${accessToken}` }
-     });
-     if (!response.ok) {
-       throw new Error(`Failed to fetch user info: ${response.statusText}`);
-     }
-     return await response.json();
+     const response = await driveUserInfo(accessToken);
+     return response.data;
    } catch (error) {
      console.error("Error fetching user info:", error);
      throw error;
