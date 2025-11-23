@@ -47,8 +47,11 @@ export function loadTsModule(tsPath, overrides = {}) {
     FormData: overrides.FormData ?? globalThis.FormData,
     Blob: overrides.Blob ?? globalThis.Blob,
     URL: overrides.URL ?? globalThis.URL,
+    Date: overrides.Date ?? globalThis.Date,
     setTimeout,
     clearTimeout,
+    setInterval,
+    clearInterval,
   };
 
   Object.assign(sandbox, overrides);
