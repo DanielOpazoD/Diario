@@ -4,12 +4,16 @@ import { createPatientSlice, PatientSlice } from './slices/patientSlice';
 import { createTaskSlice, TaskSlice } from './slices/taskSlice';
 import { createUserSlice, UserSlice } from './slices/userSlice';
 import { createSettingsSlice, SettingsSlice, defaultPatientTypes } from './slices/settingsSlice';
-import { SecuritySettings, ToastMessage } from '../types';
-import { 
-  loadRecordsFromLocal, 
-  loadGeneralTasksFromLocal, 
-  saveRecordsToLocal, 
-  saveGeneralTasksToLocal 
+import { RecordSnapshot, SecuritySettings, ToastMessage } from '../types';
+import {
+  loadRecordsFromLocal,
+  loadGeneralTasksFromLocal,
+  loadRecordHistoryFromLocal,
+  saveRecordsToLocal,
+  saveGeneralTasksToLocal,
+  saveRecordHistoryToLocal,
+  pushSnapshotWithLimit,
+  SNAPSHOT_LIMIT
 } from '../services/storage';
 
 // UI Slice directly here for simplicity
@@ -19,7 +23,12 @@ interface UiSlice {
   removeToast: (id: string) => void;
 }
 
-type AppStore = PatientSlice & TaskSlice & UserSlice & SettingsSlice & UiSlice;
+interface HistorySlice {
+  recordHistory: RecordSnapshot[];
+  revertToPreviousVersion: () => boolean;
+}
+
+type AppStore = PatientSlice & TaskSlice & UserSlice & SettingsSlice & UiSlice & HistorySlice;
 
 // Helper to safely parse types and avoid "null" string issues
 const getInitialPatientTypes = () => {
@@ -88,6 +97,14 @@ const getInitialPreferences = () => {
 };
 
 const initialPreferences = getInitialPreferences();
+const loadedRecordHistory = loadRecordHistoryFromLocal();
+const initialRecordHistory = loadedRecordHistory.length > 0
+  ? loadedRecordHistory.slice(-SNAPSHOT_LIMIT)
+  : (initialRecords.length > 0 ? [{ timestamp: Date.now(), records: initialRecords }] : []);
+const initialSnapshotSeed = initialRecordHistory.length > 0
+  ? initialRecordHistory[initialRecordHistory.length - 1].records
+  : initialRecords;
+let lastSnapshotSignature = JSON.stringify(initialSnapshotSeed);
 
 const useAppStore = create<AppStore>()(
   devtools(
@@ -116,6 +133,27 @@ const useAppStore = create<AppStore>()(
       autoLockMinutes: initialSecurity.autoLockMinutes,
       highlightPendingPatients: initialPreferences.highlightPendingPatients,
       compactStats: initialPreferences.compactStats,
+
+      recordHistory: initialRecordHistory,
+      revertToPreviousVersion: () => {
+        let restored = false;
+        set((state) => {
+          if (state.recordHistory.length < 2) return state;
+
+          const updatedHistory = [...state.recordHistory];
+          updatedHistory.pop();
+          const previousSnapshot = updatedHistory[updatedHistory.length - 1];
+
+          lastSnapshotSignature = JSON.stringify(previousSnapshot.records);
+          restored = true;
+
+          return {
+            records: previousSnapshot.records,
+            recordHistory: updatedHistory,
+          };
+        });
+        return restored;
+      },
     }),
     { name: 'MediDiarioStore' }
   )
@@ -129,15 +167,31 @@ if (useAppStore.getState().theme === 'dark') {
 // --- Auto-Save Middleware (Subscriber) ---
 let saveTimeout: any;
 
+// Snapshot history for patient records
+useAppStore.subscribe((state) => {
+  const currentSignature = JSON.stringify(state.records);
+  if (currentSignature === lastSnapshotSignature) return;
+
+  useAppStore.setState((current) => ({
+    recordHistory: pushSnapshotWithLimit(
+      current.recordHistory,
+      { timestamp: Date.now(), records: state.records },
+      SNAPSHOT_LIMIT
+    ),
+  }));
+  lastSnapshotSignature = currentSignature;
+});
+
 useAppStore.subscribe((state) => {
   if (saveTimeout) clearTimeout(saveTimeout);
 
-  saveTimeout = setTimeout(() => {
-    saveRecordsToLocal(state.records);
-    saveGeneralTasksToLocal(state.generalTasks);
-    
-    if (state.user) {
-      localStorage.setItem('medidiario_user', JSON.stringify(state.user));
+    saveTimeout = setTimeout(() => {
+      saveRecordsToLocal(state.records);
+      saveGeneralTasksToLocal(state.generalTasks);
+      saveRecordHistoryToLocal(state.recordHistory);
+
+      if (state.user) {
+        localStorage.setItem('medidiario_user', JSON.stringify(state.user));
     } else {
       localStorage.removeItem('medidiario_user');
     }
