@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ShieldCheck, Activity, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, AlertTriangle } from 'lucide-react';
 import { handleGoogleLogin, checkGoogleConfig, initGoogleApi, getUserInfo } from '../services/googleService';
 import { User } from '../types';
 import useAppStore from '../stores/useAppStore';
@@ -83,7 +83,13 @@ const Login: React.FC = () => {
           
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg mb-6">
-              <Activity className="w-8 h-8 text-white" />
+              <img
+                src="/icon.svg"
+                alt="MediDiario icon"
+                className="w-10 h-10 drop-shadow-md"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight mb-2">MediDiario AI</h1>
             <p className="text-gray-500 dark:text-gray-300">Gestión clínica simplificada</p>
