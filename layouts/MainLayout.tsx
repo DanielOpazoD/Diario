@@ -1,8 +1,9 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { BarChart2, Calendar as CalendarIcon, CheckSquare, Cloud, Download, LogOut, Menu, RefreshCw, Search, Settings as SettingsIcon, Upload, X } from 'lucide-react';
+import { BarChart2, Bookmark, Calendar as CalendarIcon, CheckSquare, Cloud, Download, LogOut, Menu, RefreshCw, Search, Settings as SettingsIcon, Upload, X } from 'lucide-react';
 import DateNavigator from '../components/DateNavigator';
 import { ViewMode, PatientRecord, User } from '../types';
 import { downloadDataAsJson } from '../services/storage';
+import BookmarksBar from '../components/BookmarksBar';
 
 interface MainLayoutProps {
   viewMode: ViewMode;
@@ -96,7 +97,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             { id: 'daily', label: 'Agenda Diaria', icon: CalendarIcon },
             { id: 'tasks', label: 'Mis Tareas', icon: CheckSquare },
             { id: 'search', label: 'Buscador Global', icon: Search },
-            { id: 'stats', label: 'Estadísticas', icon: BarChart2 }
+            { id: 'stats', label: 'Estadísticas', icon: BarChart2 },
+            { id: 'bookmarks', label: 'Marcadores', icon: Bookmark }
           ].map((item) => (
             <button
               key={item.id}
@@ -242,6 +244,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                   {viewMode === 'stats' && 'Estadísticas'}
                   {viewMode === 'tasks' && 'Tareas'}
                   {viewMode === 'settings' && 'Ajustes'}
+                  {viewMode === 'bookmarks' && 'Marcadores'}
                 </h2>
               )}
             </div>
@@ -269,6 +272,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           ref={contentRef}
           className="flex-1 overflow-y-auto custom-scrollbar px-3 md:px-6 pt-2 md:pt-3 pb-4 md:pb-6 relative scroll-smooth"
         >
+          <BookmarksBar />
           {children}
         </div>
       </main>

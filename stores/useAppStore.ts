@@ -4,12 +4,14 @@ import { createPatientSlice, PatientSlice } from './slices/patientSlice';
 import { createTaskSlice, TaskSlice } from './slices/taskSlice';
 import { createUserSlice, UserSlice } from './slices/userSlice';
 import { createSettingsSlice, SettingsSlice, defaultPatientTypes } from './slices/settingsSlice';
+import { Bookmark, BookmarkCategory } from '../types';
+import { createBookmarksSlice, BookmarkSlice } from './slices/bookmarkSlice';
 import { SecuritySettings, ToastMessage } from '../types';
-import { 
-  loadRecordsFromLocal, 
-  loadGeneralTasksFromLocal, 
-  saveRecordsToLocal, 
-  saveGeneralTasksToLocal 
+import {
+  loadRecordsFromLocal,
+  loadGeneralTasksFromLocal,
+  saveRecordsToLocal,
+  saveGeneralTasksToLocal
 } from '../services/storage';
 
 // UI Slice directly here for simplicity
@@ -19,7 +21,7 @@ interface UiSlice {
   removeToast: (id: string) => void;
 }
 
-type AppStore = PatientSlice & TaskSlice & UserSlice & SettingsSlice & UiSlice;
+type AppStore = PatientSlice & TaskSlice & UserSlice & SettingsSlice & BookmarkSlice & UiSlice;
 
 // Helper to safely parse types and avoid "null" string issues
 const getInitialPatientTypes = () => {
@@ -42,6 +44,8 @@ const storedUser = localStorage.getItem('medidiario_user');
 const storedTheme = localStorage.getItem('medidiario_theme') as 'light' | 'dark';
 const storedSecurity = localStorage.getItem('medidiario_security');
 const storedPreferences = localStorage.getItem('medidiario_preferences');
+const storedBookmarks = localStorage.getItem('medidiario_bookmarks');
+const storedBookmarkCategories = localStorage.getItem('medidiario_bookmark_categories');
 
 const getInitialSecuritySettings = (): SecuritySettings => {
   const defaults: SecuritySettings = {
@@ -89,6 +93,37 @@ const getInitialPreferences = () => {
 
 const initialPreferences = getInitialPreferences();
 
+const getInitialBookmarks = (): Bookmark[] => {
+  if (storedBookmarks) {
+    try {
+      const parsed = JSON.parse(storedBookmarks);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+      console.error('Error parsing bookmarks', e);
+    }
+  }
+  return [];
+};
+
+const defaultBookmarkCategories: BookmarkCategory[] = [
+  { id: 'default', name: 'General', icon: 'Bookmark', color: 'blue' }
+];
+
+const getInitialBookmarkCategories = (): BookmarkCategory[] => {
+  if (storedBookmarkCategories) {
+    try {
+      const parsed = JSON.parse(storedBookmarkCategories);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+      console.error('Error parsing bookmark categories', e);
+    }
+  }
+  return defaultBookmarkCategories;
+};
+
+const initialBookmarks = getInitialBookmarks();
+const initialBookmarkCategories = getInitialBookmarkCategories();
+
 const useAppStore = create<AppStore>()(
   devtools(
     (set, get, api) => ({
@@ -96,6 +131,7 @@ const useAppStore = create<AppStore>()(
       ...createTaskSlice(set, get, api),
       ...createUserSlice(set, get, api),
       ...createSettingsSlice(set, get, api),
+      ...createBookmarksSlice(set, get, api),
       
       // UI Slice Implementation
       toasts: [],
@@ -116,6 +152,8 @@ const useAppStore = create<AppStore>()(
       autoLockMinutes: initialSecurity.autoLockMinutes,
       highlightPendingPatients: initialPreferences.highlightPendingPatients,
       compactStats: initialPreferences.compactStats,
+      bookmarks: initialBookmarks,
+      categories: initialBookmarkCategories,
     }),
     { name: 'MediDiarioStore' }
   )
@@ -151,6 +189,8 @@ useAppStore.subscribe((state) => {
       highlightPendingPatients: state.highlightPendingPatients,
       compactStats: state.compactStats,
     }));
+    localStorage.setItem('medidiario_bookmarks', JSON.stringify(state.bookmarks));
+    localStorage.setItem('medidiario_bookmark_categories', JSON.stringify(state.categories));
 
     console.log(' [AutoSave] Estado sincronizado con LocalStorage');
   }, 2000);
