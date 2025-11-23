@@ -16,6 +16,8 @@ export interface SettingsSlice {
   compactStats: boolean;
   setHighlightPendingPatients: (value: boolean) => void;
   setCompactStats: (value: boolean) => void;
+  pinnedBookmarksBar: boolean;
+  setPinnedBookmarksBar: (value: boolean) => void;
 }
 
 export const defaultPatientTypes: PatientTypeConfig[] = [
@@ -31,6 +33,7 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   autoLockMinutes: 5,
   highlightPendingPatients: true,
   compactStats: true,
+  pinnedBookmarksBar: false,
   setPatientTypes: (types) => set({ patientTypes: types }),
   addPatientType: (config) => set((state) => ({
     patientTypes: [...state.patientTypes, config]
@@ -42,4 +45,5 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   setAutoLockMinutes: (minutes) => set({ autoLockMinutes: minutes }),
   setHighlightPendingPatients: (value) => set({ highlightPendingPatients: value }),
   setCompactStats: (value) => set({ compactStats: value }),
+  setPinnedBookmarksBar: (value) => set({ pinnedBookmarksBar: value }),
 });

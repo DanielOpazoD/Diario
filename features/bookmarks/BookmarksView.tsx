@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bookmark, Edit3, ExternalLink, Plus, Search, Star, Trash2 } from 'lucide-react';
+import { Bookmark, Edit3, ExternalLink, LayoutGrid, List, Plus, Search, Star, Trash2 } from 'lucide-react';
 import useAppStore from '../../stores/useAppStore';
 
 interface BookmarksViewProps {
@@ -11,6 +11,7 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
   const { bookmarks, bookmarkCategories, updateBookmark, deleteBookmark } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [displayMode, setDisplayMode] = useState<'list' | 'grid'>('list');
 
   const filteredBookmarks = useMemo(() => {
     return [...bookmarks]
@@ -59,6 +60,30 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
               </option>
             ))}
           </select>
+          <div className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <button
+              onClick={() => setDisplayMode('list')}
+              className={`px-3 py-2 flex items-center gap-1 text-xs font-semibold ${
+                displayMode === 'list'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              Lista
+            </button>
+            <button
+              onClick={() => setDisplayMode('grid')}
+              className={`px-3 py-2 flex items-center gap-1 text-xs font-semibold ${
+                displayMode === 'grid'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Tarjetas
+            </button>
+          </div>
           <button
             onClick={onAdd}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm"
@@ -69,100 +94,190 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {filteredBookmarks.map((bookmark) => {
-          const category = resolveCategory(bookmark.categoryId);
-          return (
-            <div
-              key={bookmark.id}
-              className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60 shadow-sm flex flex-col gap-3"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  {bookmark.icon && bookmark.icon.startsWith('http') ? (
-                    <img
-                      src={bookmark.icon}
-                      alt=""
-                      className="w-6 h-6 rounded"
-                      loading="lazy"
-                    />
-                  ) : bookmark.icon ? (
-                    <span className="text-xl" aria-hidden>
-                      {bookmark.icon}
-                    </span>
-                  ) : (
-                    <img
-                      src={`https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=32`}
-                      alt=""
-                      className="w-6 h-6 rounded"
-                      loading="lazy"
-                    />
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{bookmark.title}</p>
-                    <p className="text-xs text-blue-600 dark:text-blue-300 truncate">{bookmark.url}</p>
-                    {bookmark.note && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{bookmark.note}</p>
+      {displayMode === 'list' ? (
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/70 shadow-sm overflow-hidden">
+          <div className="grid grid-cols-[1.2fr_1.1fr_0.8fr_0.5fr] text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 px-4 py-3 bg-gray-50 dark:bg-gray-800/60">
+            <span>Marcador</span>
+            <span>URL</span>
+            <span>Categoría</span>
+            <span className="text-right">Acciones</span>
+          </div>
+          <div className="divide-y divide-gray-200 dark:divide-gray-800">
+            {filteredBookmarks.map((bookmark) => {
+              const category = resolveCategory(bookmark.categoryId);
+              return (
+                <div key={bookmark.id} className="grid grid-cols-[1.2fr_1.1fr_0.8fr_0.5fr] items-center gap-3 px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {bookmark.icon && bookmark.icon.startsWith('http') ? (
+                      <img src={bookmark.icon} alt="" className="w-6 h-6 rounded" loading="lazy" />
+                    ) : bookmark.icon ? (
+                      <span className="text-xl" aria-hidden>
+                        {bookmark.icon}
+                      </span>
+                    ) : (
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=32`}
+                        alt=""
+                        className="w-6 h-6 rounded"
+                        loading="lazy"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{bookmark.title}</p>
+                      {bookmark.note && (
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{bookmark.note}</p>
+                      )}
+                      <p className="text-[11px] text-gray-400">Creado {new Date(bookmark.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-blue-600 dark:text-blue-300 truncate">{bookmark.url}</p>
+                  <div className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
+                    <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800">{category?.name}</span>
+                    {bookmark.isFavorite && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-200">
+                        <Star className="w-3 h-3 fill-amber-300/70" />
+                        Barra
+                      </span>
                     )}
                   </div>
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => updateBookmark(bookmark.id, { isFavorite: !bookmark.isFavorite })}
+                      className={`p-2 rounded-lg transition-colors ${
+                        bookmark.isFavorite
+                          ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                          : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                      }`}
+                      title="Mostrar en la barra"
+                    >
+                      <Star className={`w-4 h-4 ${bookmark.isFavorite ? 'fill-amber-300/70' : ''}`} />
+                    </button>
+                    <button
+                      onClick={() => window.open(bookmark.url, '_blank', 'noopener,noreferrer')}
+                      className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      title="Abrir"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onEdit(bookmark.id)}
+                      className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                      title="Editar"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteBookmark(bookmark.id)}
+                      className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <span className="text-[11px] px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                  {category?.name}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800">
-                    <Bookmark className="w-3.5 h-3.5" />
-                    Creado: {new Date(bookmark.createdAt).toLocaleDateString()}
+              );
+            })}
+            {filteredBookmarks.length === 0 && (
+              <div className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">No se encontraron marcadores.</div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {filteredBookmarks.map((bookmark) => {
+            const category = resolveCategory(bookmark.categoryId);
+            return (
+              <div
+                key={bookmark.id}
+                className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60 shadow-sm flex flex-col gap-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {bookmark.icon && bookmark.icon.startsWith('http') ? (
+                      <img
+                        src={bookmark.icon}
+                        alt=""
+                        className="w-6 h-6 rounded"
+                        loading="lazy"
+                      />
+                    ) : bookmark.icon ? (
+                      <span className="text-xl" aria-hidden>
+                        {bookmark.icon}
+                      </span>
+                    ) : (
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=32`}
+                        alt=""
+                        className="w-6 h-6 rounded"
+                        loading="lazy"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{bookmark.title}</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-300 truncate">{bookmark.url}</p>
+                      {bookmark.note && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{bookmark.note}</p>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[11px] px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                    {category?.name}
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => updateBookmark(bookmark.id, { isFavorite: !bookmark.isFavorite })}
-                    className={`p-2 rounded-lg transition-colors ${
-                      bookmark.isFavorite
-                        ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20'
-                        : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-                    }`}
-                    title="Mostrar en la barra"
-                  >
-                    <Star className={`w-4 h-4 ${bookmark.isFavorite ? 'fill-amber-300/70' : ''}`} />
-                  </button>
-                  <button
-                    onClick={() => window.open(bookmark.url, '_blank', 'noopener,noreferrer')}
-                    className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                    title="Abrir"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => onEdit(bookmark.id)}
-                    className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                    title="Editar"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => deleteBookmark(bookmark.id)}
-                    className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    title="Eliminar"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800">
+                      <Bookmark className="w-3.5 h-3.5" />
+                      Creado: {new Date(bookmark.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => updateBookmark(bookmark.id, { isFavorite: !bookmark.isFavorite })}
+                      className={`p-2 rounded-lg transition-colors ${
+                        bookmark.isFavorite
+                          ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                          : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                      }`}
+                      title="Mostrar en la barra"
+                    >
+                      <Star className={`w-4 h-4 ${bookmark.isFavorite ? 'fill-amber-300/70' : ''}`} />
+                    </button>
+                    <button
+                      onClick={() => window.open(bookmark.url, '_blank', 'noopener,noreferrer')}
+                      className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      title="Abrir"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onEdit(bookmark.id)}
+                      className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                      title="Editar"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteBookmark(bookmark.id)}
+                      className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
-        {filteredBookmarks.length === 0 && (
-          <div className="col-span-full text-center text-gray-500 dark:text-gray-400 py-10 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-            No se encontraron marcadores.
-          </div>
-        )}
-      </div>
+          {filteredBookmarks.length === 0 && (
+            <div className="col-span-full text-center text-gray-500 dark:text-gray-400 py-10 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+              No se encontraron marcadores.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon, Lock, Timer, Pencil, Check, X } from 'lucide-react';
+import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon, Lock, Timer, Pencil, Check, X, Bookmark } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
 import Button from './Button';
 import { PatientTypeConfig } from '../types';
@@ -36,6 +36,8 @@ const Settings: React.FC = () => {
   const setHighlightPendingPatients = useAppStore(state => state.setHighlightPendingPatients);
   const compactStats = useAppStore(state => state.compactStats);
   const setCompactStats = useAppStore(state => state.setCompactStats);
+  const pinnedBookmarksBar = useAppStore(state => state.pinnedBookmarksBar);
+  const setPinnedBookmarksBar = useAppStore(state => state.setPinnedBookmarksBar);
 
   const [newTypeLabel, setNewTypeLabel] = useState('');
   const [selectedColor, setSelectedColor] = useState(AVAILABLE_COLORS[0]);
@@ -208,6 +210,23 @@ const Settings: React.FC = () => {
                 aria-pressed={compactStats}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${compactStats ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700">
+              <div>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                  <Bookmark className="w-4 h-4 text-blue-500" />
+                  Barra de marcadores fija
+                </p>
+                <p className="text-xs text-gray-500">Muestra la barra superior siempre visible (oculta por defecto).</p>
+              </div>
+              <button
+                onClick={() => setPinnedBookmarksBar(!pinnedBookmarksBar)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${pinnedBookmarksBar ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                aria-pressed={pinnedBookmarksBar}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${pinnedBookmarksBar ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
             </div>
           </div>

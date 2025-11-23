@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookmarkPlus, ExternalLink, GripVertical, Plus, Star, Trash2, X } from 'lucide-react';
+import { BookmarkPlus, ExternalLink, GripVertical, Pencil, Plus, Star, Trash2, X } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
 import { Bookmark } from '../types';
 
@@ -36,6 +36,8 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
     deleteBookmark,
     reorderBookmarks,
     addBookmarkCategory,
+    updateBookmarkCategory,
+    deleteBookmarkCategory,
   } = useAppStore();
 
   const [form, setForm] = useState<BookmarkFormState>(defaultFormState);
@@ -132,6 +134,22 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
     const name = prompt('Nombre de la categoría');
     if (!name) return;
     addBookmarkCategory({ name });
+  };
+
+  const handleRenameCategory = (id: string, currentName: string) => {
+    const name = prompt('Nuevo nombre de la categoría', currentName);
+    if (!name) return;
+    updateBookmarkCategory(id, { name });
+  };
+
+  const handleDeleteCategory = (id: string) => {
+    if (id === 'default') return;
+    const confirmDelete = window.confirm('¿Eliminar esta categoría? Los marcadores pasarán a "General".');
+    if (!confirmDelete) return;
+    deleteBookmarkCategory(id);
+    if (form.categoryId === id) {
+      setForm((prev) => ({ ...prev, categoryId: 'default' }));
+    }
   };
 
   return (
@@ -236,6 +254,51 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
                   />
                   Mostrar en la barra rápida
                 </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Administrar categorías</p>
+                <span className="text-[11px] px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                  {bookmarkCategories.length} grupos
+                </span>
+              </div>
+              <div className="space-y-2 max-h-36 overflow-y-auto pr-1 custom-scrollbar">
+                {bookmarkCategories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{category.name}</span>
+                      {category.id === form.categoryId && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200">
+                          Seleccionada
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleRenameCategory(category.id, category.name)}
+                        className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        title="Renombrar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCategory(category.id)}
+                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Eliminar"
+                        disabled={category.id === 'default'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

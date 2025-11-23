@@ -11,6 +11,8 @@ export interface BookmarksSlice {
   deleteBookmark: (id: string) => void;
   reorderBookmarks: (bookmarks: Bookmark[]) => void;
   addBookmarkCategory: (category: Omit<BookmarkCategory, 'id'>) => void;
+  updateBookmarkCategory: (id: string, data: Partial<BookmarkCategory>) => void;
+  deleteBookmarkCategory: (id: string) => void;
 }
 
 export const defaultBookmarkCategories: BookmarkCategory[] = [
@@ -73,4 +75,27 @@ export const createBookmarkSlice: StateCreator<BookmarksSlice> = (set) => ({
     set((state) => ({
       bookmarkCategories: [...state.bookmarkCategories, { ...category, id: crypto.randomUUID() }],
     })),
+
+  updateBookmarkCategory: (id, data) =>
+    set((state) => ({
+      bookmarkCategories: state.bookmarkCategories.map((category) =>
+        category.id === id ? { ...category, ...data, name: data.name?.trim() || category.name } : category
+      ),
+    })),
+
+  deleteBookmarkCategory: (id) =>
+    set((state) => {
+      if (id === 'default') return state;
+
+      const fallbackCategory = state.bookmarkCategories.find((category) => category.id === 'default')
+        ? 'default'
+        : state.bookmarkCategories[0]?.id;
+
+      return {
+        bookmarkCategories: state.bookmarkCategories.filter((category) => category.id !== id),
+        bookmarks: state.bookmarks.map((bookmark) =>
+          bookmark.categoryId === id ? { ...bookmark, categoryId: fallbackCategory } : bookmark
+        ),
+      };
+    }),
 });

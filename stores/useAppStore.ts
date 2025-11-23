@@ -77,6 +77,7 @@ const getInitialPreferences = () => {
   const defaults = {
     highlightPendingPatients: true,
     compactStats: true,
+    pinnedBookmarksBar: false,
   };
 
   if (storedPreferences) {
@@ -85,6 +86,7 @@ const getInitialPreferences = () => {
       return {
         highlightPendingPatients: typeof parsed.highlightPendingPatients === 'boolean' ? parsed.highlightPendingPatients : defaults.highlightPendingPatients,
         compactStats: typeof parsed.compactStats === 'boolean' ? parsed.compactStats : defaults.compactStats,
+        pinnedBookmarksBar: typeof parsed.pinnedBookmarksBar === 'boolean' ? parsed.pinnedBookmarksBar : defaults.pinnedBookmarksBar,
       };
     } catch (e) {
       console.error('Error parsing stored preferences', e);
@@ -123,9 +125,10 @@ const useAppStore = create<AppStore>()(
       theme: storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
       patientTypes: getInitialPatientTypes(),
       securityPin: initialSecurity.pin,
-      autoLockMinutes: initialSecurity.autoLockMinutes,
-      highlightPendingPatients: initialPreferences.highlightPendingPatients,
-      compactStats: initialPreferences.compactStats,
+  autoLockMinutes: initialSecurity.autoLockMinutes,
+  highlightPendingPatients: initialPreferences.highlightPendingPatients,
+  compactStats: initialPreferences.compactStats,
+  pinnedBookmarksBar: initialPreferences.pinnedBookmarksBar,
     }),
     { name: 'MediDiarioStore' }
   )
@@ -162,6 +165,7 @@ useAppStore.subscribe((state) => {
     localStorage.setItem('medidiario_preferences', JSON.stringify({
       highlightPendingPatients: state.highlightPendingPatients,
       compactStats: state.compactStats,
+      pinnedBookmarksBar: state.pinnedBookmarksBar,
     }));
 
     console.log(' [AutoSave] Estado sincronizado con LocalStorage');

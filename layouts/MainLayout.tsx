@@ -4,6 +4,7 @@ import DateNavigator from '../components/DateNavigator';
 import { ViewMode, PatientRecord, User } from '../types';
 import { downloadDataAsJson } from '../services/storage';
 import BookmarksBar from '../components/BookmarksBar';
+import useAppStore from '../stores/useAppStore';
 
 interface MainLayoutProps {
   viewMode: ViewMode;
@@ -41,6 +42,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const localImportInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useMemo(() => typeof window !== 'undefined' && window.innerWidth < 768, []);
+  const pinnedBookmarksBar = useAppStore((state) => state.pinnedBookmarksBar);
 
   useEffect(() => {
     if (isMobile) {
@@ -270,7 +272,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
             <div className="flex items-center gap-3 hidden md:flex" />
           </header>
-          <BookmarksBar onOpenManager={onOpenBookmarksModal} />
+          {pinnedBookmarksBar && <BookmarksBar onOpenManager={onOpenBookmarksModal} variant="pinned" />}
         </div>
 
         <div

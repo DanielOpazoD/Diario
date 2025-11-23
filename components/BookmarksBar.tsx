@@ -4,9 +4,10 @@ import useAppStore from '../stores/useAppStore';
 
 interface BookmarksBarProps {
   onOpenManager: () => void;
+  variant?: 'inline' | 'pinned';
 }
 
-const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
+const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager, variant = 'inline' }) => {
   const bookmarks = useAppStore((state) => state.bookmarks);
 
   const favoriteBookmarks = useMemo(
@@ -17,8 +18,13 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
     [bookmarks]
   );
 
+  const containerClasses =
+    variant === 'pinned'
+      ? 'flex items-center gap-3 px-4 md:px-6 py-2 bg-white/90 dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800 backdrop-blur-md shadow-sm sticky top-0 z-30'
+      : 'flex items-center gap-3 px-4 md:px-6 py-2 bg-white/90 dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800 backdrop-blur-md shadow-sm';
+
   return (
-    <div className="flex items-center gap-3 px-4 md:px-6 py-2 bg-white/90 dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800 backdrop-blur-md shadow-sm">
+    <div className={containerClasses}>
       <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
         <BookmarkIcon className="w-4 h-4" />
         <span className="text-xs font-semibold uppercase tracking-wide">Marcadores</span>
