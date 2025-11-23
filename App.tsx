@@ -12,14 +12,17 @@ import TaskDashboard from './components/TaskDashboard';
 import ConfirmationModal from './components/ConfirmationModal';
 import BackupModal from './components/BackupModal';
 import DrivePickerModal from './components/DrivePickerModal';
+import BookmarksModal from './components/BookmarksModal';
 import { LogProvider, useLogger } from './context/LogContext';
 import DebugConsole from './components/DebugConsole';
 import { validateEnvironment } from './services/geminiService';
 import useAppStore from './stores/useAppStore';
+import { defaultBookmarkCategories } from './stores/slices/bookmarkSlice';
 import MainLayout from './layouts/MainLayout';
 import DailyView from './features/daily/DailyView';
 import SearchView from './features/search/SearchView';
 import StatsView from './features/stats/StatsView';
+import BookmarksView from './features/bookmarks/BookmarksView';
 import LockScreen from './components/LockScreen';
 import useAutoLock from './hooks/useAutoLock';
 
@@ -34,9 +37,11 @@ const AppContent: React.FC = () => {
   const records = useAppStore(state => state.records);
   const generalTasks = useAppStore(state => state.generalTasks);
   const patientTypes = useAppStore(state => state.patientTypes);
+  const bookmarks = useAppStore(state => state.bookmarks);
+  const bookmarkCategories = useAppStore(state => state.bookmarkCategories);
   const securityPin = useAppStore(state => state.securityPin);
   const autoLockMinutes = useAppStore(state => state.autoLockMinutes);
-  const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient } = useAppStore();
+  const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient, setBookmarks, setBookmarkCategories } = useAppStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
@@ -46,6 +51,8 @@ const AppContent: React.FC = () => {
   const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
+  const [isBookmarksModalOpen, setIsBookmarksModalOpen] = useState(false);
+  const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(null);
   const [driveFolderPreference, setDriveFolderPreference] = useState<DriveFolderPreference>(() => {
     const stored = localStorage.getItem('medidiario_drive_folder');
     if (stored) {
@@ -172,7 +179,9 @@ const AppContent: React.FC = () => {
       const backupData = {
         patients: records,
         generalTasks: generalTasks,
-        patientTypes: patientTypes
+        patientTypes: patientTypes,
+        bookmarks,
+        bookmarkCategories,
       };
       const finalName = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
       await uploadFileToDrive(JSON.stringify(backupData, null, 2), finalName, token, folder.name, folder.id);
@@ -197,10 +206,18 @@ const AppContent: React.FC = () => {
       if (data.patients && Array.isArray(data.patients)) {
         setRecords(data.patients);
         if (data.generalTasks) setGeneralTasks(data.generalTasks);
+        if (Array.isArray(data.bookmarks)) setBookmarks(data.bookmarks);
+        if (Array.isArray(data.bookmarkCategories)) {
+          setBookmarkCategories(data.bookmarkCategories);
+        } else {
+          setBookmarkCategories(defaultBookmarkCategories);
+        }
         addToast('success', 'Respaldo restaurado exitosamente');
         setIsDrivePickerOpen(false);
       } else if (Array.isArray(data)) {
         setRecords(data);
+        setBookmarks([]);
+        setBookmarkCategories(defaultBookmarkCategories);
         addToast('success', 'Respaldo (formato antiguo) restaurado');
         setIsDrivePickerOpen(false);
       } else {
@@ -250,6 +267,7 @@ const AppContent: React.FC = () => {
         onOpenDrivePicker={() => setIsDrivePickerOpen(true)}
         onLogout={handleLogout}
         onLocalImport={handleLocalImport}
+        onOpenBookmarksModal={() => { setEditingBookmarkId(null); setIsBookmarksModalOpen(true); }}
         contentRef={mainScrollRef}
       >
         {viewMode === 'daily' && (
@@ -275,6 +293,13 @@ const AppContent: React.FC = () => {
 
         {viewMode === 'tasks' && (
           <TaskDashboard onNavigateToPatient={(p) => { setEditingPatient(p); setIsModalOpen(true); }} />
+        )}
+
+        {viewMode === 'bookmarks' && (
+          <BookmarksView
+            onAdd={() => { setEditingBookmarkId(null); setIsBookmarksModalOpen(true); }}
+            onEdit={(bookmarkId) => { setEditingBookmarkId(bookmarkId); setIsBookmarksModalOpen(true); }}
+          />
         )}
 
         {viewMode === 'settings' && <Settings />}
@@ -313,6 +338,11 @@ const AppContent: React.FC = () => {
         isLoadingProp={isUploading}
         preferredFolder={driveFolderPreference}
         onFolderChange={setDriveFolderPreference}
+      />
+      <BookmarksModal
+        isOpen={isBookmarksModalOpen}
+        onClose={() => { setIsBookmarksModalOpen(false); setEditingBookmarkId(null); }}
+        editingBookmarkId={editingBookmarkId}
       />
     </div>
   );

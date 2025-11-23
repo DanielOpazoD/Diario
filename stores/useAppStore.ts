@@ -4,12 +4,17 @@ import { createPatientSlice, PatientSlice } from './slices/patientSlice';
 import { createTaskSlice, TaskSlice } from './slices/taskSlice';
 import { createUserSlice, UserSlice } from './slices/userSlice';
 import { createSettingsSlice, SettingsSlice, defaultPatientTypes } from './slices/settingsSlice';
+import { BookmarksSlice, createBookmarkSlice, defaultBookmarkCategories } from './slices/bookmarkSlice';
 import { SecuritySettings, ToastMessage } from '../types';
-import { 
-  loadRecordsFromLocal, 
-  loadGeneralTasksFromLocal, 
-  saveRecordsToLocal, 
-  saveGeneralTasksToLocal 
+import {
+  loadRecordsFromLocal,
+  loadGeneralTasksFromLocal,
+  loadBookmarksFromLocal,
+  loadBookmarkCategoriesFromLocal,
+  saveRecordsToLocal,
+  saveGeneralTasksToLocal,
+  saveBookmarksToLocal,
+  saveBookmarkCategoriesToLocal
 } from '../services/storage';
 
 // UI Slice directly here for simplicity
@@ -19,7 +24,7 @@ interface UiSlice {
   removeToast: (id: string) => void;
 }
 
-type AppStore = PatientSlice & TaskSlice & UserSlice & SettingsSlice & UiSlice;
+type AppStore = PatientSlice & TaskSlice & UserSlice & SettingsSlice & BookmarksSlice & UiSlice;
 
 // Helper to safely parse types and avoid "null" string issues
 const getInitialPatientTypes = () => {
@@ -38,6 +43,8 @@ const getInitialPatientTypes = () => {
 // Load initial state
 const initialRecords = loadRecordsFromLocal();
 const initialTasks = loadGeneralTasksFromLocal();
+const initialBookmarks = loadBookmarksFromLocal();
+const initialBookmarkCategories = loadBookmarkCategoriesFromLocal();
 const storedUser = localStorage.getItem('medidiario_user');
 const storedTheme = localStorage.getItem('medidiario_theme') as 'light' | 'dark';
 const storedSecurity = localStorage.getItem('medidiario_security');
@@ -96,6 +103,7 @@ const useAppStore = create<AppStore>()(
       ...createTaskSlice(set, get, api),
       ...createUserSlice(set, get, api),
       ...createSettingsSlice(set, get, api),
+      ...createBookmarkSlice(set, get, api),
       
       // UI Slice Implementation
       toasts: [],
@@ -109,6 +117,8 @@ const useAppStore = create<AppStore>()(
       // Overwrite initial state with loaded data if available
       records: initialRecords,
       generalTasks: initialTasks,
+      bookmarks: initialBookmarks,
+      bookmarkCategories: initialBookmarkCategories.length > 0 ? initialBookmarkCategories : defaultBookmarkCategories,
       user: storedUser ? JSON.parse(storedUser) : null,
       theme: storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
       patientTypes: getInitialPatientTypes(),
@@ -135,6 +145,8 @@ useAppStore.subscribe((state) => {
   saveTimeout = setTimeout(() => {
     saveRecordsToLocal(state.records);
     saveGeneralTasksToLocal(state.generalTasks);
+    saveBookmarksToLocal(state.bookmarks);
+    saveBookmarkCategoriesToLocal(state.bookmarkCategories);
     
     if (state.user) {
       localStorage.setItem('medidiario_user', JSON.stringify(state.user));
