@@ -15,6 +15,8 @@ interface DailyViewProps {
   onEditPatient: (patient: PatientRecord) => void;
   onDeletePatient: (patientId: string) => void;
   onGenerateReport: () => void;
+  onRevertPatient: () => void;
+  canRevertPatient: boolean;
 }
 
 const DailyView: React.FC<DailyViewProps> = ({
@@ -25,6 +27,8 @@ const DailyView: React.FC<DailyViewProps> = ({
   onEditPatient,
   onDeletePatient,
   onGenerateReport,
+  onRevertPatient,
+  canRevertPatient,
 }) => {
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
@@ -132,6 +136,8 @@ const DailyView: React.FC<DailyViewProps> = ({
                 patient={patient}
                 onEdit={() => onEditPatient(patient)}
                 onDelete={() => onDeletePatient(patient.id)}
+                onRevert={onRevertPatient}
+                canRevert={canRevertPatient}
               />
             ))}
           </div>

@@ -58,6 +58,11 @@ export interface PatientRecord {
   createdAt: number;
 }
 
+export interface RecordSnapshot {
+  timestamp: number;
+  records: PatientRecord[];
+}
+
 export interface AIAnalysisResult {
   structuredDiagnosis: string;
   extractedTasks: string[];
