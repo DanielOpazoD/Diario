@@ -12,10 +12,6 @@ import {
   Grid,
   List,
   Star,
-  Tag,
-  Microscope,
-  Scan,
-  Pill,
 } from 'lucide-react';
 import { AttachedFile } from '../types';
 import { uploadFileForPatient, deleteFileFromDrive } from '../services/googleService';
@@ -41,11 +37,9 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [selectedFile, setSelectedFile] = useState<AttachedFile | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | AttachedFile['category']>('all');
-  const [tagFilter, setTagFilter] = useState<string>('all');
   const [showStarredOnly, setShowStarredOnly] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -164,21 +158,6 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
   const formatDate = (timestamp: number) => new Date(timestamp).toLocaleDateString();
 
-  const getCategoryIcon = (category?: AttachedFile['category']) => {
-    switch (category) {
-      case 'lab':
-        return <Microscope className="w-4 h-4" />;
-      case 'imaging':
-        return <Scan className="w-4 h-4" />;
-      case 'report':
-        return <FileText className="w-4 h-4" />;
-      case 'prescription':
-        return <Pill className="w-4 h-4" />;
-      default:
-        return <File className="w-4 h-4" />;
-    }
-  };
-
   const handleSelectFile = (file: AttachedFile) => {
     setSelectedFile(file);
   };
@@ -196,20 +175,13 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
   const displayName = (name: string) => name.replace(/^\d{4}-\d{2}-\d{2}_/, '');
 
-  const availableTags = useMemo(
-    () => Array.from(new Set(files.flatMap((file) => file.tags || []))),
-    [files],
-  );
-
   const filteredFiles = useMemo(
     () =>
       files.filter((file) => {
-        const matchCategory = categoryFilter === 'all' || file.category === categoryFilter;
-        const matchTag = tagFilter === 'all' || (file.tags && file.tags.includes(tagFilter));
         const matchStarred = !showStarredOnly || file.isStarred;
-        return matchCategory && matchTag && matchStarred;
+        return matchStarred;
       }),
-    [categoryFilter, files, showStarredOnly, tagFilter],
+    [files, showStarredOnly],
   );
 
   const starredFiles = useMemo(() => files.filter((file) => file.isStarred), [files]);
@@ -227,18 +199,18 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   }, [filteredFiles, selectedFile]);
 
   const renderGrid = (items: AttachedFile[]) => (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
       {items.map((file) => (
         <div
           key={file.id}
           onClick={() => handleSelectFile(file)}
-          className="group relative aspect-square rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 cursor-pointer transition-all hover:shadow-lg"
+          className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-400 cursor-pointer transition-all hover:shadow-md"
         >
           {file.thumbnailLink ? (
             <img src={file.thumbnailLink} alt={file.name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
-              {getCategoryIcon(file.category)}
+              {getFileIcon(file.mimeType)}
             </div>
           )}
 
@@ -256,28 +228,21 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
               <Star className="w-5 h-5 fill-yellow-400 text-yellow-400 drop-shadow" />
             </div>
           )}
-
-          {file.category && (
-            <div className="absolute top-2 left-2 bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded-full text-[10px] font-bold uppercase flex items-center gap-1">
-              {getCategoryIcon(file.category)}
-              <span>{file.category}</span>
-            </div>
-          )}
         </div>
       ))}
     </div>
   );
 
   const renderList = (items: AttachedFile[]) => (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {items.map((file) => (
         <div
           key={file.id}
           onClick={() => handleSelectFile(file)}
-          className="group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg hover:shadow-md transition-all cursor-pointer"
+          className="group flex items-center gap-3 p-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg hover:shadow-md transition-all cursor-pointer"
         >
           <div className="relative">
-            <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-700 flex items-center justify-center border border-gray-100 dark:border-gray-600">
+            <div className="w-11 h-11 rounded-md overflow-hidden bg-gray-50 dark:bg-gray-700 flex items-center justify-center border border-gray-100 dark:border-gray-600">
               {file.thumbnailLink ? (
                 <img src={file.thumbnailLink} alt={file.name} className="w-full h-full object-cover" />
               ) : (
@@ -295,14 +260,9 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 truncate" title={file.name}>
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate" title={file.name}>
                 {displayName(file.name)}
               </h4>
-              {file.category && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 font-semibold uppercase">
-                  {getCategoryIcon(file.category)} {file.category}
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
               <span>{formatSize(file.size)}</span>
@@ -311,19 +271,6 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
             </div>
             {file.description && (
               <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">{file.description}</p>
-            )}
-            {file.tags && file.tags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1 text-[10px] text-gray-500">
-                <Tag className="w-3.5 h-3.5" />
-                {file.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
             )}
           </div>
 
@@ -354,7 +301,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <h3 className="font-bold text-lg text-gray-900 dark:text-white">Archivos Adjuntos ({files.length})</h3>
-            <p className="text-xs text-gray-500">Previsualiza, etiqueta y organiza rápidamente</p>
+            <p className="text-xs text-gray-500">Previsualiza y organiza rápidamente</p>
           </div>
           <div className="flex items-center gap-2">
             {files.length > 0 && (
@@ -384,51 +331,19 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
           </div>
         </div>
 
-      <div className="flex flex-wrap items-center gap-3 text-xs">
-        <div className="flex items-center gap-2">
-          <label className="text-gray-500 dark:text-gray-300">Categoría</label>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
-            className="border rounded-lg px-2 py-1 text-xs bg-white dark:bg-gray-800 dark:border-gray-700"
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <button
+            onClick={() => setShowStarredOnly((prev) => !prev)}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-[11px] transition-colors ${
+              showStarredOnly
+                ? 'bg-yellow-50 border-yellow-300 text-yellow-800 dark:bg-yellow-900/40 dark:border-yellow-700 dark:text-yellow-100'
+                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
+            }`}
           >
-            <option value="all">Todas</option>
-            <option value="lab">Laboratorio</option>
-            <option value="imaging">Imagenología</option>
-            <option value="report">Informe</option>
-            <option value="prescription">Receta</option>
-            <option value="other">Otro</option>
-          </select>
+            <Star className={`w-4 h-4 ${showStarredOnly ? 'fill-yellow-400 text-yellow-500' : 'text-gray-400'}`} />
+            Solo destacados
+          </button>
         </div>
-
-        <div className="flex items-center gap-2">
-          <label className="text-gray-500 dark:text-gray-300">Etiqueta</label>
-          <select
-            value={tagFilter}
-            onChange={(e) => setTagFilter(e.target.value)}
-            className="border rounded-lg px-2 py-1 text-xs bg-white dark:bg-gray-800 dark:border-gray-700"
-          >
-            <option value="all">Todas</option>
-            {availableTags.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <button
-          onClick={() => setShowStarredOnly((prev) => !prev)}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-[11px] transition-colors ${
-            showStarredOnly
-              ? 'bg-yellow-50 border-yellow-300 text-yellow-800 dark:bg-yellow-900/40 dark:border-yellow-700 dark:text-yellow-100'
-              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
-          }`}
-        >
-          <Star className={`w-4 h-4 ${showStarredOnly ? 'fill-yellow-400 text-yellow-500' : 'text-gray-400'}`} />
-          Solo destacados
-        </button>
-      </div>
 
       <div className="flex-1 grid lg:grid-cols-3 gap-4 min-h-0">
         <div className="lg:col-span-2 overflow-y-auto custom-scrollbar space-y-4">
@@ -487,7 +402,6 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
                   >
                     <p className="text-xs font-bold text-gray-800 dark:text-amber-50 truncate">{displayName(file.name)}</p>
                     <p className="text-[10px] text-gray-500 dark:text-amber-100/80 truncate">
-                      {file.category ? `${file.category} • ` : ''}
                       {formatDate(file.uploadedAt)}
                     </p>
                   </button>
