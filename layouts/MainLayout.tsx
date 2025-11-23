@@ -73,9 +73,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       >
         <div className="p-6 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
-              <span className="text-lg">M</span>
-            </div>
+            <img
+              src="/icon.svg"
+              alt="MediDiario icon"
+              className="w-9 h-9 rounded-xl shadow-lg shadow-blue-500/20"
+              loading="lazy"
+              decoding="async"
+            />
             <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">MediDiario</h1>
           </div>
           <button
