@@ -66,9 +66,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">
       {showBookmarkBar && <BookmarksBar onOpenManager={onOpenBookmarksModal} />}
-      {showBookmarkBar && <div aria-hidden className="w-full" style={{ height: `${bookmarkBarOffset}px` }} />}
 
-      <div className="flex-1 flex flex-col md:flex-row">
+      <div
+        className="flex-1 flex flex-col md:flex-row"
+        style={{ paddingTop: bookmarkBarOffset ? `${bookmarkBarOffset}px` : undefined }}
+      >
         {isSidebarOpen && (
           <div
             className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 md:hidden transition-opacity"
