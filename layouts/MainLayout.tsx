@@ -79,6 +79,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         className={`fixed inset-y-0 left-0 z-50 w-72 glass border-r-0 transform transition-all duration-300 ease-out flex flex-col h-full ${
           isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         } md:translate-x-0 md:bg-white/80 md:dark:bg-gray-900/80 md:backdrop-blur-lg md:h-screen md:z-40 md:border-r md:border-gray-200/60 md:dark:border-gray-800/60 md:shadow-sm flex-shrink-0`}
+        style={{ paddingTop: bookmarkBarOffset ? `${bookmarkBarOffset}px` : undefined }}
       >
         <div className="p-6 flex items-center justify-between">
           <div className="flex items-center space-x-3">
