@@ -282,7 +282,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
             <div className="flex items-center gap-3 hidden md:flex" />
           </header>
-          {showBookmarkBar && <BookmarksBar onOpenManager={onOpenBookmarksModal} />}
         </div>
 
         <div
