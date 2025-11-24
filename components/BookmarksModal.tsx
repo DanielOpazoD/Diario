@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BookmarkPlus, ExternalLink, GripVertical, Plus, Star, Trash2, X } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
 import { Bookmark } from '../types';
+import BookmarkIconGraphic from './BookmarkIcon';
 
 interface BookmarkFormState {
   title: string;
@@ -26,6 +27,8 @@ const defaultFormState: BookmarkFormState = {
   categoryId: 'default',
   isFavorite: true,
 };
+
+const presetIcons = ['🩺', '💊', '📁', '🧠', '🧪', '📌', '🌐', '⚕️'];
 
 const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editingBookmarkId }) => {
   const {
@@ -187,6 +190,26 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="🧪 o https://.../icon.png"
               />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Se intentará usar el favicon del sitio primero. Si no existe, se mostrará el ícono que elijas.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {presetIcons.map((icon) => (
+                  <button
+                    type="button"
+                    key={icon}
+                    onClick={() => setForm((prev) => ({ ...prev, icon }))}
+                    className={`px-2.5 py-1.5 rounded-lg border text-sm transition-colors ${
+                      form.icon === icon
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200'
+                        : 'border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                    aria-label={`Usar ícono ${icon}`}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -275,25 +298,7 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
                   <div className="flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        {bookmark.icon && bookmark.icon.startsWith('http') ? (
-                          <img
-                            src={bookmark.icon}
-                            alt=""
-                            className="w-5 h-5 rounded"
-                            loading="lazy"
-                          />
-                        ) : bookmark.icon ? (
-                          <span className="text-lg" aria-hidden>
-                            {bookmark.icon}
-                          </span>
-                        ) : (
-                          <img
-                            src={`https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=32`}
-                            alt=""
-                            className="w-5 h-5"
-                            loading="lazy"
-                          />
-                        )}
+                        <BookmarkIconGraphic bookmark={bookmark} sizeClass="w-5 h-5" />
                         <div>
                           <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                             {bookmark.title}

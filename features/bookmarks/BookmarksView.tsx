@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
-import { Bookmark, Edit3, ExternalLink, LayoutGrid, List, Plus, Search, Star, Trash2 } from 'lucide-react';
+import React, { useMemo, useRef, useState } from 'react';
+import { Bookmark, Edit3, ExternalLink, FileDown, FileUp, LayoutGrid, List, Plus, Search, Star, Trash2 } from 'lucide-react';
 import useAppStore from '../../stores/useAppStore';
+import BookmarkIconGraphic from '../../components/BookmarkIcon';
+import { defaultBookmarkCategories } from '../../stores/slices/bookmarkSlice';
 
 interface BookmarksViewProps {
   onAdd: () => void;
@@ -16,12 +18,16 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
     updateBookmarkCategory,
     deleteBookmarkCategory,
     addBookmarkCategory,
+    setBookmarks,
+    setBookmarkCategories,
     showBookmarkBar,
     setShowBookmarkBar,
+    addToast,
   } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const filteredBookmarks = useMemo(() => {
     return [...bookmarks]
@@ -53,6 +59,68 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
     deleteBookmarkCategory(categoryId);
   };
 
+  const handleExport = () => {
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      bookmarks,
+      categories: bookmarkCategories,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `medidiario_marcadores_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    addToast('success', 'Marcadores exportados');
+  };
+
+  const ensureDefaultCategory = (categories: typeof bookmarkCategories) => {
+    const hasDefault = categories.some((category) => category.id === 'default');
+    return hasDefault ? categories : [defaultBookmarkCategories[0], ...categories];
+  };
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const importedBookmarks = Array.isArray(parsed.bookmarks)
+        ? parsed.bookmarks
+        : Array.isArray(parsed)
+          ? parsed
+          : [];
+      const importedCategories = Array.isArray(parsed.categories) ? parsed.categories : bookmarkCategories;
+
+      const categoriesWithDefault = ensureDefaultCategory(importedCategories);
+      const categoryIds = new Set(categoriesWithDefault.map((category) => category.id));
+
+      const sanitizedBookmarks = importedBookmarks.map((bookmark: any, index: number) => ({
+        ...bookmark,
+        id: bookmark.id || crypto.randomUUID(),
+        order: typeof bookmark.order === 'number' ? bookmark.order : index,
+        createdAt: typeof bookmark.createdAt === 'number' ? bookmark.createdAt : Date.now(),
+        categoryId: categoryIds.has(bookmark.categoryId) ? bookmark.categoryId : 'default',
+      }));
+
+      setBookmarkCategories(categoriesWithDefault);
+      setBookmarks(sanitizedBookmarks);
+      addToast('success', 'Marcadores importados correctamente');
+    } catch (error) {
+      console.error('Error al importar marcadores', error);
+      addToast('error', 'No se pudo importar el archivo. Verifica el formato JSON.');
+    } finally {
+      if (importInputRef.current) {
+        importInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4 xl:flex-row">
@@ -63,6 +131,13 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
               <p className="text-sm text-gray-500 dark:text-gray-400">Organiza tus accesos rápidos clínicos.</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-end">
+              <input
+                type="file"
+                accept="application/json"
+                ref={importInputRef}
+                onChange={handleImportFile}
+                className="hidden"
+              />
               <div className="relative">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -118,6 +193,20 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
                 />
                 Mostrar barra superior
               </label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => importInputRef.current?.click()}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <FileUp className="w-4 h-4" /> Importar
+                </button>
+                <button
+                  onClick={handleExport}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <FileDown className="w-4 h-4" /> Exportar
+                </button>
+              </div>
               <button
                 onClick={onAdd}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm"
@@ -138,20 +227,7 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
                 return (
                   <div key={bookmark.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {bookmark.icon && bookmark.icon.startsWith('http') ? (
-                        <img src={bookmark.icon} alt="" className="w-6 h-6 rounded" loading="lazy" />
-                      ) : bookmark.icon ? (
-                        <span className="text-xl" aria-hidden>
-                          {bookmark.icon}
-                        </span>
-                      ) : (
-                        <img
-                          src={`https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=32`}
-                          alt=""
-                          className="w-6 h-6 rounded"
-                          loading="lazy"
-                        />
-                      )}
+                      <BookmarkIconGraphic bookmark={bookmark} />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{bookmark.title}</p>
                         <p className="text-xs text-blue-600 dark:text-blue-300 truncate">{bookmark.url}</p>
@@ -217,25 +293,7 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        {bookmark.icon && bookmark.icon.startsWith('http') ? (
-                          <img
-                            src={bookmark.icon}
-                            alt=""
-                            className="w-6 h-6 rounded"
-                            loading="lazy"
-                          />
-                        ) : bookmark.icon ? (
-                          <span className="text-xl" aria-hidden>
-                            {bookmark.icon}
-                          </span>
-                        ) : (
-                          <img
-                            src={`https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=32`}
-                            alt=""
-                            className="w-6 h-6 rounded"
-                            loading="lazy"
-                          />
-                        )}
+                        <BookmarkIconGraphic bookmark={bookmark} />
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{bookmark.title}</p>
                           <p className="text-xs text-blue-600 dark:text-blue-300 truncate">{bookmark.url}</p>

@@ -1,25 +1,11 @@
 import React, { useMemo } from 'react';
 import { Bookmark as BookmarkIcon, Plus } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
+import BookmarkIconGraphic from './BookmarkIcon';
 
 interface BookmarksBarProps {
   onOpenManager: () => void;
 }
-
-const getHostname = (url: string) => {
-  try {
-    const normalizedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
-    return new URL(normalizedUrl).hostname;
-  } catch (error) {
-    console.warn('No se pudo obtener el dominio del marcador', { url, error });
-    return '';
-  }
-};
-
-const getFaviconUrl = (url: string) => {
-  const hostname = getHostname(url);
-  return hostname ? `https://www.google.com/s2/favicons?domain=${hostname}&sz=32` : '';
-};
 
 const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
   const bookmarks = useAppStore((state) => state.bookmarks);
@@ -55,26 +41,7 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
             title={bookmark.note || bookmark.url}
             className="group flex items-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0 border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
           >
-            {bookmark.icon && bookmark.icon.startsWith('http') ? (
-              <img
-                src={bookmark.icon}
-                className="w-3.5 h-3.5 rounded"
-                alt=""
-                loading="lazy"
-                onError={(event) => {
-                  const fallbackUrl = getFaviconUrl(bookmark.url);
-                  if (fallbackUrl && event.currentTarget.src !== fallbackUrl) {
-                    event.currentTarget.src = fallbackUrl;
-                  }
-                }}
-              />
-            ) : bookmark.icon ? (
-              <span className="text-sm" aria-hidden>
-                {bookmark.icon}
-              </span>
-            ) : (
-              <img src={getFaviconUrl(bookmark.url)} className="w-3.5 h-3.5" alt="" loading="lazy" />
-            )}
+            <BookmarkIconGraphic bookmark={bookmark} sizeClass="w-3.5 h-3.5" />
             <span className="text-[11px] font-medium text-gray-700 dark:text-gray-200 max-w-[120px] truncate">
               {bookmark.title}
             </span>
