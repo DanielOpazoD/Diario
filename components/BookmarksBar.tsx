@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { Bookmark as BookmarkIcon, ExternalLink, Plus } from 'lucide-react';
+import { Bookmark as BookmarkIcon, Plus } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
+import BookmarkIconGraphic from './BookmarkIcon';
 
 interface BookmarksBarProps {
   onOpenManager: () => void;
@@ -19,15 +20,15 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
 
   return (
     <div
-      className="fixed top-0 right-0 left-0 z-40 flex items-center gap-3 px-4 md:px-6 py-2 bg-white/90 dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800 backdrop-blur-md shadow-sm md:left-72 md:right-0"
+      className="fixed top-0 right-0 left-0 z-40 flex items-center gap-2.5 px-4 md:px-6 py-1.5 bg-white/90 dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800 backdrop-blur-md shadow-sm md:left-72 md:right-0"
       role="banner"
     >
       <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
         <BookmarkIcon className="w-4 h-4" />
-        <span className="text-xs font-semibold uppercase tracking-wide">Marcadores</span>
+        <span className="text-[11px] font-semibold uppercase tracking-wide">Marcadores</span>
       </div>
 
-      <div className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <div className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         {favoriteBookmarks.length === 0 && (
           <p className="text-xs text-gray-500 dark:text-gray-400 italic">Añade tus accesos rápidos clínicos</p>
         )}
@@ -38,26 +39,12 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
             target="_blank"
             rel="noopener noreferrer"
             title={bookmark.note || bookmark.url}
-            className="group flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0 border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+            className="group flex items-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0 border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
           >
-            {bookmark.icon && bookmark.icon.startsWith('http') ? (
-              <img src={bookmark.icon} className="w-4 h-4 rounded" alt="" loading="lazy" />
-            ) : bookmark.icon ? (
-              <span className="text-base" aria-hidden>
-                {bookmark.icon}
-              </span>
-            ) : (
-              <img
-                src={`https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=32`}
-                className="w-4 h-4"
-                alt=""
-                loading="lazy"
-              />
-            )}
-            <span className="text-xs font-medium text-gray-700 dark:text-gray-200 max-w-[120px] truncate">
+            <BookmarkIconGraphic bookmark={bookmark} sizeClass="w-3.5 h-3.5" />
+            <span className="text-[11px] font-medium text-gray-700 dark:text-gray-200 max-w-[120px] truncate">
               {bookmark.title}
             </span>
-            <ExternalLink className="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
           </a>
         ))}
       </div>
