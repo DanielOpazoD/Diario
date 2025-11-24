@@ -1,13 +1,28 @@
-import React, { useMemo } from 'react';
+import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { Bookmark as BookmarkIcon, ExternalLink, Plus } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
 
 interface BookmarksBarProps {
   onOpenManager: () => void;
+  onHeightChange?: (height: number) => void;
 }
 
-const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
+const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager, onHeightChange }) => {
   const bookmarks = useAppStore((state) => state.bookmarks);
+  const barRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const element = barRef.current;
+    if (!element) return;
+
+    const notify = () => onHeightChange?.(element.getBoundingClientRect().height);
+    notify();
+
+    const resizeObserver = new ResizeObserver(notify);
+    resizeObserver.observe(element);
+
+    return () => resizeObserver.disconnect();
+  }, [onHeightChange]);
 
   const favoriteBookmarks = useMemo(
     () =>
@@ -19,7 +34,8 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
 
   return (
     <div
-      className="fixed top-0 right-0 left-0 md:left-72 z-40 flex items-center gap-3 px-4 md:px-6 py-2 bg-white/90 dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800 backdrop-blur-md shadow-sm"
+      ref={barRef}
+      className="fixed top-0 z-40 flex items-center gap-3 px-4 md:px-6 py-2 bg-white/90 dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800 backdrop-blur-md shadow-sm w-full md:w-[calc(100vw-18rem)] md:left-72 md:right-auto"
       role="banner"
     >
       <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">

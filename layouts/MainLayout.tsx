@@ -41,6 +41,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   children,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [bookmarkBarHeight, setBookmarkBarHeight] = useState(52);
   const localImportInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useMemo(() => typeof window !== 'undefined' && window.innerWidth < 768, []);
 
@@ -61,7 +62,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     }
   };
 
-  const bookmarkBarOffset = showBookmarkBar ? 52 : 0;
+  const bookmarkBarOffset = showBookmarkBar ? bookmarkBarHeight : 0;
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">
@@ -280,7 +281,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
             <div className="flex items-center gap-3 hidden md:flex" />
           </header>
-          {showBookmarkBar && <BookmarksBar onOpenManager={onOpenBookmarksModal} />}
+          {showBookmarkBar && (
+            <BookmarksBar onOpenManager={onOpenBookmarksModal} onHeightChange={setBookmarkBarHeight} />
+          )}
         </div>
 
         <div
