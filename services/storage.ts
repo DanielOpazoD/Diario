@@ -1,8 +1,10 @@
 
-import { PatientRecord, GeneralTask } from '../types';
+import { Bookmark, BookmarkCategory, PatientRecord, GeneralTask } from '../types';
 
 const STORAGE_KEY = 'medidiario_data_v1';
 const GENERAL_TASKS_KEY = 'medidiario_general_tasks_v1';
+const BOOKMARKS_KEY = 'medidiario_bookmarks_v1';
+const BOOKMARK_CATEGORIES_KEY = 'medidiario_bookmark_categories_v1';
 
 export const saveRecordsToLocal = (records: PatientRecord[]) => {
   try {
@@ -48,6 +50,52 @@ export const loadGeneralTasksFromLocal = (): GeneralTask[] => {
   } catch (e) {
     return [];
   }
+};
+
+export const saveBookmarksToLocal = (bookmarks: Bookmark[]) => {
+  try {
+    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+  } catch (e) {
+    console.error('Error saving bookmarks', e);
+  }
+};
+
+export const loadBookmarksFromLocal = (): Bookmark[] => {
+  try {
+    const data = localStorage.getItem(BOOKMARKS_KEY);
+    if (!data) return [];
+
+    const parsed = JSON.parse(data);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.map((bookmark: any, index: number) => ({
+      ...bookmark,
+      order: typeof bookmark.order === 'number' ? bookmark.order : index,
+      createdAt: typeof bookmark.createdAt === 'number' ? bookmark.createdAt : Date.now(),
+    }));
+  } catch (e) {
+    console.error('Error loading bookmarks', e);
+    return [];
+  }
+};
+
+export const saveBookmarkCategoriesToLocal = (categories: BookmarkCategory[]) => {
+  try {
+    localStorage.setItem(BOOKMARK_CATEGORIES_KEY, JSON.stringify(categories));
+  } catch (e) {
+    console.error('Error saving bookmark categories', e);
+  }
+};
+
+export const loadBookmarkCategoriesFromLocal = (): BookmarkCategory[] => {
+  try {
+    const data = localStorage.getItem(BOOKMARK_CATEGORIES_KEY);
+    const parsed = data ? JSON.parse(data) : null;
+    if (Array.isArray(parsed)) return parsed;
+  } catch (e) {
+    console.error('Error loading bookmark categories', e);
+  }
+  return [];
 };
 
 export const downloadDataAsJson = (records: PatientRecord[]) => {
