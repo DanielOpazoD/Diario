@@ -65,6 +65,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">
+      {showBookmarkBar && <BookmarksBar onOpenManager={onOpenBookmarksModal} />}
+
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 md:hidden transition-opacity"
