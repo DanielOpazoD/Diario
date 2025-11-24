@@ -30,20 +30,20 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
 
   // Center the selected date (which is always in the middle of the array)
   const scrollToCenter = (smooth = false) => {
-    if (scrollRef.current && !showPicker) {
+    if (scrollRef.current && itemRef.current && !showPicker) {
       const container = scrollRef.current;
-      
-      // Each item is w-[54px] + mx-[3px] (6px total margin) = 60px
-      // Use fixed value for consistency or measure DOM
-      const itemWidth = 60; 
-      const containerWidth = container.clientWidth;
-      const centerIndex = 15; // The selected date is always at index 15
-      
-      // Calculate scroll position to center the item:
-      // (ItemStart + ItemHalf) - (ContainerHalf)
-      const scrollPos = (centerIndex * itemWidth) + (itemWidth / 2) - (containerWidth / 2);
-      
-      container.scrollTo({ left: scrollPos, behavior: smooth ? 'smooth' : 'auto' });
+      const item = itemRef.current;
+
+      // Use actual DOM sizes to avoid alignment drift across devices
+      const containerRect = container.getBoundingClientRect();
+      const itemRect = item.getBoundingClientRect();
+      const offset = itemRect.left - containerRect.left - (containerRect.width / 2 - itemRect.width / 2);
+
+      // `scrollIntoView` improves centering on mobile Safari/Firefox, while
+      // the manual adjustment keeps the item perfectly centered within the
+      // scroll container.
+      item.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'nearest', inline: 'center' });
+      container.scrollTo({ left: container.scrollLeft + offset, behavior: smooth ? 'smooth' : 'auto' });
     }
   };
 
