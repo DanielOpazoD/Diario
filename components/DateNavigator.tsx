@@ -28,21 +28,17 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
     setDays(newDays);
   }, [currentDate]);
 
-  // Center the selected date (which is always in the middle of the array)
+  // Center the selected date using its real position/width to avoid misalignment
   const scrollToCenter = (smooth = false) => {
-    if (scrollRef.current && !showPicker) {
+    if (scrollRef.current && itemRef.current && !showPicker) {
       const container = scrollRef.current;
-      
-      // Each item is w-[54px] + mx-[3px] (6px total margin) = 60px
-      // Use fixed value for consistency or measure DOM
-      const itemWidth = 60; 
+      const item = itemRef.current;
       const containerWidth = container.clientWidth;
-      const centerIndex = 15; // The selected date is always at index 15
-      
-      // Calculate scroll position to center the item:
-      // (ItemStart + ItemHalf) - (ContainerHalf)
-      const scrollPos = (centerIndex * itemWidth) + (itemWidth / 2) - (containerWidth / 2);
-      
+
+      const itemStart = item.offsetLeft;
+      const itemCenter = itemStart + item.offsetWidth / 2;
+      const scrollPos = itemCenter - containerWidth / 2;
+
       container.scrollTo({ left: scrollPos, behavior: smooth ? 'smooth' : 'auto' });
     }
   };
@@ -162,7 +158,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
           return (
             <div 
               key={date.toISOString()} 
-              ref={index === 15 ? itemRef : null} 
+              ref={isSelected ? itemRef : null}
               onClick={() => onSelectDate(date)} 
               className={`snap-center shrink-0 w-[54px] mx-[3px] flex flex-col items-center justify-center cursor-pointer transition-all duration-300 rounded-2xl relative border ${baseClasses}`}
             >

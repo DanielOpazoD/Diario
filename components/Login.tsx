@@ -12,6 +12,9 @@ const Login: React.FC = () => {
   const [isConfigured] = useState(checkGoogleConfig());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [testPassword, setTestPassword] = useState('');
+  const [showTestMode, setShowTestMode] = useState(false);
+  const [testError, setTestError] = useState('');
 
   // Initialize GAPI on mount
   React.useEffect(() => {
@@ -69,10 +72,29 @@ const Login: React.FC = () => {
 
   const handleGuestLogin = () => {
       login({
-        name: "Dr. Usuario Local",
-        email: "local@medidiario.app",
-        avatar: "https://ui-avatars.com/api/?name=Dr+Local&background=0D8ABC&color=fff"
+        name: "Modo de Prueba",
+        email: "demo@medidiario.app",
+        avatar: "https://ui-avatars.com/api/?name=Demo&background=0D8ABC&color=fff"
       });
+  };
+
+  React.useEffect(() => {
+    if (!showTestMode) {
+      setTestPassword('');
+      setTestError('');
+    }
+  }, [showTestMode]);
+
+  const handleTestModeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTestError('');
+
+    if (testPassword !== 'HHR1') {
+      setTestError('Contraseña incorrecta para el modo de prueba');
+      return;
+    }
+
+    handleGuestLogin();
   };
 
   return (
@@ -106,11 +128,11 @@ const Login: React.FC = () => {
                     <p className="text-sm text-yellow-700">
                       Falta configurar <strong>VITE_GOOGLE_CLIENT_ID</strong> en tus variables de entorno de Netlify.
                     </p>
-                    <button 
-                       onClick={handleGuestLogin}
+                    <button
+                       onClick={() => setShowTestMode(!showTestMode)}
                        className="mt-2 text-sm font-bold text-yellow-800 underline"
                     >
-                       Entrar como Invitado (Sin Drive)
+                       Entrar en modo de prueba
                     </button>
                   </div>
                 </div>
@@ -139,12 +161,38 @@ const Login: React.FC = () => {
             )}
 
             {isConfigured && (
-              <button
-                onClick={handleGuestLogin}
-                className="w-full py-3 px-4 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              >
-                Continuar sin cuenta (Solo Local)
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setShowTestMode(!showTestMode)}
+                  className="w-full py-3 px-4 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
+                >
+                  Modo de prueba (requiere contraseña)
+                </button>
+              </div>
+            )}
+
+            {showTestMode && (
+              <form onSubmit={handleTestModeSubmit} className="space-y-2 animate-fade-in">
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">
+                  Ingresá la contraseña de prueba
+                </label>
+                <input
+                  type="password"
+                  value={testPassword}
+                  onChange={(e) => setTestPassword(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="••••"
+                />
+                <button
+                  type="submit"
+                  className="w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 active:scale-[0.99] transition"
+                >
+                  Entrar en modo de prueba
+                </button>
+                {testError && (
+                  <p className="text-xs text-red-600 dark:text-red-400 text-center">{testError}</p>
+                )}
+              </form>
             )}
 
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700/50">
