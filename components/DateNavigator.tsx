@@ -20,9 +20,9 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
 
   useEffect(() => {
     const newDays: Date[] = [];
-    // Generate 15 days before and 15 days after
-    // The logic relies on the selected day being exactly in the middle (index 15)
-    for (let i = -15; i <= 15; i++) {
+    // Generate 5 days before and 5 days after (11 total)
+    // The logic relies on the selected day being exactly in the middle (index 5)
+    for (let i = -5; i <= 5; i++) {
       newDays.push(addDays(currentDate, i));
     }
     setDays(newDays);
@@ -32,12 +32,12 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
   const scrollToCenter = (smooth = false) => {
     if (scrollRef.current && !showPicker) {
       const container = scrollRef.current;
-      
+
       // Each item is w-[54px] + mx-[3px] (6px total margin) = 60px
       // Use fixed value for consistency or measure DOM
-      const itemWidth = 60; 
+      const itemWidth = 60;
       const containerWidth = container.clientWidth;
-      const centerIndex = 15; // The selected date is always at index 15
+      const centerIndex = 5; // The selected date is always at index 5
       
       // Calculate scroll position to center the item:
       // (ItemStart + ItemHalf) - (ContainerHalf)
@@ -155,10 +155,10 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
                 : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 h-16 border-gray-100 dark:border-gray-700/50';
 
           return (
-            <div 
-              key={date.toISOString()} 
-              ref={index === 15 ? itemRef : null} 
-              onClick={() => onSelectDate(date)} 
+            <div
+              key={date.toISOString()}
+              ref={index === 5 ? itemRef : null}
+              onClick={() => onSelectDate(date)}
               className={`snap-center shrink-0 w-[54px] mx-[3px] flex flex-col items-center justify-center cursor-pointer transition-all duration-300 rounded-2xl relative border ${baseClasses}`}
             >
               <span className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isSelected ? 'text-blue-100' : isTodayDate ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>{format(date, 'EEE', { locale: es }).replace('.', '')}</span>
