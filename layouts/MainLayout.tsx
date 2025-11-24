@@ -4,6 +4,7 @@ import DateNavigator from '../components/DateNavigator';
 import { ViewMode, PatientRecord, User } from '../types';
 import { downloadDataAsJson } from '../services/storage';
 import BookmarksBar from '../components/BookmarksBar';
+import GoogleConnectionStatus from '../components/GoogleConnectionStatus';
 
 interface MainLayoutProps {
   viewMode: ViewMode;
@@ -161,6 +162,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.name || 'Usuario'}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate opacity-80">{user.email || 'Sin email'}</p>
             </div>
+          </div>
+
+          <div className="mb-3 flex justify-center">
+            <GoogleConnectionStatus />
           </div>
 
           <div className="space-y-2">
