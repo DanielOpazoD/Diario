@@ -50,12 +50,17 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
   useLayoutEffect(() => {
     // Execute immediately on layout to prevent visual jump
     scrollToCenter(false);
-    
+
     // Re-center on resize
     const handleResize = () => scrollToCenter(false);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [days, showPicker]); 
+  }, [days, showPicker]);
+
+  useEffect(() => {
+    // Ensure the current day is centered on initial render and when the date changes
+    scrollToCenter(true);
+  }, [currentDate]);
 
   const getIndicators = (date: Date) => {
     const dayRecords = records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), date));

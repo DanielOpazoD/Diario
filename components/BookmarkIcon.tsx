@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Bookmark } from '../types';
 
 interface BookmarkIconProps {
@@ -35,6 +35,11 @@ const BookmarkIcon: React.FC<BookmarkIconProps> = ({ bookmark, sizeClass = 'w-6 
 
   const faviconUrl = useMemo(() => getFaviconUrl(bookmark.url), [bookmark.url]);
   const customIcon = bookmark.icon?.trim();
+
+  useEffect(() => {
+    // Reset fallback state when bookmark changes
+    setUseCustomIcon(!faviconUrl && !!customIcon);
+  }, [faviconUrl, customIcon]);
 
   if ((useCustomIcon || !faviconUrl) && customIcon) {
     if (customIcon.startsWith('http')) {
