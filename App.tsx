@@ -25,6 +25,7 @@ import StatsView from './features/stats/StatsView';
 import BookmarksView from './features/bookmarks/BookmarksView';
 import LockScreen from './components/LockScreen';
 import useAutoLock from './hooks/useAutoLock';
+import useGoogleSessionMonitor from './hooks/useGoogleSessionMonitor';
 
 const toTitleCase = (str: string) => {
   return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -77,6 +78,8 @@ const AppContent: React.FC = () => {
     },
     onUnlock: () => addToast('success', 'Sesión desbloqueada')
   });
+
+  useGoogleSessionMonitor();
 
   useEffect(() => {
     localStorage.setItem('medidiario_drive_folder', JSON.stringify(driveFolderPreference));

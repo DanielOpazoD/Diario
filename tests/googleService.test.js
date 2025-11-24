@@ -44,8 +44,8 @@ test('restoreStoredToken prioritizes active session tokens', () => {
 });
 
 test('restoreStoredToken ignores expired stored tokens', () => {
-  const { local } = createStorageMocks();
-  local.setItem('medidiario_google_token', JSON.stringify({
+  const { session } = createStorageMocks();
+  session.setItem('medidiario_google_token', JSON.stringify({
     accessToken: 'old-token',
     expiresAt: Date.now() - 1000,
     version: 'v2',
@@ -53,12 +53,12 @@ test('restoreStoredToken ignores expired stored tokens', () => {
   const service = loadTsModule('services/googleService.ts');
 
   assert.equal(service.restoreStoredToken(), null);
-  assert.equal(local.getItem('medidiario_google_token'), null);
+  assert.equal(session.getItem('medidiario_google_token'), null);
 });
 
 test('restoreStoredToken copies valid stored tokens to session storage', () => {
-  const { local, session } = createStorageMocks();
-  local.setItem('medidiario_google_token', JSON.stringify({
+  const { session } = createStorageMocks();
+  session.setItem('medidiario_google_token', JSON.stringify({
     accessToken: 'fresh-token',
     expiresAt: Date.now() + 60_000,
     version: 'v2',
@@ -67,6 +67,34 @@ test('restoreStoredToken copies valid stored tokens to session storage', () => {
 
   assert.equal(service.restoreStoredToken(), 'fresh-token');
   assert.equal(session.getItem('google_access_token'), 'fresh-token');
+});
+
+test('isTokenExpiringSoon detects tokens within threshold', () => {
+  const { session } = createStorageMocks();
+  session.setItem('medidiario_google_token', JSON.stringify({
+    accessToken: 'threshold-token',
+    expiresAt: Date.now() + 5 * 60_000,
+    version: 'v2',
+  }));
+
+  const service = loadTsModule('services/googleService.ts');
+
+  assert.equal(service.isTokenExpiringSoon(), true);
+  assert.equal(service.isTokenExpired(), false);
+});
+
+test('isTokenExpiringSoon returns false for long-lived tokens', () => {
+  const { session } = createStorageMocks();
+  session.setItem('medidiario_google_token', JSON.stringify({
+    accessToken: 'long-token',
+    expiresAt: Date.now() + 30 * 60_000,
+    version: 'v2',
+  }));
+
+  const service = loadTsModule('services/googleService.ts');
+
+  assert.equal(service.isTokenExpiringSoon(), false);
+  assert.equal(service.isTokenExpired(), false);
 });
 
 test('listFolderEntries retries on invalid value errors', async () => {
