@@ -76,7 +76,7 @@ export interface User {
   avatar: string;
 }
 
-export type ViewMode = 'daily' | 'search' | 'stats' | 'settings' | 'tasks';
+export type ViewMode = 'daily' | 'search' | 'stats' | 'settings' | 'tasks' | 'bookmarks';
 
 export interface ToastMessage {
   id: string;
@@ -102,4 +102,23 @@ export interface DriveFolderPreference {
 export interface SecuritySettings {
   pin: string | null;
   autoLockMinutes: number;
+}
+
+export interface BookmarkCategory {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface Bookmark {
+  id: string;
+  title: string;
+  url: string;
+  icon?: string;
+  note?: string;
+  categoryId?: string;
+  isFavorite?: boolean;
+  createdAt: number;
+  order: number;
 }
