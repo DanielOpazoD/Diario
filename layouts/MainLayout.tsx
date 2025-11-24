@@ -61,11 +61,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     }
   };
 
+  const bookmarkBarOffset = showBookmarkBar ? 52 : 0;
+
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-40 md:hidden transition-opacity"
+          className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 md:hidden transition-opacity"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -232,8 +234,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col h-full relative bg-gray-50/50 dark:bg-gray-950 overflow-hidden md:ml-72">
-        <div className="sticky top-0 z-30 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl shadow-sm border-b border-gray-200/60 dark:border-gray-800/60">
+      <main
+        className="flex-1 flex flex-col h-full relative bg-gray-50/50 dark:bg-gray-950 overflow-hidden md:ml-72"
+        style={{ paddingTop: bookmarkBarOffset ? `${bookmarkBarOffset}px` : undefined }}
+      >
+        <div
+          className="sticky top-0 z-30 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl shadow-sm border-b border-gray-200/60 dark:border-gray-800/60"
+          style={{ top: bookmarkBarOffset ? `${bookmarkBarOffset}px` : undefined }}
+        >
           <header className="shrink-0 flex flex-col md:flex-row items-center justify-between px-4 md:px-6 transition-all glass pt-2 pb-2 md:pt-4 md:pb-3 gap-2 md:gap-0">
             <div className="flex items-center w-full md:w-auto justify-between md:justify-start">
               <div className="flex items-center">
