@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import vm from 'node:vm';
 import { createRequire } from 'module';
+import Module from 'module';
 import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
@@ -19,10 +20,8 @@ export function loadTsModule(tsPath, overrides = {}) {
     fileName: absolutePath,
   });
 
-  const module = { exports: {} };
-  const localRequire = createRequire(absolutePath);
-  if (!localRequire.extensions['.ts']) {
-    localRequire.extensions['.ts'] = (moduleInstance, filename) => {
+  if (!Module._extensions['.ts']) {
+    Module._extensions['.ts'] = (moduleInstance, filename) => {
       const tsSource = fs.readFileSync(filename, 'utf8');
       const compiled = ts.transpileModule(tsSource, {
         compilerOptions: {
@@ -34,10 +33,55 @@ export function loadTsModule(tsPath, overrides = {}) {
       moduleInstance._compile(compiled.outputText, filename);
     };
   }
+
+  const module = { exports: {} };
+  const localRequire = createRequire(absolutePath);
+
+  const transpileDependency = (filename) => {
+    const tsSource = fs.readFileSync(filename, 'utf8');
+    const sanitized = tsSource.replace(/import\.meta/g, 'importMeta');
+    const preface = 'const importMeta = { env: {} };\n';
+    return ts.transpileModule(preface + sanitized, {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2020,
+      },
+      fileName: filename,
+    }).outputText;
+  };
+
+  const makeRequire = (baseDir) => (specifier) => {
+    if (specifier.startsWith('.') && !path.extname(specifier)) {
+      const resolved = path.resolve(baseDir, `${specifier}.ts`);
+      const depModule = { exports: {} };
+      const compiled = transpileDependency(resolved);
+      const dependencySandbox = {
+        module: depModule,
+        exports: depModule.exports,
+        require: makeRequire(path.dirname(resolved)),
+        setTimeout,
+        clearTimeout,
+        setInterval,
+        clearInterval,
+        fetch: overrides.fetch ?? globalThis.fetch,
+        FormData: overrides.FormData ?? globalThis.FormData,
+        Blob: overrides.Blob ?? globalThis.Blob,
+        URL: overrides.URL ?? globalThis.URL,
+        URLSearchParams: overrides.URLSearchParams ?? globalThis.URLSearchParams,
+        Headers: overrides.Headers ?? globalThis.Headers,
+      };
+      vm.runInNewContext(compiled, dependencySandbox, { filename: resolved });
+      return depModule.exports;
+    }
+
+    return localRequire(specifier);
+  };
+
+  const customRequire = makeRequire(path.dirname(absolutePath));
   const sandbox = {
     module,
     exports: module.exports,
-    require: localRequire,
+    require: customRequire,
     console,
     globalThis,
     window: overrides.window ?? globalThis,
