@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Filter, Plus } from 'lucide-react';
@@ -6,6 +6,7 @@ import Button from '../../components/Button';
 import CompactPatientCard from '../../components/CompactPatientCard';
 import FilterBar from '../../components/FilterBar';
 import { PatientRecord, PatientType, PatientTypeConfig } from '../../types';
+import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 
 interface DailyViewProps {
   currentDate: Date;
@@ -71,6 +72,29 @@ const DailyView: React.FC<DailyViewProps> = ({
     [dailyRecords]
   );
 
+  const listHeight = useMemo(() => {
+    const baseHeight = typeof window !== 'undefined' ? Math.max(window.innerHeight - 300, 320) : 480;
+    const estimatedHeight = visibleRecords.length * 136;
+    return Math.min(Math.max(estimatedHeight, 200), baseHeight);
+  }, [visibleRecords.length]);
+
+  const renderRow = useCallback(
+    ({ index, style }: ListChildComponentProps) => {
+      const patient = visibleRecords[index];
+
+      return (
+        <div style={style} key={patient.id}>
+          <CompactPatientCard
+            patient={patient}
+            onEdit={onEditPatient}
+            onDelete={onDeletePatient}
+          />
+        </div>
+      );
+    },
+    [onDeletePatient, onEditPatient, visibleRecords]
+  );
+
   return (
     <div className="h-full flex flex-col max-w-5xl mx-auto">
       <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/90 dark:bg-gray-900/70 shadow-md backdrop-blur-sm px-4 py-3.5 mb-3 animate-fade-in space-y-3">
@@ -125,16 +149,14 @@ const DailyView: React.FC<DailyViewProps> = ({
         </div>
       ) : (
         <div className="flex-1 pb-20 md:pb-4 animate-fade-in">
-          <div className="space-y-2">
-            {visibleRecords.map(patient => (
-              <CompactPatientCard
-                key={patient.id}
-                patient={patient}
-                onEdit={() => onEditPatient(patient)}
-                onDelete={() => onDeletePatient(patient.id)}
-              />
-            ))}
-          </div>
+          <List
+            height={listHeight}
+            itemCount={visibleRecords.length}
+            itemSize={136}
+            width="100%"
+          >
+            {renderRow}
+          </List>
         </div>
       )}
     </div>
