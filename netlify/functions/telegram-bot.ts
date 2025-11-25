@@ -1,7 +1,7 @@
 import type { Handler, HandlerEvent } from '@netlify/functions';
 import { Telegraf, Context } from 'telegraf';
 import { google } from 'googleapis';
-import { GoogleGenerativeAI, GenerativeModel } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { Readable } from 'node:stream';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -35,9 +35,7 @@ const driveAuth = serviceAccountEmail && serviceAccountKey
 
 const drive = driveAuth ? google.drive({ version: 'v3', auth: driveAuth }) : null;
 
-const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
-const textModel: GenerativeModel | undefined = genAI?.getGenerativeModel({ model: 'gemini-1.5-flash' });
-const visionModel: GenerativeModel | undefined = genAI?.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const genAI = geminiApiKey ? new GoogleGenAI({ apiKey: geminiApiKey }) : null;
 
 const bot = token ? new Telegraf(token) : null;
 let handlersRegistered = false;
@@ -101,22 +99,26 @@ const saveFileToDrive = async (
 const sanitizeFileName = (input: string) => input.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
 
 const summarizeText = async (text: string): Promise<string> => {
-  if (!textModel) return 'Gemini no está configurado para resumir texto.';
+  if (!genAI) return 'Gemini no está configurado para resumir texto.';
 
   const prompt = `Eres un asistente para registros clínicos personales. Resume en español el siguiente mensaje en máximo 6 viñetas con hallazgos y próximos pasos:\n\n"""${text}"""`;
 
-  const result = await textModel.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] });
-  const summary = result.response.text();
+  const result = await genAI.models.generateContent({
+    model: 'gemini-1.5-flash',
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+  });
+  const summary = result.text;
   return summary?.trim() || 'Gemini no devolvió texto.';
 };
 
 const describeImage = async (buffer: Buffer, mimeType: string): Promise<string> => {
-  if (!visionModel) return 'Gemini no está configurado para análisis de imágenes.';
+  if (!genAI) return 'Gemini no está configurado para análisis de imágenes.';
 
   const prompt =
     'Analiza la imagen adjunta y devuelve en español un resumen breve y los hallazgos médicos relevantes. Añade posibles próximos pasos.';
 
-  const result = await visionModel.generateContent({
+  const result = await genAI.models.generateContent({
+    model: 'gemini-1.5-flash',
     contents: [
       {
         role: 'user',
@@ -128,7 +130,7 @@ const describeImage = async (buffer: Buffer, mimeType: string): Promise<string> 
     ],
   });
 
-  const description = result.response.text();
+  const description = result.text;
   return description?.trim() || 'Gemini no devolvió texto para la imagen.';
 };
 
