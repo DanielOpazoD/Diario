@@ -88,20 +88,6 @@ const getAccessToken = async (credentials: ServiceAccountCredentials) => {
   return data.access_token;
 };
 
-const toNodeStream = (stream: ReadableStream<Uint8Array>) =>
-  typeof Readable.fromWeb === 'function'
-    ? Readable.fromWeb(stream)
-    : Readable.from(
-        (async function* () {
-          const reader = stream.getReader();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            if (value) yield value;
-          }
-        })(),
-      );
-
 const uploadToDrive = async (
   fileStream: Readable,
   metadata: { name: string; parents: string[] },
@@ -165,13 +151,13 @@ const downloadTelegramFile = async (
   const fileUrl = `${TELEGRAM_API_BASE}/file/bot${botToken}/${fileInfo.file_path}`;
   const response = await fetch(fileUrl);
 
-  if (!response.ok || !response.body) {
+  if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Failed to download file: ${errorText}`);
   }
 
   const mimeType = response.headers.get('content-type') ?? 'application/octet-stream';
-  const stream = toNodeStream(response.body);
+  const stream = Readable.from(Buffer.from(await response.arrayBuffer()));
   const fileName = fileInfo.file_path?.split('/').pop() || fallbackName;
 
   return { stream, mimeType, fileName };
