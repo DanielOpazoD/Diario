@@ -1,4 +1,4 @@
-import type { Handler } from '@netlify/functions';
+import type { Handler, HandlerEvent } from '@netlify/functions';
 import { Telegraf } from 'telegraf';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -9,7 +9,7 @@ if (!token) {
 
 const bot = new Telegraf(token ?? '');
 
-export const handler: Handler = async (event) => {
+export const handler: Handler = async (event: HandlerEvent) => {
   if (!token) {
     return { statusCode: 500, body: 'TELEGRAM_BOT_TOKEN not configured' };
   }
