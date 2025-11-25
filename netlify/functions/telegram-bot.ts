@@ -174,6 +174,40 @@ const setupBotHandlers = () => {
   if (!bot || handlersRegistered) return;
   handlersRegistered = true;
 
+  bot.command('debug', (ctx) => {
+    const folderId = process.env.GOOGLE_DRIVE_INBOX_ID;
+    const saJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+    let jsonStatus = '❌ FALTA';
+    if (saJson) {
+      try {
+        JSON.parse(saJson);
+        jsonStatus = '✅ OK (Válido)';
+      } catch (error) {
+        jsonStatus = '⚠️ ERROR DE FORMATO (El JSON está roto)';
+      }
+    }
+
+    const emailStatus = serviceAccountEmail
+      ? `✅ Detectado (${serviceAccountEmail})`
+      : '❌ FALTA';
+
+    const keyStatus = serviceAccountKey ? '✅ Detectada' : '❌ FALTA';
+    const geminiStatus = geminiApiKey ? '✅ Detectada' : '⚠️ No configurada';
+
+    ctx.reply(
+      `🕵️‍♂️ <b>Diagnóstico de Netlify</b>\n\n` +
+        `1. <b>Carpeta Drive (ID):</b> ${folderId ? `✅ Detectada (${folderId.substring(0, 4)}...)` : '⚠️ No configurada (se usa MediDiario_Inbox)'}` +
+        `\n2. <b>Credencial Google (JSON):</b> ${jsonStatus}` +
+        `\n3. <b>Correo de servicio:</b> ${emailStatus}` +
+        `\n4. <b>Llave privada:</b> ${keyStatus}` +
+        `\n5. <b>Clave Gemini:</b> ${geminiStatus}` +
+        `\n   - Largo del JSON: ${saJson ? saJson.length : 0} caracteres\n\n` +
+        `<i>Si ves una ❌, ve a Netlify > Site Settings > Environment Variables y corrígelo.</i>`,
+      { parse_mode: 'HTML' },
+    );
+  });
+
   bot.on('text', async (ctx) => {
     try {
       await handleTextMessage(ctx);
