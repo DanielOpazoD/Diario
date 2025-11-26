@@ -16,7 +16,21 @@ type GeminiRequest =
   | { action: 'askAboutImages'; prompt: string; images: any[] };
 
 const MODEL_NAME = 'gemini-1.5-flash';
-const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_API_KEY || '';
+
+const resolveGeminiApiKey = () => {
+  const candidates = [
+    { value: process.env.GEMINI_API_KEY, source: 'GEMINI_API_KEY' },
+    { value: process.env.GOOGLE_GENAI_API_KEY, source: 'GOOGLE_GENAI_API_KEY' },
+    { value: process.env.GOOGLE_API_KEY, source: 'GOOGLE_API_KEY' },
+    { value: process.env.VITE_GEMINI_API_KEY, source: 'VITE_GEMINI_API_KEY' },
+    { value: process.env.VITE_API_KEY, source: 'VITE_API_KEY' },
+  ];
+
+  const found = candidates.find((candidate) => candidate.value);
+  return { apiKey: found?.value ?? '', source: found?.source ?? 'none' };
+};
+
+const { apiKey, source: apiKeySource } = resolveGeminiApiKey();
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 const analysisSchema = {
@@ -75,6 +89,7 @@ const handler: Handler = async (event) => {
           status: apiKey ? 'Configured' : 'Missing',
           length: apiKey ? apiKey.length : 0,
           keyPreview: apiKey ? `${apiKey.substring(0, 4)}...` : 'none',
+          source: apiKeySource,
         }),
       };
     }
