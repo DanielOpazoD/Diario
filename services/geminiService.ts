@@ -39,12 +39,14 @@ const patientListExtractionSchema = {
 
 const readEncodedKey = () => {
   // 1. Intentar leer la variable inyectada por Vite (Standard)
-  if (typeof import.meta !== "undefined" && import.meta.env.VITE_API_KEY) {
-    return import.meta.env.VITE_API_KEY;
+  if (typeof import.meta !== "undefined") {
+    if (import.meta.env.VITE_GOOGLE_API_KEY) return import.meta.env.VITE_GOOGLE_API_KEY;
+    if (import.meta.env.VITE_API_KEY) return import.meta.env.VITE_API_KEY;
   }
   // 2. Fallback a process.env (inyectada por nuestro define)
-  if (typeof process !== "undefined" && process.env.API_KEY) {
-    return process.env.API_KEY;
+  if (typeof process !== "undefined") {
+    if (process.env.VITE_GOOGLE_API_KEY) return process.env.VITE_GOOGLE_API_KEY;
+    if (process.env.API_KEY) return process.env.API_KEY;
   }
   // 3. Fallback a LocalStorage (para pruebas locales manuales)
   if (typeof localStorage !== "undefined") {
