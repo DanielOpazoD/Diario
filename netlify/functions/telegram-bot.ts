@@ -6,8 +6,23 @@ import { Readable } from 'node:stream';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const geminiApiKey = process.env.GEMINI_API_KEY;
-const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY?.replace(/\n/g, '\n');
+
+let serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+let serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+
+if ((!serviceAccountEmail || !serviceAccountKey) && process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+  try {
+    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+    serviceAccountEmail = serviceAccountEmail || credentials.client_email;
+    serviceAccountKey = serviceAccountKey || credentials.private_key;
+  } catch (e) {
+    console.error('Error al parsear GOOGLE_SERVICE_ACCOUNT_JSON:', e);
+  }
+}
+
+if (serviceAccountKey) {
+  serviceAccountKey = serviceAccountKey.replace(/\\n/g, '\n');
+}
 
 if (!token) {
   console.warn('TELEGRAM_BOT_TOKEN is not set; Telegram bot updates will fail.');
