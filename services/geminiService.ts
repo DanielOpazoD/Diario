@@ -38,13 +38,19 @@ const patientListExtractionSchema = {
 };
 
 const readEncodedKey = () => {
-  return (
-    (typeof import.meta !== "undefined" && import.meta.env.VITE_API_KEY) ||
-    (typeof import.meta !== "undefined" && import.meta.env.API_KEY) ||
-    (typeof import.meta !== "undefined" && import.meta.env.GEMINI_API_KEY) ||
-    (typeof localStorage !== "undefined" && localStorage.getItem("medidiario_api_key")) ||
-    ""
-  );
+  // 1. Intentar leer la variable inyectada por Vite (Standard)
+  if (typeof import.meta !== "undefined" && import.meta.env.VITE_API_KEY) {
+    return import.meta.env.VITE_API_KEY;
+  }
+  // 2. Fallback a process.env (inyectada por nuestro define)
+  if (typeof process !== "undefined" && process.env.API_KEY) {
+    return process.env.API_KEY;
+  }
+  // 3. Fallback a LocalStorage (para pruebas locales manuales)
+  if (typeof localStorage !== "undefined") {
+    return localStorage.getItem("medidiario_api_key") || "";
+  }
+  return "";
 };
 
 const decodeKey = (encodedKey: string): string => {
@@ -57,9 +63,9 @@ const decodeKey = (encodedKey: string): string => {
 
 const getApiKey = (): string => {
   const encodedKey = readEncodedKey();
-  if (!encodedKey) throw new Error("API Key no configurada.");
+  if (!encodedKey) throw new Error("API Key no configurada. Verifica las variables de entorno en Netlify.");
   const apiKey = decodeKey(encodedKey);
-  if (!apiKey) throw new Error("API Key no configurada.");
+  if (!apiKey) throw new Error("API Key inválida.");
   return apiKey;
 };
 
