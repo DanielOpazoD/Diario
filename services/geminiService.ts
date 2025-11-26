@@ -39,6 +39,7 @@ const patientListExtractionSchema = {
 
 const readEncodedKey = () => {
   return (
+    (typeof process !== "undefined" && process.env.API_KEY) ||
     (typeof import.meta !== "undefined" && import.meta.env.VITE_API_KEY) ||
     (typeof import.meta !== "undefined" && import.meta.env.API_KEY) ||
     (typeof import.meta !== "undefined" && import.meta.env.GEMINI_API_KEY) ||
