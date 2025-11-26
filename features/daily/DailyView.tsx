@@ -1,11 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Filter, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, Filter, Plus, Copy, MoveRight } from 'lucide-react';
 import Button from '../../components/Button';
 import CompactPatientCard from '../../components/CompactPatientCard';
 import FilterBar from '../../components/FilterBar';
 import { PatientRecord, PatientType, PatientTypeConfig } from '../../types';
+import useAppStore from '../../stores/useAppStore';
 
 interface DailyViewProps {
   currentDate: Date;
@@ -15,6 +16,8 @@ interface DailyViewProps {
   onEditPatient: (patient: PatientRecord) => void;
   onDeletePatient: (patientId: string) => void;
   onGenerateReport: () => void;
+  onMovePatients: (patientIds: string[], targetDate: string) => void;
+  onCopyPatients: (patientIds: string[], targetDate: string) => void;
 }
 
 const DailyView: React.FC<DailyViewProps> = ({
@@ -25,8 +28,15 @@ const DailyView: React.FC<DailyViewProps> = ({
   onEditPatient,
   onDeletePatient,
   onGenerateReport,
+  onMovePatients,
+  onCopyPatients,
 }) => {
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedPatients, setSelectedPatients] = useState<Set<string>>(new Set());
+  const [targetDate, setTargetDate] = useState<string>(format(currentDate, 'yyyy-MM-dd'));
+
+  const addToast = useAppStore(state => state.addToast);
 
   const dailyRecords = useMemo(
     () => records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), currentDate)),
@@ -66,10 +76,69 @@ const DailyView: React.FC<DailyViewProps> = ({
     [dailyRecords, activeFilter]
   );
 
+  useEffect(() => {
+    setTargetDate(format(currentDate, 'yyyy-MM-dd'));
+  }, [currentDate]);
+
   const pendingTasks = useMemo(
     () => dailyRecords.reduce((acc, record) => acc + (record.pendingTasks?.filter(t => !t.isCompleted).length || 0), 0),
     [dailyRecords]
   );
+
+  const allVisibleSelected = useMemo(
+    () => visibleRecords.length > 0 && visibleRecords.every(record => selectedPatients.has(record.id)),
+    [visibleRecords, selectedPatients]
+  );
+
+  const toggleSelectionMode = () => {
+    setSelectionMode(prev => {
+      if (prev) {
+        setSelectedPatients(new Set());
+      }
+      return !prev;
+    });
+  };
+
+  const togglePatientSelection = (patientId: string) => {
+    setSelectedPatients(prev => {
+      const next = new Set(prev);
+      if (next.has(patientId)) {
+        next.delete(patientId);
+      } else {
+        next.add(patientId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedPatients(new Set());
+      return;
+    }
+
+    setSelectedPatients(new Set(visibleRecords.map(record => record.id)));
+  };
+
+  const handleBatchMove = () => {
+    if (selectedPatients.size === 0) {
+      addToast('info', 'Selecciona al menos un paciente para mover.');
+      return;
+    }
+    onMovePatients(Array.from(selectedPatients), targetDate);
+    setSelectedPatients(new Set());
+    setSelectionMode(false);
+  };
+
+  const handleBatchCopy = () => {
+    if (selectedPatients.size === 0) {
+      addToast('info', 'Selecciona al menos un paciente para copiar.');
+      return;
+    }
+    onCopyPatients(Array.from(selectedPatients), targetDate);
+    setSelectedPatients(new Set());
+    setSelectionMode(false);
+  };
 
   return (
     <div className="h-full flex flex-col max-w-5xl mx-auto">
@@ -85,6 +154,14 @@ const DailyView: React.FC<DailyViewProps> = ({
             </p>
           </div>
           <div className="flex flex-wrap gap-2 justify-end">
+            <Button
+              variant={selectionMode ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={toggleSelectionMode}
+              className="rounded-pill"
+            >
+              {selectionMode ? 'Cancelar selección' : 'Gestionar pacientes'}
+            </Button>
             <Button
               variant="secondary"
               size="sm"
@@ -105,6 +182,58 @@ const DailyView: React.FC<DailyViewProps> = ({
           totalCount={dailyRecords.length}
         />
       </div>
+
+      {selectionMode && (
+        <div className="rounded-panel border border-blue-100 dark:border-blue-800/60 bg-blue-50/60 dark:bg-blue-900/30 shadow-md px-4 py-3 mb-3 animate-fade-in">
+          <div className="flex flex-col md:flex-row md:items-center gap-3 justify-between">
+            <div className="flex items-center gap-2 text-sm text-blue-900 dark:text-blue-100 font-medium">
+              <span className="px-2 py-1 bg-white/70 dark:bg-blue-950/50 rounded-control border border-blue-100 dark:border-blue-800 shadow-soft">
+                {selectedPatients.size} seleccionados
+              </span>
+              <button
+                className="text-xs text-blue-800 dark:text-blue-200 underline"
+                onClick={() => setSelectedPatients(new Set())}
+              >
+                Limpiar selección
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                onClick={toggleSelectAllVisible}
+                size="sm"
+                variant="ghost"
+                className="text-blue-700 dark:text-blue-200"
+              >
+                {allVisibleSelected ? 'Quitar selección' : 'Seleccionar visibles'}
+              </Button>
+              <input
+                type="date"
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
+                className="px-3 py-2 rounded-md border border-blue-200 dark:border-blue-700 bg-white dark:bg-blue-950/60 text-sm shadow-soft"
+              />
+              <Button
+                onClick={handleBatchMove}
+                size="sm"
+                variant="secondary"
+                icon={<MoveRight className="w-4 h-4" />}
+                disabled={selectedPatients.size === 0}
+              >
+                Mover a fecha
+              </Button>
+              <Button
+                onClick={handleBatchCopy}
+                size="sm"
+                variant="primary"
+                icon={<Copy className="w-4 h-4" />}
+                disabled={selectedPatients.size === 0}
+              >
+                Copiar a fecha
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {visibleRecords.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-center flex-1">
@@ -132,6 +261,9 @@ const DailyView: React.FC<DailyViewProps> = ({
                 patient={patient}
                 onEdit={() => onEditPatient(patient)}
                 onDelete={() => onDeletePatient(patient.id)}
+                selectionMode={selectionMode}
+                selected={selectedPatients.has(patient.id)}
+                onToggleSelect={() => togglePatientSelection(patient.id)}
               />
             ))}
           </div>

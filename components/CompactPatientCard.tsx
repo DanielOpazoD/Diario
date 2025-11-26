@@ -27,9 +27,12 @@ interface CompactPatientCardProps {
   patient: PatientRecord;
   onEdit: (p: PatientRecord) => void;
   onDelete: (id: string) => void;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
-const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit, onDelete }) => {
+const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit, onDelete, selectionMode, selected, onToggleSelect }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const updatePatient = useAppStore(state => state.updatePatient);
   const patientTypes = useAppStore(state => state.patientTypes);
@@ -50,12 +53,28 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
     updatePatient({ ...patient, pendingTasks: updatedTasks });
   };
 
+  const handleCardClick = () => {
+    if (selectionMode) {
+      onToggleSelect?.();
+      return;
+    }
+    setIsExpanded(!isExpanded);
+  };
+
   return (
     <div
-      className={`group bg-white/95 dark:bg-gray-800/90 rounded-card shadow-card border overflow-hidden transition-all duration-200 hover:shadow-elevated mb-3 ${highlightPendingPatients && pendingCount > 0 ? 'border-amber-200 dark:border-amber-700/60 ring-1 ring-amber-200/70 dark:ring-amber-600/40' : 'border-gray-200 dark:border-gray-700/50'}`}
+      className={`group relative bg-white/95 dark:bg-gray-800/90 rounded-card shadow-card border overflow-hidden transition-all duration-200 hover:shadow-elevated mb-3 ${highlightPendingPatients && pendingCount > 0 ? 'border-amber-200 dark:border-amber-700/60 ring-1 ring-amber-200/70 dark:ring-amber-600/40' : 'border-gray-200 dark:border-gray-700/50'} ${selectionMode && selected ? 'ring-2 ring-blue-200 dark:ring-blue-700 border-blue-200/70 dark:border-blue-700/70 bg-blue-50/40 dark:bg-blue-900/10' : ''}`}
     >
+      {selectionMode && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSelect?.(); }}
+          className={`absolute top-3 left-3 z-10 p-1.5 rounded-full border ${selected ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-200' : 'bg-white border-gray-200 text-gray-400 dark:bg-gray-900/70 dark:border-gray-700 dark:text-gray-300'} shadow-soft`}
+        >
+          {selected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+        </button>
+      )}
       <div
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={handleCardClick}
         className="flex flex-row items-stretch cursor-pointer min-h-[76px]"
       >
         <div className={`w-1.5 shrink-0 bg-${coreColor}-500`}></div>
