@@ -30,6 +30,14 @@ const toTitleCase = (str: string) => {
   return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 };
 
+const formatDateLabel = (dateStr: string) => {
+  try {
+    return format(new Date(dateStr + 'T00:00:00'), 'dd-MM-yyyy');
+  } catch (e) {
+    return dateStr;
+  }
+};
+
 const AppContent: React.FC = () => {
   const { addLog } = useLogger();
 
@@ -169,6 +177,49 @@ const AppContent: React.FC = () => {
     addToast('success', 'PDF Generado');
   };
 
+  const handleMovePatientsToDate = (patientIds: string[], targetDate: string) => {
+    if (!targetDate) {
+      addToast('error', 'Debes seleccionar una fecha destino.');
+      return;
+    }
+
+    const updatedRecords = records.map(record =>
+      patientIds.includes(record.id)
+        ? { ...record, date: targetDate }
+        : record
+    );
+
+    setRecords(updatedRecords);
+    addToast('success', `Pacientes movidos al ${formatDateLabel(targetDate)}.`);
+  };
+
+  const handleCopyPatientsToDate = (patientIds: string[], targetDate: string) => {
+    if (!targetDate) {
+      addToast('error', 'Debes seleccionar una fecha destino.');
+      return;
+    }
+
+    const selectedPatients = records.filter(record => patientIds.includes(record.id));
+
+    if (selectedPatients.length === 0) {
+      addToast('info', 'No hay pacientes para copiar.');
+      return;
+    }
+
+    const timestamp = Date.now();
+    const clonedPatients = selectedPatients.map((patient, index) => ({
+      ...patient,
+      id: crypto.randomUUID(),
+      date: targetDate,
+      createdAt: timestamp + index,
+      pendingTasks: patient.pendingTasks?.map(task => ({ ...task, id: crypto.randomUUID() })) || [],
+      attachedFiles: patient.attachedFiles?.map(file => ({ ...file, id: crypto.randomUUID() })) || [],
+    }));
+
+    setRecords([...records, ...clonedPatients]);
+    addToast('success', `${clonedPatients.length} pacientes copiados al ${formatDateLabel(targetDate)}.`);
+  };
+
   const handleBackupConfirm = async (fileName: string, folder: DriveFolderPreference) => {
     const token = getActiveAccessToken();
     if (!token) {
@@ -282,6 +333,8 @@ const AppContent: React.FC = () => {
             onEditPatient={(patient) => { setEditingPatient(patient); setIsModalOpen(true); }}
             onDeletePatient={(id) => setPatientToDelete(id)}
             onGenerateReport={handleGeneratePDF}
+            onMovePatients={handleMovePatientsToDate}
+            onCopyPatients={handleCopyPatientsToDate}
           />
         )}
 
