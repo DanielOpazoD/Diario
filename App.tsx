@@ -89,8 +89,9 @@ const AppContent: React.FC = () => {
   }, [viewMode]);
 
   useEffect(() => {
-    const envStatus = validateEnvironment();
-    addLog('info', 'App', 'Iniciando Aplicación', envStatus);
+    validateEnvironment()
+      .then(envStatus => addLog('info', 'App', 'Iniciando Aplicación', envStatus))
+      .catch(error => addLog('error', 'App', 'No se pudo validar el entorno', { message: String(error) }));
   }, [addLog]);
 
   useEffect(() => {

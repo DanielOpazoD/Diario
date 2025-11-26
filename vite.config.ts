@@ -7,25 +7,6 @@ export default defineConfig(({ mode }) => {
   // Carga variables desde archivos .env locales
   const env = loadEnv(mode, (process as any).cwd(), '');
 
-  // CORRECCIÓN: Buscamos explícitamente en process.env para capturar la variable de Netlify
-  const rawKey =
-    env.VITE_API_KEY ||
-    env.GEMINI_API_KEY ||
-    process.env.GEMINI_API_KEY || // <--- ESTA ES LA LÍNEA CLAVE QUE FALTA
-    process.env.VITE_API_KEY ||
-    '';
-
-  // Debug en el log de Netlify para confirmar si encontró la clave (solo muestra los primeros 4 caracteres)
-  if (mode === 'production') {
-    if (rawKey) {
-      console.log(`✅ API Key detectada para el build: ${rawKey.substring(0, 4)}...`);
-    } else {
-      console.error('❌ ERROR CRÍTICO: No se encontró GEMINI_API_KEY durante el build del frontend.');
-    }
-  }
-
-  // Codificamos la clave para inyectarla de forma segura
-  const encodedKey = Buffer.from(rawKey).toString('base64');
   const googleClientId = env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
 
   return {
@@ -62,12 +43,12 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     define: {
-      // Inyección de la variable en el código del navegador
-      'process.env.API_KEY': JSON.stringify(encodedKey),
-      'import.meta.env.VITE_API_KEY': JSON.stringify(encodedKey),
       'process.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
       'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
     },
+    // Solo exponer variables VITE_ relacionadas con Google para evitar que otras claves
+    // (p. ej., API keys sensibles) queden incrustadas en el bundle de cliente.
+    envPrefix: ['VITE_GOOGLE_'],
     server: {
       host: true,
     },
