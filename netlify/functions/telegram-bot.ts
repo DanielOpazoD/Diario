@@ -60,6 +60,14 @@ const ensureInboxFolder = async (): Promise<string> => {
   if (!drive) throw new Error('Google Drive no está configurado');
   if (cachedInboxFolderId) return cachedInboxFolderId;
 
+  // 1. Si existe un ID configurado manualmente en Netlify, úsalo directamente.
+  // Esto evita que el bot intente crear carpetas y consuma su cuota inexistente.
+  if (process.env.GOOGLE_DRIVE_INBOX_ID) {
+    cachedInboxFolderId = process.env.GOOGLE_DRIVE_INBOX_ID;
+    return cachedInboxFolderId;
+  }
+
+  // 2. Fallback: Buscar por nombre (Lógica antigua)
   const existing = await drive.files.list({
     q: `name = '${INBOX_FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
     fields: 'files(id, name)',
@@ -71,6 +79,7 @@ const ensureInboxFolder = async (): Promise<string> => {
     if (cachedInboxFolderId) return cachedInboxFolderId;
   }
 
+  // 3. Último recurso: Intentar crearla (probablemente fallará por cuota, pero se mantiene como fallback)
   const created = await drive.files.create({
     requestBody: {
       name: INBOX_FOLDER_NAME,
