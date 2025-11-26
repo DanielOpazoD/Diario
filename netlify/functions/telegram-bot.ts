@@ -5,7 +5,7 @@ import { GoogleGenAI } from '@google/genai';
 import { Readable } from 'node:stream';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const geminiApiKey = process.env.GEMINI_API_KEY;
+const geminiApiKey = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : "";
 
 let serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 let serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
@@ -119,7 +119,7 @@ const summarizeText = async (text: string): Promise<string> => {
   const prompt = `Eres un asistente para registros clínicos personales. Resume en español el siguiente mensaje en máximo 6 viñetas con hallazgos y próximos pasos:\n\n"""${text}"""`;
 
   const result = await genAI.models.generateContent({
-    model: 'gemini-1.5-flash-001',
+    model: 'gemini-1.5-flash',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   });
   const summary = result.text;
@@ -133,7 +133,7 @@ const describeImage = async (buffer: Buffer, mimeType: string): Promise<string> 
     'Analiza la imagen adjunta y devuelve en español un resumen breve y los hallazgos médicos relevantes. Añade posibles próximos pasos.';
 
   const result = await genAI.models.generateContent({
-    model: 'gemini-1.5-flash-001',
+    model: 'gemini-1.5-flash',
     contents: [
       {
         role: 'user',
