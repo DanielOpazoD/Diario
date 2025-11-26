@@ -10,7 +10,6 @@
     "test": "node --test"
   },
   "dependencies": {
-    "@google/genai": "^0.7.0",
     "@google/generative-ai": "^0.21.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
