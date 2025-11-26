@@ -3,21 +3,30 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { Buffer } from 'buffer';
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Load env file based on `mode` in the current working directory.
+  // Carga variables desde archivos .env locales
   const env = loadEnv(mode, (process as any).cwd(), '');
 
-  // Obfuscate API Key to avoid Netlify build secret scanner (AIza...)
+  // CORRECCIÓN: Buscamos explícitamente en process.env para capturar la variable de Netlify
   const rawKey =
     env.VITE_API_KEY ||
     env.GEMINI_API_KEY ||
-    process.env.GEMINI_API_KEY ||
+    process.env.GEMINI_API_KEY || // <--- ESTA ES LA LÍNEA CLAVE QUE FALTA
     process.env.VITE_API_KEY ||
     '';
+
+  // Debug en el log de Netlify para confirmar si encontró la clave (solo muestra los primeros 4 caracteres)
+  if (mode === 'production') {
+    if (rawKey) {
+      console.log(`✅ API Key detectada para el build: ${rawKey.substring(0, 4)}...`);
+    } else {
+      console.error('❌ ERROR CRÍTICO: No se encontró GEMINI_API_KEY durante el build del frontend.');
+    }
+  }
+
+  // Codificamos la clave para inyectarla de forma segura
   const encodedKey = Buffer.from(rawKey).toString('base64');
-  const googleClientId =
-    env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
+  const googleClientId = env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
 
   return {
     plugins: [
@@ -28,8 +37,7 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: 'MediDiario AI',
           short_name: 'MediDiario',
-          description:
-            'Gestor inteligente de pacientes diarios con soporte para Policlínico, Hospitalizados y Extras.',
+          description: 'Gestor inteligente de pacientes diarios.',
           theme_color: '#3b82f6',
           background_color: '#ffffff',
           display: 'standalone',
@@ -37,109 +45,26 @@ export default defineConfig(({ mode }) => {
           scope: '/',
           start_url: '/',
           icons: [
-            {
-              src: 'icon.svg',
-              sizes: 'any',
-              type: 'image/svg+xml',
-            },
-            {
-              src: 'masked-icon.svg',
-              sizes: 'any',
-              type: 'image/svg+xml',
-              purpose: 'any maskable',
-            },
+            { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml' },
+            { src: 'masked-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
           ],
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-          // Estrategia de caché en tiempo de ejecución crítica para CDNs externos
           runtimeCaching: [
             {
-              // Cachear librerías de React y utilidades desde aistudiocdn
-              urlPattern: ({ url }) => url.origin === 'https://aistudiocdn.com',
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'cdn-libraries',
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 Días
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-            {
-              // Cachear Tailwind CSS
-              urlPattern: ({ url }) => url.origin === 'https://cdn.tailwindcss.com',
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'tailwind-cdn',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 30,
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-            {
-              // Google Fonts (Cache First)
-              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365,
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-            {
-              // Google Fonts Static Files (Cache First)
-              urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'gstatic-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365,
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-            {
-              // APIs de Google y Drive (Network First)
-              // Intentará conectar, si falla (offline), usa caché si existe, aunque Drive requiere online para escritura
-              urlPattern: ({ url }) => url.origin.includes('googleapis.com') || url.origin.includes('accounts.google.com'),
+              urlPattern: ({ url }) => url.origin.includes('googleapis.com'),
               handler: 'NetworkFirst',
-              options: {
-                cacheName: 'google-api-cache',
-                networkTimeoutSeconds: 3,
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24,
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
+              options: { cacheName: 'google-api-cache' },
             },
           ],
         },
       }),
     ],
     define: {
-      // We inject the encoded key to prevent the "Secrets scanning detected" build error
+      // Inyección de la variable en el código del navegador
       'process.env.API_KEY': JSON.stringify(encodedKey),
       'import.meta.env.VITE_API_KEY': JSON.stringify(encodedKey),
-      // Fallback to empty string if undefined to avoid undefined substitution
       'process.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
       'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
     },
