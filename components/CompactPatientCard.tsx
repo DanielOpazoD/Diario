@@ -85,25 +85,24 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
             </div>
 
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <span className={`text-[10px] uppercase font-bold px-1.5 rounded-control bg-${coreColor}-50 text-${coreColor}-700 dark:bg-${coreColor}-900/30 dark:text-${coreColor}-300 border border-${coreColor}-100 dark:border-${coreColor}-800`}>
                   {patient.type}
                 </span>
-                {patient.entryTime && (
-                  <span className="flex items-center text-xs font-mono gap-0.5 bg-gray-100 dark:bg-gray-700 px-2 rounded-control">
-                    <Clock className="w-2.5 h-2.5" />
-                    {patient.entryTime}
+                {patient.diagnosis && (
+                  <span className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300 min-w-0">
+                    <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0"></span>
+                    <span className="truncate max-w-[15rem] sm:max-w-[22rem]">{patient.diagnosis}</span>
                   </span>
                 )}
               </div>
+              {patient.entryTime && (
+                <span className="flex items-center text-xs font-mono gap-0.5 bg-gray-100 dark:bg-gray-700 px-2 rounded-control">
+                  <Clock className="w-2.5 h-2.5" />
+                  {patient.entryTime}
+                </span>
+              )}
             </div>
-
-            {patient.diagnosis && (
-              <p className="text-xs text-gray-600 dark:text-gray-300 truncate pr-2 mt-0.5 flex items-center gap-1">
-                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0"></span>
-                {patient.diagnosis}
-              </p>
-            )}
           </div>
 
           <div className="flex items-center gap-3 ml-auto flex-shrink-0 pl-1">
