@@ -80,7 +80,7 @@ export const analyzeClinicalNote = async (noteText: string): Promise<AIAnalysisR
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash-001',
       contents: `Analyze this clinical note. Extract diagnosis and tasks in Spanish. Note: "${noteText}"`,
       config: {
         responseMimeType: "application/json",
@@ -105,7 +105,7 @@ export const extractPatientDataFromImage = async (base64Image: string, mimeType:
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash-001',
       contents: {
         parts: [
           { inlineData: { mimeType, data: base64Image } },
@@ -135,7 +135,7 @@ export const extractMultiplePatientsFromImage = async (base64Image: string, mime
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash-001',
       contents: {
         parts: [
           { inlineData: { mimeType, data: base64Image } },
@@ -175,7 +175,7 @@ export const askAboutImages = async (prompt: string, images: FileContent[]): Pro
     const parts: any[] = [...images, { text: prompt }];
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash-001',
       contents: {
         parts: parts
       },

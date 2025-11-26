@@ -119,7 +119,7 @@ const summarizeText = async (text: string): Promise<string> => {
   const prompt = `Eres un asistente para registros clínicos personales. Resume en español el siguiente mensaje en máximo 6 viñetas con hallazgos y próximos pasos:\n\n"""${text}"""`;
 
   const result = await genAI.models.generateContent({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-1.5-flash-001',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   });
   const summary = result.text;
@@ -133,7 +133,7 @@ const describeImage = async (buffer: Buffer, mimeType: string): Promise<string> 
     'Analiza la imagen adjunta y devuelve en español un resumen breve y los hallazgos médicos relevantes. Añade posibles próximos pasos.';
 
   const result = await genAI.models.generateContent({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-1.5-flash-001',
     contents: [
       {
         role: 'user',
