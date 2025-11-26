@@ -46,6 +46,9 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
       'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
     },
+    // Solo exponer variables VITE_ relacionadas con Google para evitar que otras claves
+    // (p. ej., API keys sensibles) queden incrustadas en el bundle de cliente.
+    envPrefix: ['VITE_GOOGLE_'],
     server: {
       host: true,
     },
