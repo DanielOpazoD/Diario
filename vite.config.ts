@@ -9,8 +9,10 @@ export default defineConfig(({ mode }) => {
 
   // CORRECCIÓN: Buscamos explícitamente en process.env para capturar la variable de Netlify
   const rawKey =
+    env.VITE_GOOGLE_API_KEY ||
     env.VITE_API_KEY ||
     env.GEMINI_API_KEY ||
+    process.env.VITE_GOOGLE_API_KEY ||
     process.env.GEMINI_API_KEY || // <--- ESTA ES LA LÍNEA CLAVE QUE FALTA
     process.env.VITE_API_KEY ||
     '';
@@ -64,7 +66,9 @@ export default defineConfig(({ mode }) => {
     define: {
       // Inyección de la variable en el código del navegador
       'process.env.API_KEY': JSON.stringify(encodedKey),
+      'process.env.VITE_GOOGLE_API_KEY': JSON.stringify(encodedKey),
       'import.meta.env.VITE_API_KEY': JSON.stringify(encodedKey),
+      'import.meta.env.VITE_GOOGLE_API_KEY': JSON.stringify(encodedKey),
       'process.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
       'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
     },
