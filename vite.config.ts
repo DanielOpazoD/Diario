@@ -9,9 +9,17 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '');
 
   // Obfuscate API Key to avoid Netlify build secret scanner (AIza...)
-  const rawKey = env.VITE_API_KEY || env.API_KEY || env.GEMINI_API_KEY || '';
+  const rawKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.VITE_API_KEY ||
+    env.GEMINI_API_KEY ||
+    env.VITE_API_KEY ||
+    env.API_KEY ||
+    '';
+
   const encodedKey = Buffer.from(rawKey).toString('base64');
-  const googleClientId = env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || '';
+  const googleClientId =
+    process.env.GOOGLE_CLIENT_ID || env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || '';
 
   return {
     plugins: [
