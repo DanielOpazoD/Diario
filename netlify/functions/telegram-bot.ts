@@ -7,22 +7,25 @@ import { Readable } from 'node:stream';
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const geminiApiKey = process.env.GEMINI_API_KEY;
 
-let serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-let serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+const clientId = process.env.GOOGLE_CLIENT_ID;
+const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
-if ((!serviceAccountEmail || !serviceAccountKey) && process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
-  try {
-    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
-    serviceAccountEmail = serviceAccountEmail || credentials.client_email;
-    serviceAccountKey = serviceAccountKey || credentials.private_key;
-  } catch (e) {
-    console.error('Error al parsear GOOGLE_SERVICE_ACCOUNT_JSON:', e);
-  }
+// Validación básica
+if (!clientId || !clientSecret || !refreshToken) {
+  console.warn('Faltan credenciales OAuth de Google (ID, Secret o Refresh Token).');
 }
 
-if (serviceAccountKey) {
-  serviceAccountKey = serviceAccountKey.replace(/\\n/g, '\n');
+// Configurar cliente OAuth2
+const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+if (refreshToken) {
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
 }
+
+// Inicializar Drive con el cliente OAuth
+const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+const INBOX_FOLDER_NAME = 'MediDiario_Inbox';
 
 if (!token) {
   console.warn('TELEGRAM_BOT_TOKEN is not set; Telegram bot updates will fail.');
@@ -32,24 +35,6 @@ if (!geminiApiKey) {
   console.warn('GEMINI_API_KEY is not set; Gemini calls will be skipped.');
 }
 
-if (!serviceAccountEmail || !serviceAccountKey) {
-  console.warn('Google Drive credentials are not set; Drive uploads will be skipped.');
-}
-
-const INBOX_FOLDER_NAME = 'MediDiario_Inbox';
-
-const driveAuth = serviceAccountEmail && serviceAccountKey
-  ? new google.auth.GoogleAuth({
-      credentials: {
-        client_email: serviceAccountEmail,
-        private_key: serviceAccountKey,
-      },
-      scopes: ['https://www.googleapis.com/auth/drive.file'],
-    })
-  : null;
-
-const drive = driveAuth ? google.drive({ version: 'v3', auth: driveAuth }) : null;
-
 const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 
 const bot = token ? new Telegraf(token) : null;
@@ -57,17 +42,11 @@ let handlersRegistered = false;
 let cachedInboxFolderId: string | null = null;
 
 const ensureInboxFolder = async (): Promise<string> => {
-  if (!drive) throw new Error('Google Drive no está configurado');
+  if (process.env.GOOGLE_DRIVE_INBOX_ID) return process.env.GOOGLE_DRIVE_INBOX_ID;
+
+  // Si no hay ID, intentar buscar o crear (ahora sí funcionará porque es cuenta de usuario)
   if (cachedInboxFolderId) return cachedInboxFolderId;
-
-  // 1. Si existe un ID configurado manualmente en Netlify, úsalo directamente.
-  // Esto evita que el bot intente crear carpetas y consuma su cuota inexistente.
-  if (process.env.GOOGLE_DRIVE_INBOX_ID) {
-    cachedInboxFolderId = process.env.GOOGLE_DRIVE_INBOX_ID;
-    return cachedInboxFolderId;
-  }
-
-  // 2. Fallback: Buscar por nombre (Lógica antigua)
+  // ... (Mantén tu lógica de búsqueda por nombre INBOX_FOLDER_NAME aquí) ...
   const existing = await drive.files.list({
     q: `name = '${INBOX_FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
     fields: 'files(id, name)',
@@ -79,7 +58,6 @@ const ensureInboxFolder = async (): Promise<string> => {
     if (cachedInboxFolderId) return cachedInboxFolderId;
   }
 
-  // 3. Último recurso: Intentar crearla (probablemente fallará por cuota, pero se mantiene como fallback)
   const created = await drive.files.create({
     requestBody: {
       name: INBOX_FOLDER_NAME,
@@ -196,33 +174,14 @@ const setupBotHandlers = () => {
 
   bot.command('debug', (ctx) => {
     const folderId = process.env.GOOGLE_DRIVE_INBOX_ID;
-    const saJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-
-    let jsonStatus = '❌ FALTA';
-    if (saJson) {
-      try {
-        JSON.parse(saJson);
-        jsonStatus = '✅ OK (Válido)';
-      } catch (error) {
-        jsonStatus = '⚠️ ERROR DE FORMATO (El JSON está roto)';
-      }
-    }
-
-    const emailStatus = serviceAccountEmail
-      ? `✅ Detectado (${serviceAccountEmail})`
-      : '❌ FALTA';
-
-    const keyStatus = serviceAccountKey ? '✅ Detectada' : '❌ FALTA';
+    const oauthStatus = clientId && clientSecret && refreshToken ? '✅ Detectadas' : '⚠️ Incompletas';
     const geminiStatus = geminiApiKey ? '✅ Detectada' : '⚠️ No configurada';
 
     ctx.reply(
       `🕵️‍♂️ <b>Diagnóstico de Netlify</b>\n\n` +
         `1. <b>Carpeta Drive (ID):</b> ${folderId ? `✅ Detectada (${folderId.substring(0, 4)}...)` : '⚠️ No configurada (se usa MediDiario_Inbox)'}` +
-        `\n2. <b>Credencial Google (JSON):</b> ${jsonStatus}` +
-        `\n3. <b>Correo de servicio:</b> ${emailStatus}` +
-        `\n4. <b>Llave privada:</b> ${keyStatus}` +
-        `\n5. <b>Clave Gemini:</b> ${geminiStatus}` +
-        `\n   - Largo del JSON: ${saJson ? saJson.length : 0} caracteres\n\n` +
+        `\n2. <b>OAuth Google:</b> ${oauthStatus}` +
+        `\n3. <b>Clave Gemini:</b> ${geminiStatus}\n\n` +
         `<i>Si ves una ❌, ve a Netlify > Site Settings > Environment Variables y corrígelo.</i>`,
       { parse_mode: 'HTML' },
     );
