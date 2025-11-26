@@ -96,14 +96,14 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
                   </span>
                 )}
               </div>
-            </div>
 
-            {patient.diagnosis && (
-              <p className="text-xs text-gray-600 dark:text-gray-300 truncate pr-2 mt-0.5 flex items-center gap-1">
-                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0"></span>
-                {patient.diagnosis}
-              </p>
-            )}
+              {patient.diagnosis && (
+                <div className="flex items-center gap-1 min-w-0 text-xs text-gray-600 dark:text-gray-300">
+                  <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0"></span>
+                  <span className="truncate pr-2">{patient.diagnosis}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-3 ml-auto flex-shrink-0 pl-1">
