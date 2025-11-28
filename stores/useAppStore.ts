@@ -45,6 +45,14 @@ const initialRecords = loadRecordsFromLocal();
 const initialTasks = loadGeneralTasksFromLocal();
 const initialBookmarks = loadBookmarksFromLocal();
 const initialBookmarkCategories = loadBookmarkCategoriesFromLocal();
+
+const withDefaultBookmarkCategories = (categories: ReturnType<typeof loadBookmarkCategoriesFromLocal>) => {
+  const missingDefaults = defaultBookmarkCategories.filter(
+    (defaultCategory) => !categories.some((category) => category.id === defaultCategory.id)
+  );
+
+  return [...categories, ...missingDefaults];
+};
 const storedUser = localStorage.getItem('medidiario_user');
 const storedTheme = localStorage.getItem('medidiario_theme') as 'light' | 'dark';
 const storedSecurity = localStorage.getItem('medidiario_security');
@@ -120,7 +128,10 @@ const useAppStore = create<AppStore>()(
       records: initialRecords,
       generalTasks: initialTasks,
       bookmarks: initialBookmarks,
-      bookmarkCategories: initialBookmarkCategories.length > 0 ? initialBookmarkCategories : defaultBookmarkCategories,
+      bookmarkCategories:
+        initialBookmarkCategories.length > 0
+          ? withDefaultBookmarkCategories(initialBookmarkCategories)
+          : defaultBookmarkCategories,
       user: storedUser ? JSON.parse(storedUser) : null,
       theme: storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
       patientTypes: getInitialPatientTypes(),

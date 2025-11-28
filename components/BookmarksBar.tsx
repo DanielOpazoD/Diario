@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Bookmark as BookmarkIcon, Plus } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Bookmark as BookmarkIcon, Grid, Plus } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
 import BookmarkIconGraphic from './BookmarkIcon';
 
@@ -9,6 +9,17 @@ interface BookmarksBarProps {
 
 const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
   const bookmarks = useAppStore((state) => state.bookmarks);
+  const bookmarkCategories = useAppStore((state) => state.bookmarkCategories);
+
+  const [isAppsMenuOpen, setIsAppsMenuOpen] = useState(false);
+  const appsMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const appsCategoryId = useMemo(() => {
+    const appsCategory = bookmarkCategories.find(
+      (category) => category.id === 'apps' || category.name.toLowerCase() === 'aplicaciones'
+    );
+    return appsCategory?.id;
+  }, [bookmarkCategories]);
 
   const favoriteBookmarks = useMemo(
     () =>
@@ -17,6 +28,28 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
         .sort((a, b) => a.order - b.order),
     [bookmarks]
   );
+
+  const applicationBookmarks = useMemo(() => {
+    if (!appsCategoryId) return [];
+
+    return [...bookmarks]
+      .filter((bookmark) => (bookmark.categoryId || 'default') === appsCategoryId)
+      .sort((a, b) => a.order - b.order);
+  }, [appsCategoryId, bookmarks]);
+
+  useEffect(() => {
+    if (!isAppsMenuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!appsMenuRef.current) return;
+      if (!appsMenuRef.current.contains(event.target as Node)) {
+        setIsAppsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isAppsMenuOpen]);
 
   return (
     <div
@@ -47,6 +80,45 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
             </span>
           </a>
         ))}
+      </div>
+
+      <div className="relative" ref={appsMenuRef}>
+        <button
+          onClick={() => setIsAppsMenuOpen((prev) => !prev)}
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0"
+          title="Aplicaciones"
+          aria-haspopup="menu"
+          aria-expanded={isAppsMenuOpen}
+        >
+          <Grid className="w-4 h-4" />
+        </button>
+
+        {isAppsMenuOpen && (
+          <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden z-50">
+            <div className="py-1 max-h-72 overflow-y-auto">
+              {applicationBookmarks.length === 0 ? (
+                <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No hay aplicaciones guardadas</p>
+              ) : (
+                applicationBookmarks.map((bookmark) => (
+                  <a
+                    key={bookmark.id}
+                    href={bookmark.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsAppsMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <BookmarkIconGraphic bookmark={bookmark} sizeClass="w-4 h-4" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{bookmark.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{bookmark.url}</p>
+                    </div>
+                  </a>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <button
