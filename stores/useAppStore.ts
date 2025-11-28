@@ -5,7 +5,7 @@ import { createTaskSlice, TaskSlice } from './slices/taskSlice';
 import { createUserSlice, UserSlice } from './slices/userSlice';
 import { createSettingsSlice, SettingsSlice, defaultPatientTypes } from './slices/settingsSlice';
 import { BookmarksSlice, createBookmarkSlice, defaultBookmarkCategories } from './slices/bookmarkSlice';
-import { SecuritySettings, ToastMessage } from '../types';
+import { BookmarkCategory, SecuritySettings, ToastMessage } from '../types';
 import {
   loadRecordsFromLocal,
   loadGeneralTasksFromLocal,
@@ -45,6 +45,18 @@ const initialRecords = loadRecordsFromLocal();
 const initialTasks = loadGeneralTasksFromLocal();
 const initialBookmarks = loadBookmarksFromLocal();
 const initialBookmarkCategories = loadBookmarkCategoriesFromLocal();
+const ensureDefaultBookmarkCategories = (categories: BookmarkCategory[]) => {
+  const ids = new Set(categories.map((category) => category.id));
+  const merged = [...categories];
+
+  defaultBookmarkCategories.forEach((category) => {
+    if (!ids.has(category.id)) {
+      merged.push(category);
+    }
+  });
+
+  return merged;
+};
 const storedUser = localStorage.getItem('medidiario_user');
 const storedTheme = localStorage.getItem('medidiario_theme') as 'light' | 'dark';
 const storedSecurity = localStorage.getItem('medidiario_security');
@@ -120,7 +132,10 @@ const useAppStore = create<AppStore>()(
       records: initialRecords,
       generalTasks: initialTasks,
       bookmarks: initialBookmarks,
-      bookmarkCategories: initialBookmarkCategories.length > 0 ? initialBookmarkCategories : defaultBookmarkCategories,
+      bookmarkCategories:
+        initialBookmarkCategories.length > 0
+          ? ensureDefaultBookmarkCategories(initialBookmarkCategories)
+          : defaultBookmarkCategories,
       user: storedUser ? JSON.parse(storedUser) : null,
       theme: storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
       patientTypes: getInitialPatientTypes(),

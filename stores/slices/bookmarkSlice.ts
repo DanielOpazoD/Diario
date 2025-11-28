@@ -17,6 +17,7 @@ export interface BookmarksSlice {
 
 export const defaultBookmarkCategories: BookmarkCategory[] = [
   { id: 'default', name: 'General', icon: 'Bookmark', color: 'blue' },
+  { id: 'apps', name: 'Aplicaciones', icon: 'Apps', color: 'indigo' },
 ];
 
 export const createBookmarkSlice: StateCreator<BookmarksSlice> = (set) => ({
