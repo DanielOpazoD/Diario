@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import {
   Upload,
   File,
@@ -12,9 +12,10 @@ import {
   Grid,
   List,
   Star,
+  RefreshCw,
 } from 'lucide-react';
 import { AttachedFile } from '../types';
-import { uploadFileForPatient, deleteFileFromDrive } from '../services/googleService';
+import { uploadFileForPatient, deleteFileFromDrive, fetchPatientFolderFiles } from '../services/googleService';
 import AIAttachmentAssistant from './AIAttachmentAssistant';
 import FilePreviewModal from './FilePreviewModal';
 
@@ -41,7 +42,10 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [selectedFile, setSelectedFile] = useState<AttachedFile | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [showStarredOnly, setShowStarredOnly] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollingRef = useRef<number | null>(null);
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -158,6 +162,61 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
   const formatDate = (timestamp: number) => new Date(timestamp).toLocaleDateString();
 
+  const syncFromDrive = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
+
+      if (!patientRut || !patientName) {
+        if (!silent) addToast('error', 'Completa el Nombre y RUT del paciente para sincronizar.');
+        return;
+      }
+
+      const token = sessionStorage.getItem('google_access_token');
+      if (!token) {
+        if (!silent) addToast('error', 'Conecta tu cuenta de Google para leer la carpeta de Drive.');
+        return;
+      }
+
+      setIsSyncing(true);
+      try {
+        const remoteFiles = await fetchPatientFolderFiles(token, patientRut, patientName);
+        const localById = new Map(files.map((f) => [f.id, f]));
+        const remoteIds = new Set(remoteFiles.map((f) => f.id));
+
+        const merged: AttachedFile[] = remoteFiles.map((remote) => {
+          const local = localById.get(remote.id);
+          // Preserve local metadata (tags, descripciones, estrellas) pero actualiza datos base desde Drive
+          return local ? { ...local, ...remote } : remote;
+        });
+
+        const newCount = merged.filter((file) => !localById.has(file.id)).length;
+        const removedCount = files.filter((file) => !remoteIds.has(file.id)).length;
+
+        onFilesChange(merged);
+        setLastSyncedAt(Date.now());
+
+        if (!silent) {
+          if (newCount > 0) {
+            addToast('success', `${newCount} archivo(s) nuevos sincronizados desde Drive.`);
+          }
+          if (removedCount > 0) {
+            addToast('info', `${removedCount} archivo(s) ya no están en Drive y se ocultaron de la lista.`);
+          }
+          if (newCount === 0 && removedCount === 0) {
+            addToast('info', 'Sin cambios nuevos en la carpeta de Drive.');
+          }
+        }
+      } catch (error: any) {
+        if (!silent) {
+          addToast('error', error?.message || 'No se pudo sincronizar con Drive.');
+        }
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [patientRut, patientName, files, onFilesChange, addToast]
+  );
+
   const handleSelectFile = (file: AttachedFile) => {
     setSelectedFile(file);
   };
@@ -197,6 +256,27 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
       setSelectedFile(filteredFiles[0]);
     }
   }, [filteredFiles, selectedFile]);
+
+  useEffect(() => {
+    if (pollingRef.current) {
+      window.clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+
+    const token = sessionStorage.getItem('google_access_token');
+    if (!token || !patientRut || !patientName) return;
+
+    // Sincroniza una vez al montar y luego cada 5 minutos para detectar nuevos archivos en Drive
+    syncFromDrive({ silent: true });
+    pollingRef.current = window.setInterval(() => syncFromDrive({ silent: true }), 5 * 60 * 1000);
+
+    return () => {
+      if (pollingRef.current) {
+        window.clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [patientRut, patientName, syncFromDrive]);
 
   const renderGrid = (items: AttachedFile[]) => (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -303,7 +383,19 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
             <h3 className="font-bold text-lg text-gray-900 dark:text-white">Archivos Adjuntos ({files.length})</h3>
             <p className="text-xs text-gray-500">Previsualiza y organiza rápidamente</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <button
+              onClick={() => syncFromDrive()}
+              disabled={isSyncing}
+              className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs font-semibold transition-all shadow-sm ${
+                isSyncing
+                  ? 'bg-blue-50 border-blue-200 text-blue-600'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-blue-400'
+              }`}
+            >
+              {isSyncing ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              {isSyncing ? 'Sincronizando…' : 'Sincronizar Drive'}
+            </button>
             {files.length > 0 && (
               <button
                 onClick={() => setIsAIPanelOpen(true)}
@@ -343,6 +435,12 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
             <Star className={`w-4 h-4 ${showStarredOnly ? 'fill-yellow-400 text-yellow-500' : 'text-gray-400'}`} />
             Solo destacados
           </button>
+          {lastSyncedAt && (
+            <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
+              <RefreshCw className="w-3 h-3" />
+              Actualizado a las {new Date(lastSyncedAt).toLocaleTimeString()}
+            </span>
+          )}
         </div>
 
       <div className="flex-1 grid lg:grid-cols-3 gap-4 min-h-0">
