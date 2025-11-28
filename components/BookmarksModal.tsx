@@ -44,6 +44,9 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
   const [form, setForm] = useState<BookmarkFormState>(defaultFormState);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(editingBookmarkId || null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [isTouchDragging, setIsTouchDragging] = useState(false);
 
   const sortedBookmarks = useMemo(
     () => [...bookmarks].sort((a, b) => a.order - b.order),
@@ -129,6 +132,78 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
     const [removed] = newOrder.splice(index, 1);
     newOrder.splice(targetIndex, 0, removed);
     reorderBookmarks(newOrder);
+  };
+
+  const applyReorder = (sourceId: string, targetId: string) => {
+    if (sourceId === targetId) return;
+
+    const currentOrder = [...sortedBookmarks];
+    const sourceIndex = currentOrder.findIndex((bookmark) => bookmark.id === sourceId);
+    const targetIndex = currentOrder.findIndex((bookmark) => bookmark.id === targetId);
+
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    const [removed] = currentOrder.splice(sourceIndex, 1);
+    currentOrder.splice(targetIndex, 0, removed);
+    reorderBookmarks(currentOrder);
+  };
+
+  const handleDragStart = (event: React.DragEvent<HTMLDivElement>, id: string) => {
+    setDraggingId(id);
+    setDragOverId(id);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', id);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>, id: string) => {
+    event.preventDefault();
+    if (!draggingId) {
+      const source = event.dataTransfer.getData('text/plain');
+      if (source) setDraggingId(source);
+    }
+    if (dragOverId !== id) setDragOverId(id);
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>, id: string) => {
+    event.preventDefault();
+    const sourceId = draggingId || event.dataTransfer.getData('text/plain');
+    if (sourceId) applyReorder(sourceId, id);
+    setDraggingId(null);
+    setDragOverId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingId(null);
+    setDragOverId(null);
+  };
+
+  const handleTouchStart = (id: string) => {
+    setIsTouchDragging(true);
+    setDraggingId(id);
+    setDragOverId(id);
+  };
+
+  const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!isTouchDragging) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    const droppable = element?.closest('[data-bookmark-id]') as HTMLElement | null;
+    const targetId = droppable?.dataset.bookmarkId;
+    if (targetId && targetId !== dragOverId) {
+      event.preventDefault();
+      setDragOverId(targetId);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (draggingId && dragOverId) {
+      applyReorder(draggingId, dragOverId);
+    }
+    setIsTouchDragging(false);
+    setDraggingId(null);
+    setDragOverId(null);
   };
 
   const handleAddCategory = () => {
@@ -287,76 +362,96 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
 
             <div className="space-y-3">
               {sortedBookmarks.map((bookmark) => (
-                <div
-                  key={bookmark.id}
-                  className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/50"
-                >
-                  <div className="flex items-center gap-2 w-10 justify-center text-gray-400">
-                    <GripVertical className="w-4 h-4" />
-                    {bookmark.isFavorite && <Star className="w-4 h-4 text-amber-400 fill-amber-300/60" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <BookmarkIconGraphic bookmark={bookmark} sizeClass="w-5 h-5" />
-                        <div>
-                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                            {bookmark.title}
-                          </p>
-                          <p className="text-xs text-blue-600 dark:text-blue-300 truncate">{bookmark.url}</p>
+                <React.Fragment key={bookmark.id}>
+                  {dragOverId === bookmark.id && draggingId !== bookmark.id && (
+                    <div className="h-2 rounded-lg border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-900/20 transition-colors" />
+                  )}
+                  <div
+                    data-bookmark-id={bookmark.id}
+                    className={`flex items-start gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/50 transition-shadow ${
+                      draggingId === bookmark.id
+                        ? 'opacity-60 shadow-lg cursor-grabbing'
+                        : 'hover:shadow-md cursor-grab'
+                    }`}
+                    draggable={!isTouchDragging}
+                    onDragStart={(event) => handleDragStart(event, bookmark.id)}
+                    onDragOver={(event) => handleDragOver(event, bookmark.id)}
+                    onDrop={(event) => handleDrop(event, bookmark.id)}
+                    onDragEnd={handleDragEnd}
+                    onTouchStart={() => handleTouchStart(bookmark.id)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                  >
+                    <div className="flex items-center gap-2 w-10 justify-center text-gray-400">
+                      <GripVertical className="w-4 h-4" />
+                      {bookmark.isFavorite && <Star className="w-4 h-4 text-amber-400 fill-amber-300/60" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <BookmarkIconGraphic bookmark={bookmark} sizeClass="w-5 h-5" />
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                              {bookmark.title}
+                            </p>
+                            <p className="text-xs text-blue-600 dark:text-blue-300 truncate">{bookmark.url}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => moveBookmark(bookmark.id, 'up')}
+                            className="text-xs px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            onClick={() => moveBookmark(bookmark.id, 'down')}
+                            className="text-xs px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                          >
+                            ↓
+                          </button>
+                          <button
+                            onClick={() => window.open(bookmark.url, '_blank', 'noopener,noreferrer')}
+                            className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingId(bookmark.id);
+                              setForm({
+                                title: bookmark.title,
+                                url: bookmark.url,
+                                icon: bookmark.icon || '',
+                                note: bookmark.note || '',
+                                categoryId: bookmark.categoryId || 'default',
+                                isFavorite: !!bookmark.isFavorite,
+                              });
+                              setError(null);
+                            }}
+                            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                            title="Editar"
+                          >
+                            <BookmarkPlus className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteBookmark(bookmark.id)}
+                            className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => moveBookmark(bookmark.id, 'up')}
-                          className="text-xs px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          onClick={() => moveBookmark(bookmark.id, 'down')}
-                          className="text-xs px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                        >
-                          ↓
-                        </button>
-                        <button
-                          onClick={() => window.open(bookmark.url, '_blank', 'noopener,noreferrer')}
-                          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingId(bookmark.id);
-                            setForm({
-                              title: bookmark.title,
-                              url: bookmark.url,
-                              icon: bookmark.icon || '',
-                              note: bookmark.note || '',
-                              categoryId: bookmark.categoryId || 'default',
-                              isFavorite: !!bookmark.isFavorite,
-                            });
-                            setError(null);
-                          }}
-                          className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                          title="Editar"
-                        >
-                          <BookmarkPlus className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteBookmark(bookmark.id)}
-                          className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {bookmark.note && (
+                        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{bookmark.note}</p>
+                      )}
                     </div>
-                    {bookmark.note && (
-                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{bookmark.note}</p>
-                    )}
                   </div>
-                </div>
+                </React.Fragment>
               ))}
+              {draggingId && dragOverId === null && (
+                <div className="h-2 rounded-lg border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-900/20" />
+              )}
             </div>
           </div>
         </div>
