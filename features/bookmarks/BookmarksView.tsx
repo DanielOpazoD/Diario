@@ -79,8 +79,15 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
   };
 
   const ensureDefaultCategory = (categories: typeof bookmarkCategories) => {
-    const hasDefault = categories.some((category) => category.id === 'default');
-    return hasDefault ? categories : [defaultBookmarkCategories[0], ...categories];
+    const categoryMap = new Map(categories.map((category) => [category.id, category]));
+
+    defaultBookmarkCategories.forEach((defaultCategory) => {
+      if (!categoryMap.has(defaultCategory.id)) {
+        categoryMap.set(defaultCategory.id, defaultCategory);
+      }
+    });
+
+    return Array.from(categoryMap.values());
   };
 
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
