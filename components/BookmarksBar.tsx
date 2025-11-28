@@ -71,53 +71,55 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
         ))}
       </div>
 
-      <div className="relative" ref={appsDropdownRef}>
-        <button
-          onClick={() => setIsAppsOpen((prev) => !prev)}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0"
-          title="Aplicaciones"
-          aria-expanded={isAppsOpen}
-          aria-haspopup="menu"
-        >
-          <LayoutGrid className="w-4 h-4" />
-        </button>
-
-        {isAppsOpen && (
-          <div
-            className="absolute right-0 mt-2 w-64 max-h-96 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg py-2 z-50"
-            role="menu"
+      <div className="flex items-center gap-1.5">
+        <div className="relative" ref={appsDropdownRef}>
+          <button
+            onClick={() => setIsAppsOpen((prev) => !prev)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0"
+            title="Aplicaciones"
+            aria-expanded={isAppsOpen}
+            aria-haspopup="menu"
           >
-            {applicationBookmarks.length === 0 && (
-              <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">No hay aplicaciones guardadas.</p>
-            )}
-            {applicationBookmarks.map((bookmark) => (
-              <a
-                key={bookmark.id}
-                href={bookmark.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                role="menuitem"
-                onClick={() => setIsAppsOpen(false)}
-              >
-                <BookmarkIconGraphic bookmark={bookmark} sizeClass="w-5 h-5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{bookmark.title}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{bookmark.url}</p>
-                </div>
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
+            <LayoutGrid className="w-4 h-4" />
+          </button>
 
-      <button
-        onClick={onOpenManager}
-        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0"
-        title="Gestionar marcadores"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
+          {isAppsOpen && (
+            <div
+              className="absolute right-0 mt-2 w-64 max-h-96 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg py-2 z-50"
+              role="menu"
+            >
+              {applicationBookmarks.length === 0 && (
+                <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">No hay aplicaciones guardadas.</p>
+              )}
+              {applicationBookmarks.map((bookmark) => (
+                <a
+                  key={bookmark.id}
+                  href={bookmark.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  role="menuitem"
+                  onClick={() => setIsAppsOpen(false)}
+                >
+                  <BookmarkIconGraphic bookmark={bookmark} sizeClass="w-5 h-5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{bookmark.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{bookmark.url}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={onOpenManager}
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0"
+          title="Gestionar marcadores"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 };

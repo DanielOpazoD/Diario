@@ -31,12 +31,12 @@ const getFaviconUrl = (url: string) => {
 };
 
 const BookmarkIcon: React.FC<BookmarkIconProps> = ({ bookmark, sizeClass = 'w-6 h-6', className }) => {
-  const [useCustomIcon, setUseCustomIcon] = useState(false);
+  const [customIconFailed, setCustomIconFailed] = useState(false);
 
   const faviconUrl = useMemo(() => getFaviconUrl(bookmark.url), [bookmark.url]);
   const customIcon = bookmark.icon?.trim();
 
-  if ((useCustomIcon || !faviconUrl) && customIcon) {
+  if (customIcon && !customIconFailed) {
     if (customIcon.startsWith('http')) {
       return (
         <img
@@ -44,6 +44,7 @@ const BookmarkIcon: React.FC<BookmarkIconProps> = ({ bookmark, sizeClass = 'w-6 
           alt=""
           className={`${sizeClass} rounded ${className || ''}`.trim()}
           loading="lazy"
+          onError={() => setCustomIconFailed(true)}
         />
       );
     }
@@ -55,27 +56,26 @@ const BookmarkIcon: React.FC<BookmarkIconProps> = ({ bookmark, sizeClass = 'w-6 
     );
   }
 
-  if (!faviconUrl) {
+  if (faviconUrl) {
     return (
-      <div
-        className={`flex items-center justify-center ${sizeClass} rounded bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-300 ${
-          className || ''
-        }`.trim()}
-        aria-hidden
-      >
-        🔖
-      </div>
+      <img
+        src={faviconUrl}
+        alt=""
+        className={`${sizeClass} rounded ${className || ''}`.trim()}
+        loading="lazy"
+      />
     );
   }
 
   return (
-    <img
-      src={faviconUrl}
-      alt=""
-      className={`${sizeClass} rounded ${className || ''}`.trim()}
-      loading="lazy"
-      onError={() => setUseCustomIcon(true)}
-    />
+    <div
+      className={`flex items-center justify-center ${sizeClass} rounded bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-300 ${
+        className || ''
+      }`.trim()}
+      aria-hidden
+    >
+      🔖
+    </div>
   );
 };
 
