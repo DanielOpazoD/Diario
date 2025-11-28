@@ -139,7 +139,8 @@ const AppContent: React.FC = () => {
         ...p,
         id: crypto.randomUUID(),
         createdAt: Date.now(),
-        pendingTasks: p.pendingTasks || []
+        pendingTasks: p.pendingTasks || [],
+        driveFolderId: p.driveFolderId || null,
       };
       addPatient(newPatient);
     });

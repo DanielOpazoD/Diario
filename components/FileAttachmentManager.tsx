@@ -12,9 +12,10 @@ import {
   Grid,
   List,
   Star,
+  RefreshCw,
 } from 'lucide-react';
 import { AttachedFile } from '../types';
-import { uploadFileForPatient, deleteFileFromDrive } from '../services/googleService';
+import { uploadFileForPatient, deleteFileFromDrive, listPatientAttachments } from '../services/googleService';
 import AIAttachmentAssistant from './AIAttachmentAssistant';
 import FilePreviewModal from './FilePreviewModal';
 
@@ -22,7 +23,9 @@ interface FileAttachmentManagerProps {
   files: AttachedFile[];
   patientRut: string;
   patientName: string;
+  driveFolderId?: string | null;
   onFilesChange: (files: AttachedFile[]) => void;
+  onDriveFolderIdChange?: (folderId: string) => void;
   addToast: (type: 'success' | 'error' | 'info', msg: string) => void;
 }
 
@@ -30,7 +33,9 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   files,
   patientRut,
   patientName,
+  driveFolderId,
   onFilesChange,
+  onDriveFolderIdChange,
   addToast,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -41,6 +46,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [selectedFile, setSelectedFile] = useState<AttachedFile | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [showStarredOnly, setShowStarredOnly] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -88,7 +94,17 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
       }
 
       try {
-        const attachedFile = await uploadFileForPatient(file, patientRut, patientName, token);
+        const { file: attachedFile, folderId } = await uploadFileForPatient(
+          file,
+          patientRut,
+          patientName,
+          token,
+          driveFolderId,
+        );
+        if (folderId && folderId !== driveFolderId && onDriveFolderIdChange) {
+          onDriveFolderIdChange(folderId);
+        }
+
         newAttachments.push(attachedFile);
         successCount++;
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
@@ -171,6 +187,55 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const toggleStar = (file: AttachedFile, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     handleFileUpdate({ ...file, isStarred: !file.isStarred });
+  };
+
+  const refreshFromDrive = async () => {
+    const token = sessionStorage.getItem('google_access_token');
+    if (!token) {
+      addToast('error', 'Inicia sesión con Google para sincronizar.');
+      return;
+    }
+
+    if (!patientRut || !patientName) {
+      addToast('error', 'Completa el Nombre y RUT antes de sincronizar.');
+      return;
+    }
+
+    setIsRefreshing(true);
+    try {
+      const { attachments, folderId } = await listPatientAttachments(
+        token,
+        patientRut,
+        patientName,
+        driveFolderId,
+      );
+
+      const merged = attachments.map((attachment) => {
+        const existing = files.find((f) => f.id === attachment.id);
+        if (!existing) return attachment;
+
+        return {
+          ...attachment,
+          description: existing.description,
+          tags: existing.tags,
+          category: existing.category,
+          isStarred: existing.isStarred,
+        };
+      });
+
+      onFilesChange(merged);
+
+      if (folderId && folderId !== driveFolderId && onDriveFolderIdChange) {
+        onDriveFolderIdChange(folderId);
+      }
+
+      addToast('success', 'Adjuntos sincronizados con Drive');
+    } catch (error) {
+      console.error(error);
+      addToast('error', 'No se pudo sincronizar adjuntos');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const displayName = (name: string) => name.replace(/^\d{4}-\d{2}-\d{2}_/, '');
@@ -304,6 +369,14 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
             <p className="text-xs text-gray-500">Previsualiza y organiza rápidamente</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={refreshFromDrive}
+              disabled={isRefreshing || isUploading}
+              className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Sincronizando...' : 'Refrescar' }
+            </button>
             {files.length > 0 && (
               <button
                 onClick={() => setIsAIPanelOpen(true)}

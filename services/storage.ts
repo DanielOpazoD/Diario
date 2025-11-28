@@ -26,6 +26,7 @@ export const loadRecordsFromLocal = (): PatientRecord[] => {
     // This fixes the "Cannot read properties of undefined (reading 'map')" error
     return parsed.map((r: any) => ({
       ...r,
+      driveFolderId: r.driveFolderId || null,
       attachedFiles: Array.isArray(r.attachedFiles) ? r.attachedFiles : [],
       pendingTasks: Array.isArray(r.pendingTasks) ? r.pendingTasks : []
     }));
@@ -121,6 +122,7 @@ export const parseUploadedJson = (file: File): Promise<PatientRecord[]> => {
           // Ensure backward compatibility on imported data
           const cleaned = parsed.map((p: any) => ({
              ...p,
+             driveFolderId: p.driveFolderId || null,
              attachedFiles: Array.isArray(p.attachedFiles) ? p.attachedFiles : [],
              pendingTasks: Array.isArray(p.pendingTasks) ? p.pendingTasks : []
           }));

@@ -45,6 +45,7 @@ export interface PatientRecord {
   id: string;
   name: string;
   rut: string;
+  driveFolderId?: string | null;
   birthDate?: string; // YYYY-MM-DD
   gender?: string;
   date: string; // ISO String YYYY-MM-DD

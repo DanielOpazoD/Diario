@@ -102,6 +102,13 @@ export interface DriveEntry {
   modifiedTime?: string;
   size?: string;
   driveId?: string;
+  webViewLink?: string;
+  thumbnailLink?: string;
+}
+
+interface PatientFolderResolution {
+  folderId: string;
+  driveId?: string | null;
 }
 
 export const checkGoogleConfig = () => {
@@ -275,6 +282,41 @@ const findOrCreateFolder = async (folderName: string, accessToken: string, paren
   return createData.id;
 };
 
+const safePatientFolderName = (patientRut: string, patientName: string) =>
+  `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
+
+const resolvePatientFolder = async (
+  accessToken: string,
+  patientRut: string,
+  patientName: string,
+  existingFolderId?: string | null
+): Promise<PatientFolderResolution> => {
+  const rootId = await findOrCreateFolder("MediDiario", accessToken);
+  const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
+
+  if (existingFolderId) {
+    try {
+      const metadata = await getFolderMetadata(accessToken, existingFolderId);
+      return { folderId: metadata.id, driveId: metadata.driveId || null };
+    } catch (error) {
+      console.warn('Stored Drive folder unavailable, resolving by name', error);
+    }
+  }
+
+  const safeFolder = safePatientFolderName(patientRut, patientName);
+  const folderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
+
+  let driveId: string | null = null;
+  try {
+    const metadata = await getFolderMetadata(accessToken, folderId);
+    driveId = metadata.driveId || null;
+  } catch (err) {
+    // Non-blocking
+  }
+
+  return { folderId, driveId };
+};
+
 export const uploadFileToDrive = async (
   content: string,
   filename: string,
@@ -315,26 +357,28 @@ export const uploadFileToDrive = async (
   return await response.json();
 };
 
+export interface UploadResult {
+  file: AttachedFile;
+  folderId: string;
+  driveId?: string | null;
+}
+
 export const uploadFileForPatient = async (
-  file: File, 
-  patientRut: string, 
-  patientName: string, 
-  accessToken: string
-): Promise<AttachedFile> => {
-  // 1. Ensure Directory Structure: MediDiario/Pacientes/{RUT}-{Nombre}/
-  const rootId = await findOrCreateFolder("MediDiario", accessToken);
-  const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
-  
-  const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
-  const patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
+  file: File,
+  patientRut: string,
+  patientName: string,
+  accessToken: string,
+  existingFolderId?: string | null
+): Promise<UploadResult> => {
+  const { folderId, driveId } = await resolvePatientFolder(accessToken, patientRut, patientName, existingFolderId);
 
   // 2. Prepare Metadata
   const datePrefix = new Date().toISOString().split('T')[0];
   const fileName = `${datePrefix}_${file.name}`;
-  
+
   const metadata = {
     name: fileName,
-    parents: [patientFolderId]
+    parents: [folderId]
   };
 
   const form = new FormData();
@@ -355,7 +399,7 @@ export const uploadFileForPatient = async (
 
   const data = await response.json();
   
-  return {
+  const attached: AttachedFile = {
     id: data.id,
     name: data.name,
     mimeType: data.mimeType,
@@ -364,6 +408,8 @@ export const uploadFileForPatient = async (
     driveUrl: data.webViewLink,
     thumbnailLink: data.thumbnailLink
   };
+
+  return { file: attached, folderId, driveId };
 };
 
 export const deleteFileFromDrive = async (fileId: string, accessToken: string) => {
@@ -399,7 +445,7 @@ const buildListUrl = (parentId?: string, options?: ListOptions) => {
   ];
 
   searchUrl.searchParams.append('q', filters.join(' and '));
-  searchUrl.searchParams.append('fields', 'files(id, name, mimeType, parents, modifiedTime, size)');
+  searchUrl.searchParams.append('fields', 'files(id, name, mimeType, parents, modifiedTime, size, webViewLink, thumbnailLink, driveId)');
   searchUrl.searchParams.append('pageSize', '100');
   searchUrl.searchParams.append('supportsAllDrives', 'true');
   searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
@@ -473,6 +519,29 @@ export const listFolderEntries = async (accessToken: string, parentId?: string, 
   throw new Error('No se pudo obtener el listado de Drive');
 };
 
+const driveFileToAttachment = (file: DriveEntry): AttachedFile => ({
+  id: file.id,
+  name: file.name,
+  mimeType: file.mimeType,
+  size: file.size ? parseInt(file.size) : 0,
+  uploadedAt: file.modifiedTime ? new Date(file.modifiedTime).getTime() : Date.now(),
+  driveUrl: file.webViewLink || `https://drive.google.com/file/d/${file.id}/view`,
+  thumbnailLink: file.thumbnailLink,
+});
+
+export const listPatientAttachments = async (
+  accessToken: string,
+  patientRut: string,
+  patientName: string,
+  existingFolderId?: string | null
+) => {
+  const { folderId, driveId } = await resolvePatientFolder(accessToken, patientRut, patientName, existingFolderId);
+  const response = await listFolderEntries(accessToken, folderId, driveId);
+
+  const attachments = (response?.files || []).map(driveFileToAttachment);
+  return { attachments, folderId, driveId };
+};
+
 export const listFolders = async (accessToken: string, parentId?: string) => {
   const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
   const parentClause = buildParentClause(parentId);
@@ -496,7 +565,7 @@ export const listFolders = async (accessToken: string, parentId?: string) => {
   return await response.json();
 };
 
-export const getFolderMetadata = async (accessToken: string, folderId: string) => {
+export async function getFolderMetadata(accessToken: string, folderId: string) {
   const response = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents,driveId,mimeType&supportsAllDrives=true`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
@@ -506,7 +575,7 @@ export const getFolderMetadata = async (accessToken: string, folderId: string) =
   }
 
   return await response.json();
-};
+}
 
 export const downloadFile = async (fileId: string, accessToken: string) => {
   const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
