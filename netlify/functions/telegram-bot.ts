@@ -40,6 +40,10 @@ const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 const bot = token ? new Telegraf(token) : null;
 let handlersRegistered = false;
 let cachedInboxFolderId: string | null = null;
+const patientSessions = new Map<
+  number,
+  { step: 'waitingName' | 'waitingRut' | 'awaitingAttachments'; patientName?: string; patientRut?: string; dateKey?: string }
+>();
 
 const ensureInboxFolder = async (): Promise<string> => {
   if (process.env.GOOGLE_DRIVE_INBOX_ID) return process.env.GOOGLE_DRIVE_INBOX_ID;
@@ -71,6 +75,17 @@ const ensureInboxFolder = async (): Promise<string> => {
   return cachedInboxFolderId;
 };
 
+const findFileInInbox = async (filename: string): Promise<string | null> => {
+  const folderId = await ensureInboxFolder();
+  const existing = await drive.files.list({
+    q: `name = '${filename}' and '${folderId}' in parents and trashed = false`,
+    fields: 'files(id, name)',
+    pageSize: 1,
+  });
+
+  return existing.data.files?.[0]?.id ?? null;
+};
+
 const saveFileToDrive = async (
   filename: string,
   mimeType: string,
@@ -96,6 +111,39 @@ const saveFileToDrive = async (
   const fileId = created.data.id;
   if (!fileId) throw new Error('No se pudo guardar el archivo en Drive');
   return fileId;
+};
+
+const downloadFileContent = async (fileId: string): Promise<string> => {
+  const response = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'arraybuffer' });
+  return Buffer.from(response.data as ArrayBuffer).toString('utf-8');
+};
+
+const appendPatientEntry = async (name: string, rut: string, dateKey: string) => {
+  const filename = `pacientes-${dateKey}.txt`;
+  const existingId = await findFileInInbox(filename);
+  const newEntry = `${name}\n${rut}\n\n`;
+
+  if (!existingId) {
+    await saveFileToDrive(filename, 'text/plain', newEntry);
+    return;
+  }
+
+  const currentContent = await downloadFileContent(existingId);
+  const updated = `${currentContent}${newEntry}`;
+  await drive.files.update({
+    fileId: existingId,
+    media: { mimeType: 'text/plain', body: Readable.from([updated]) },
+    fields: 'id',
+  });
+};
+
+const validateRut = (rut: string): boolean => /^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-[0-9Kk]$/.test(rut.trim());
+const todayKey = () => new Date().toISOString().split('T')[0];
+
+const formatPatientTag = (patientName?: string, patientRut?: string) => {
+  if (!patientName && !patientRut) return '';
+  if (patientName && patientRut) return ` (Paciente: ${patientName} - ${patientRut})`;
+  return ` (Paciente: ${patientName ?? patientRut ?? ''})`;
 };
 
 const sanitizeFileName = (input: string) => input.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
@@ -132,21 +180,29 @@ const describeImage = async (buffer: Buffer, mimeType: string): Promise<string> 
   }
 };
 
-const handleTextMessage = async (ctx: Context) => {
+const handleTextMessage = async (
+  ctx: Context,
+  options?: { patientName?: string; patientRut?: string; dateKey?: string },
+) => {
   if (!('text' in (ctx.message ?? {}))) return;
   const text = (ctx.message as { text: string }).text;
   const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
   const author = ctx.from?.username ?? ctx.from?.first_name ?? 'usuario';
-  const filename = sanitizeFileName(`${timestamp}_${author}.txt`);
+  const patientSlug = options?.patientName ? `_${sanitizeFileName(options.patientName.replace(/\s+/g, '-'))}` : '';
+  const filename = sanitizeFileName(`${timestamp}_${author}${patientSlug}.txt`);
 
   const summary = await summarizeText(text);
-  const payload = `Mensaje original:\n${text}\n\nResumen Gemini:\n${summary}\n`;
+  const patientNote = formatPatientTag(options?.patientName, options?.patientRut);
+  const payload = `Mensaje original${patientNote}:\n${text}\n\nResumen Gemini:\n${summary}\n`;
 
   await saveFileToDrive(filename, 'text/plain', payload);
-  await ctx.reply('✅ Mensaje guardado en tu MediDiario_Inbox.');
+  await ctx.reply(`✅ Mensaje guardado en tu MediDiario_Inbox${patientNote}.`);
 };
 
-const handlePhotoMessage = async (ctx: Context) => {
+const handlePhotoMessage = async (
+  ctx: Context,
+  options?: { patientName?: string; patientRut?: string; dateKey?: string },
+) => {
   const photoSizes = (ctx.message as { photo?: { file_id: string }[] }).photo;
   if (!photoSizes?.length) return;
 
@@ -159,13 +215,41 @@ const handlePhotoMessage = async (ctx: Context) => {
 
   const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
   const author = ctx.from?.username ?? ctx.from?.first_name ?? 'usuario';
-  const baseName = sanitizeFileName(`${timestamp}_${author}`);
+  const patientSlug = options?.patientName ? `_${sanitizeFileName(options.patientName.replace(/\s+/g, '-'))}` : '';
+  const baseName = sanitizeFileName(`${timestamp}_${author}${patientSlug}`);
 
   const analysis = await describeImage(buffer, mimeType);
 
-  await saveFileToDrive(`${baseName}.txt`, 'text/plain', `Análisis Gemini:\n${analysis}\n`);
+  const patientNote = formatPatientTag(options?.patientName, options?.patientRut);
+  await saveFileToDrive(`${baseName}.txt`, 'text/plain', `Análisis Gemini${patientNote}:\n${analysis}\n`);
   await saveFileToDrive(`${baseName}.jpg`, mimeType, buffer);
-  await ctx.reply('📸 Foto guardada en MediDiario_Inbox con análisis de Gemini.');
+  const closingTip = options?.patientName ? ' Usa /omitir cuando termines de enviar archivos.' : '';
+  await ctx.reply(`📸 Foto guardada en MediDiario_Inbox con análisis de Gemini${patientNote}.${closingTip}`);
+};
+
+const handleDocumentMessage = async (
+  ctx: Context,
+  options?: { patientName?: string; patientRut?: string; dateKey?: string },
+) => {
+  const document = (ctx.message as { document?: { file_id: string; file_name?: string; mime_type?: string } }).document;
+  if (!document) return;
+
+  const fileLink = await ctx.telegram.getFileLink(document.file_id);
+  const response = await fetch(fileLink.href);
+  const mimeType = document.mime_type ?? response.headers.get('content-type') ?? 'application/octet-stream';
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
+  const author = ctx.from?.username ?? ctx.from?.first_name ?? 'usuario';
+  const originalName = document.file_name ? sanitizeFileName(document.file_name) : 'archivo';
+  const patientSlug = options?.patientName ? `_${sanitizeFileName(options.patientName.replace(/\s+/g, '-'))}` : '';
+  const filename = sanitizeFileName(`${timestamp}_${author}${patientSlug}_${originalName}`);
+  const patientNote = formatPatientTag(options?.patientName, options?.patientRut);
+
+  await saveFileToDrive(filename, mimeType, buffer);
+  const closingTip = options?.patientName ? ' Usa /omitir cuando termines de enviar archivos.' : '';
+  await ctx.reply(`📎 Archivo adjunto guardado en MediDiario_Inbox${patientNote}.${closingTip}`);
 };
 
 const setupBotHandlers = () => {
@@ -187,7 +271,69 @@ const setupBotHandlers = () => {
     );
   });
 
+  bot.command('nuevopaciente', (ctx) => {
+    const chatId = ctx.chat?.id;
+    if (!chatId) return;
+    patientSessions.set(chatId, { step: 'waitingName' });
+    ctx.reply('✍️ Envíame el Nombre y Apellidos del paciente (línea única). Usa /cancelar para salir.');
+  });
+
+  bot.command('cancelar', (ctx) => {
+    const chatId = ctx.chat?.id;
+    if (!chatId) return;
+    const hadSession = patientSessions.delete(chatId);
+    ctx.reply(hadSession ? '🚫 Sesión de paciente cancelada.' : 'No hay una sesión activa.');
+  });
+
+  bot.command('omitir', (ctx) => {
+    const chatId = ctx.chat?.id;
+    if (!chatId) return;
+    const hadSession = patientSessions.delete(chatId);
+    ctx.reply(hadSession ? '✅ Se cerró la sesión sin adjuntar más archivos.' : 'No hay sesión de adjuntos activa.');
+  });
+
   bot.on('text', async (ctx) => {
+    const chatId = ctx.chat?.id;
+    const text = (ctx.message as { text?: string }).text ?? '';
+    if (text.startsWith('/')) return; // Evitar doble manejo de comandos
+
+    const session = chatId ? patientSessions.get(chatId) : null;
+
+    if (session?.step === 'waitingName') {
+      patientSessions.set(chatId, { ...session, step: 'waitingRut', patientName: text.trim() });
+      await ctx.reply('📄 Ahora envíame el RUT en formato 12.345.678-9 (usa /cancelar para salir).');
+      return;
+    }
+
+    if (session?.step === 'waitingRut') {
+      if (!validateRut(text)) {
+        await ctx.reply('⚠️ El RUT no parece válido. Usa el formato 12.345.678-9.');
+        return;
+      }
+
+      const patientName = session.patientName ?? 'Paciente';
+      const patientRut = text.trim();
+      const dateKey = todayKey();
+      try {
+        await appendPatientEntry(patientName, patientRut, dateKey);
+        patientSessions.set(chatId, { step: 'awaitingAttachments', patientName, patientRut, dateKey });
+        await ctx.reply(
+          `✅ ${patientName} agregado al calendario del ${dateKey}.\n` +
+            '¿Quieres adjuntar archivos (fotos, PDF, Word, etc.) para este paciente? Envíalos ahora o escribe /omitir para terminar.',
+        );
+      } catch (error) {
+        console.error('Error guardando paciente', error);
+        await ctx.reply('❌ No pude guardar el paciente. Revisa las credenciales de Drive.');
+        patientSessions.delete(chatId);
+      }
+      return;
+    }
+
+    if (session?.step === 'awaitingAttachments') {
+      await ctx.reply('Estoy listo para recibir archivos (fotos, PDFs, Word). Si no necesitas subir más, usa /omitir.');
+      return;
+    }
+
     try {
       await handleTextMessage(ctx);
     } catch (error) {
@@ -197,17 +343,32 @@ const setupBotHandlers = () => {
   });
 
   bot.on('photo', async (ctx) => {
+    const chatId = ctx.chat?.id;
+    const session = chatId ? patientSessions.get(chatId) : null;
     try {
-      await handlePhotoMessage(ctx);
+      await handlePhotoMessage(ctx, session?.step === 'awaitingAttachments' ? session : undefined);
     } catch (error) {
       console.error('Error procesando foto', error);
       await ctx.reply('❌ No pude guardar la foto. Revisa las credenciales de Drive/Gemini.');
     }
   });
 
+  bot.on('document', async (ctx) => {
+    const chatId = ctx.chat?.id;
+    const session = chatId ? patientSessions.get(chatId) : null;
+    try {
+      await handleDocumentMessage(ctx, session?.step === 'awaitingAttachments' ? session : undefined);
+    } catch (error) {
+      console.error('Error procesando archivo', error);
+      await ctx.reply('❌ No pude guardar el archivo adjunto. Revisa las credenciales de Drive.');
+    }
+  });
+
   bot.on('message', async (ctx) => {
-    if ('text' in (ctx.message ?? {}) || 'photo' in (ctx.message ?? {})) return;
-    await ctx.reply('Envíame texto o fotos y los guardaré en tu MediDiario_Inbox.');
+    if ('text' in (ctx.message ?? {}) || 'photo' in (ctx.message ?? {}) || 'document' in (ctx.message ?? {})) return;
+    await ctx.reply(
+      'Envíame texto, fotos o archivos y los guardaré en tu MediDiario_Inbox. Usa /nuevopaciente para registrar un paciente.',
+    );
   });
 };
 
