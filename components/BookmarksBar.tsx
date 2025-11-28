@@ -51,8 +51,6 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
       role="banner"
     >
       <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-        <BookmarkIcon className="w-4 h-4" />
-        <span className="text-[11px] font-semibold uppercase tracking-wide">Marcadores</span>
         <div className="relative">
           <button
             onClick={() => setIsAppsMenuOpen((prev) => !prev)}
@@ -95,6 +93,8 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
             </div>
           )}
         </div>
+        <BookmarkIcon className="w-4 h-4" />
+        <span className="text-[11px] font-semibold uppercase tracking-wide">Marcadores</span>
       </div>
 
       <div className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
