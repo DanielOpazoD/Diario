@@ -316,9 +316,9 @@ export const uploadFileToDrive = async (
 };
 
 export const uploadFileForPatient = async (
-  file: File, 
-  patientRut: string, 
-  patientName: string, 
+  file: File,
+  patientRut: string,
+  patientName: string,
   accessToken: string
 ): Promise<AttachedFile> => {
   // 1. Ensure Directory Structure: MediDiario/Pacientes/{RUT}-{Nombre}/
@@ -364,6 +364,59 @@ export const uploadFileForPatient = async (
     driveUrl: data.webViewLink,
     thumbnailLink: data.thumbnailLink
   };
+};
+
+export const ensurePatientFolder = async (
+  patientRut: string,
+  patientName: string,
+  accessToken: string
+): Promise<string> => {
+  const rootId = await findOrCreateFolder("MediDiario", accessToken);
+  const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
+
+  const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
+  return await findOrCreateFolder(safeFolder, accessToken, pacientesId);
+};
+
+export const fetchPatientFolderFiles = async (
+  accessToken: string,
+  patientRut: string,
+  patientName: string
+): Promise<AttachedFile[]> => {
+  const patientFolderId = await ensurePatientFolder(patientRut, patientName, accessToken);
+
+  const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
+  searchUrl.searchParams.append('q', `'${patientFolderId}' in parents and trashed=false`);
+  searchUrl.searchParams.append('fields', 'files(id,name,mimeType,size,createdTime,modifiedTime,webViewLink,thumbnailLink)');
+  searchUrl.searchParams.append('orderBy', 'modifiedTime desc');
+  searchUrl.searchParams.append('supportsAllDrives', 'true');
+  searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
+
+  const response = await fetch(searchUrl.toString(), {
+    headers: { 'Authorization': 'Bearer ' + accessToken }
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    const message = err?.error?.message || 'No se pudieron leer los archivos de Drive';
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+  const files = Array.isArray(data.files) ? data.files : [];
+
+  return files.map((file: any) => {
+    const uploadedAt = file.modifiedTime || file.createdTime;
+    return {
+      id: file.id,
+      name: file.name,
+      mimeType: file.mimeType || 'application/octet-stream',
+      size: parseInt(file.size || '0', 10) || 0,
+      uploadedAt: uploadedAt ? new Date(uploadedAt).getTime() : Date.now(),
+      driveUrl: file.webViewLink,
+      thumbnailLink: file.thumbnailLink
+    } as AttachedFile;
+  });
 };
 
 export const deleteFileFromDrive = async (fileId: string, accessToken: string) => {
