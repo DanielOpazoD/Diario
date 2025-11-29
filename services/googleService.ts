@@ -37,49 +37,57 @@ let activeLoginReject: ((reason?: any) => void) | null = null;
 
 const persistGoogleToken = (token: string, expiresIn?: number) => {
   try {
-    sessionStorage.setItem('google_access_token', token);
-
     const payload: StoredToken = { accessToken: token, version: TOKEN_VERSION };
 
     if (expiresIn) {
       payload.expiresAt = Date.now() + expiresIn * 1000;
     }
 
-    localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(payload));
+    sessionStorage.setItem('google_access_token', token);
+    sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(payload));
   } catch (error) {
     console.warn('No se pudo guardar el token de Google en almacenamiento persistente', error);
   }
 };
 
+const readStoredToken = (): StoredToken | null => {
+  const raw = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as StoredToken;
+  } catch (error) {
+    console.warn('No se pudo leer el token almacenado de Google', error);
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  }
+
+  return null;
+};
+
 export const restoreStoredToken = (): string | null => {
+  const parsed = readStoredToken();
+
+  if (parsed?.expiresAt && parsed.expiresAt < Date.now()) {
+    sessionStorage.removeItem('google_access_token');
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    return null;
+  }
+
+  if (parsed && (!parsed.version || parsed.version !== TOKEN_VERSION)) {
+    sessionStorage.removeItem('google_access_token');
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    return null;
+  }
+
   // Priorizar el token en memoria de la sesión si existe
   const active = sessionStorage.getItem('google_access_token');
   if (active) return active;
 
-  const raw = localStorage.getItem(TOKEN_STORAGE_KEY);
-  if (!raw) return null;
+  if (!parsed) return null;
 
-  try {
-    const parsed = JSON.parse(raw) as StoredToken;
-
-    if (!parsed.version || parsed.version !== TOKEN_VERSION) {
-      sessionStorage.removeItem('google_access_token');
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      return null;
-    }
-
-    if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      return null;
-    }
-
-    if (parsed.accessToken) {
-      sessionStorage.setItem('google_access_token', parsed.accessToken);
-      return parsed.accessToken;
-    }
-  } catch (error) {
-    console.warn('No se pudo leer el token almacenado de Google', error);
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  if (parsed.accessToken) {
+    sessionStorage.setItem('google_access_token', parsed.accessToken);
+    return parsed.accessToken;
   }
 
   return null;
@@ -91,7 +99,60 @@ export const getActiveAccessToken = () => {
 
 export const clearStoredToken = () => {
   sessionStorage.removeItem('google_access_token');
-  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+};
+
+export const getTokenExpiry = () => {
+  const payload = readStoredToken();
+  return payload?.expiresAt || null;
+};
+
+export const isTokenExpired = () => {
+  const expiry = getTokenExpiry();
+  return !!expiry && expiry <= Date.now();
+};
+
+export const isTokenExpiringSoon = (thresholdMs = 10 * 60 * 1000) => {
+  const expiry = getTokenExpiry();
+
+  if (!expiry) return false;
+
+  const remaining = expiry - Date.now();
+
+  return remaining > 0 && remaining <= thresholdMs;
+};
+
+const ensureTokenClient = () => {
+  if (tokenClient) return true;
+
+  const google = (window as any).google;
+
+  if (google && CLIENT_ID) {
+    try {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: (_resp: any) => {},
+        error_callback: (err: any) => {
+          if (err?.type !== 'popup_closed') {
+            console.error("Google Identity Service Error:", err);
+          }
+
+          if (activeLoginReject) {
+            activeLoginReject(err);
+            activeLoginReject = null;
+          }
+        }
+      });
+
+      return true;
+    } catch (e) {
+      console.error("Error initializing Google Token Client:", e);
+      return false;
+    }
+  }
+
+  return false;
 };
 
 export interface DriveEntry {
@@ -170,39 +231,14 @@ export const handleGoogleLogin = (): Promise<string> => {
        (err as any).type = 'popup_closed'; 
        activeLoginReject(err);
     }
-    
+
     // Guardamos la referencia a reject para usarla si el popup se cierra
     activeLoginReject = reject;
 
-    if (!tokenClient) {
-      // Attempt one last lazy init or fail
-      const google = (window as any).google;
-      if (google && CLIENT_ID) {
-         try {
-           tokenClient = google.accounts.oauth2.initTokenClient({
-              client_id: CLIENT_ID,
-              scope: SCOPES,
-              callback: (_resp: any) => {}, // Placeholder
-              error_callback: (err: any) => {
-                 if (err?.type !== 'popup_closed') {
-                    console.error("Google Identity Service Error (Lazy Init):", err);
-                 }
-                 if (activeLoginReject) {
-                    activeLoginReject(err);
-                    activeLoginReject = null;
-                 }
-              }
-           });
-         } catch (e) {
-           activeLoginReject = null;
-           reject("Error al inicializar el cliente de Google. Recarga la página.");
-           return;
-         }
-      } else {
-         activeLoginReject = null;
-         reject("Google API not initialized. Reload the page or check connection.");
-         return;
-      }
+    if (!ensureTokenClient()) {
+      activeLoginReject = null;
+      reject("Google API not initialized. Reload the page or check connection.");
+      return;
     }
 
     // Sobrescribimos el callback para esta petición específica
@@ -217,13 +253,40 @@ export const handleGoogleLogin = (): Promise<string> => {
 
     try {
       // Prompt the user to select a Google Account
-      if ((window as any).gapi.client.getToken() === null) {
+      const hasExistingToken = (window as any).gapi?.client?.getToken?.() !== null;
+
+      if (!hasExistingToken) {
         tokenClient.requestAccessToken({prompt: 'consent'});
       } else {
         tokenClient.requestAccessToken({prompt: ''});
       }
     } catch (e) {
       activeLoginReject = null;
+      reject(e);
+    }
+  });
+};
+
+export const renewGoogleToken = (): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!ensureTokenClient()) {
+      reject("Google API not initialized. Reload the page or check connection.");
+      return;
+    }
+
+    tokenClient.callback = async (resp: any) => {
+      if (resp.error !== undefined) {
+        reject(resp);
+        return;
+      }
+
+      persistGoogleToken(resp.access_token, resp.expires_in);
+      resolve(resp.access_token);
+    };
+
+    try {
+      tokenClient.requestAccessToken({ prompt: '' });
+    } catch (e) {
       reject(e);
     }
   });
