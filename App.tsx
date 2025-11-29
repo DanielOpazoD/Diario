@@ -20,8 +20,8 @@ import useAppStore from './stores/useAppStore';
 import { defaultBookmarkCategories } from './stores/slices/bookmarkSlice';
 import MainLayout from './layouts/MainLayout';
 import DailyView from './features/daily/DailyView';
-import SearchView from './features/search/SearchView';
 import StatsView from './features/stats/StatsView';
+import PatientsHistoryView from './features/history/PatientsHistoryView';
 import BookmarksView from './features/bookmarks/BookmarksView';
 import LockScreen from './components/LockScreen';
 import useAutoLock from './hooks/useAutoLock';
@@ -338,12 +338,7 @@ const AppContent: React.FC = () => {
           />
         )}
 
-        {viewMode === 'search' && (
-          <SearchView
-            records={records}
-            onEditPatient={(patient) => { setEditingPatient(patient); setIsModalOpen(true); }}
-          />
-        )}
+        {viewMode === 'history' && <PatientsHistoryView />}
 
         {viewMode === 'stats' && <StatsView currentDate={currentDate} />}
 
