@@ -40,10 +40,28 @@ const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 const bot = token ? new Telegraf(token) : null;
 let handlersRegistered = false;
 let cachedInboxFolderId: string | null = null;
-const patientSessions = new Map<
-  number,
-  { step: 'waitingName' | 'waitingRut' | 'awaitingAttachments'; patientName?: string; patientRut?: string; dateKey?: string }
->();
+type PatientSessionStep = 'waitingName' | 'waitingRut' | 'waitingDiagnosis';
+
+interface PatientSession {
+  step: PatientSessionStep;
+  patientName?: string;
+  patientRut?: string;
+}
+
+interface TelegramPatientRecord {
+  id: string;
+  name: string;
+  rut: string;
+  diagnosis: string;
+  date: string;
+  type: 'Policlínico';
+  clinicalNote: string;
+  pendingTasks: [];
+  attachedFiles: [];
+  createdAt: number;
+}
+
+const patientSessions = new Map<number, PatientSession>();
 
 const ensureInboxFolder = async (): Promise<string> => {
   if (process.env.GOOGLE_DRIVE_INBOX_ID) return process.env.GOOGLE_DRIVE_INBOX_ID;
@@ -118,27 +136,45 @@ const downloadFileContent = async (fileId: string): Promise<string> => {
   return Buffer.from(response.data as ArrayBuffer).toString('utf-8');
 };
 
-const appendPatientEntry = async (name: string, rut: string, dateKey: string) => {
-  const filename = `pacientes-${dateKey}.txt`;
+const normalizeRut = (rut: string) => rut.trim().toUpperCase();
+
+const validateRut = (rut: string): boolean => /^[0-9]{1,2}\.[0-9]{3}\.[0-9]{3}-[0-9Kk]$/.test(rut.trim());
+const todayKey = () => new Date().toISOString().split('T')[0];
+
+const parsePatientsFromContent = (content: string): TelegramPatientRecord[] => {
+  try {
+    const parsed = JSON.parse(content);
+    return Array.isArray(parsed) ? (parsed as TelegramPatientRecord[]) : [];
+  } catch (error) {
+    console.warn('No pude leer el archivo de pacientes, se usará uno nuevo', error);
+    return [];
+  }
+};
+
+const persistPatientToDrive = async (patient: TelegramPatientRecord, dateKey: string) => {
+  const filename = `pacientes-${dateKey}.json`;
   const existingId = await findFileInInbox(filename);
-  const newEntry = `${name}\n${rut}\n\n`;
+  let patients: TelegramPatientRecord[] = [];
+
+  if (existingId) {
+    const currentContent = await downloadFileContent(existingId);
+    patients = parsePatientsFromContent(currentContent);
+  }
+
+  patients.push(patient);
+  const payload = JSON.stringify(patients, null, 2);
 
   if (!existingId) {
-    await saveFileToDrive(filename, 'text/plain', newEntry);
+    await saveFileToDrive(filename, 'application/json', payload);
     return;
   }
 
-  const currentContent = await downloadFileContent(existingId);
-  const updated = `${currentContent}${newEntry}`;
   await drive.files.update({
     fileId: existingId,
-    media: { mimeType: 'text/plain', body: Readable.from([updated]) },
+    media: { mimeType: 'application/json', body: Readable.from([payload]) },
     fields: 'id',
   });
 };
-
-const validateRut = (rut: string): boolean => /^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-[0-9Kk]$/.test(rut.trim());
-const todayKey = () => new Date().toISOString().split('T')[0];
 
 const formatPatientTag = (patientName?: string, patientRut?: string) => {
   if (!patientName && !patientRut) return '';
@@ -285,13 +321,6 @@ const setupBotHandlers = () => {
     ctx.reply(hadSession ? '🚫 Sesión de paciente cancelada.' : 'No hay una sesión activa.');
   });
 
-  bot.command('omitir', (ctx) => {
-    const chatId = ctx.chat?.id;
-    if (!chatId) return;
-    const hadSession = patientSessions.delete(chatId);
-    ctx.reply(hadSession ? '✅ Se cerró la sesión sin adjuntar más archivos.' : 'No hay sesión de adjuntos activa.');
-  });
-
   bot.on('text', async (ctx) => {
     const chatId = ctx.chat?.id;
     const text = (ctx.message as { text?: string }).text ?? '';
@@ -312,25 +341,35 @@ const setupBotHandlers = () => {
       }
 
       const patientName = session.patientName ?? 'Paciente';
-      const patientRut = text.trim();
-      const dateKey = todayKey();
-      try {
-        await appendPatientEntry(patientName, patientRut, dateKey);
-        patientSessions.set(chatId, { step: 'awaitingAttachments', patientName, patientRut, dateKey });
-        await ctx.reply(
-          `✅ ${patientName} agregado al calendario del ${dateKey}.\n` +
-            '¿Quieres adjuntar archivos (fotos, PDF, Word, etc.) para este paciente? Envíalos ahora o escribe /omitir para terminar.',
-        );
-      } catch (error) {
-        console.error('Error guardando paciente', error);
-        await ctx.reply('❌ No pude guardar el paciente. Revisa las credenciales de Drive.');
-        patientSessions.delete(chatId);
-      }
+      const patientRut = normalizeRut(text);
+      patientSessions.set(chatId, { step: 'waitingDiagnosis', patientName, patientRut });
+      await ctx.reply('🩺 Escribe el diagnóstico o motivo de consulta.');
       return;
     }
 
-    if (session?.step === 'awaitingAttachments') {
-      await ctx.reply('Estoy listo para recibir archivos (fotos, PDFs, Word). Si no necesitas subir más, usa /omitir.');
+    if (session?.step === 'waitingDiagnosis') {
+      const patient: TelegramPatientRecord = {
+        id: `tg-${Date.now()}`,
+        name: session.patientName ?? 'Paciente',
+        rut: session.patientRut ?? 'S/RUT',
+        diagnosis: text.trim(),
+        date: todayKey(),
+        type: 'Policlínico',
+        clinicalNote: 'Creado desde Telegram',
+        pendingTasks: [],
+        attachedFiles: [],
+        createdAt: Date.now(),
+      };
+
+      try {
+        await persistPatientToDrive(patient, patient.date);
+        await ctx.reply(`✅ Paciente registrado para el ${patient.date}.`);
+      } catch (error) {
+        console.error('Error guardando paciente', error);
+        await ctx.reply('❌ No pude guardar el paciente. Revisa las credenciales de Drive.');
+      } finally {
+        patientSessions.delete(chatId);
+      }
       return;
     }
 
@@ -343,10 +382,8 @@ const setupBotHandlers = () => {
   });
 
   bot.on('photo', async (ctx) => {
-    const chatId = ctx.chat?.id;
-    const session = chatId ? patientSessions.get(chatId) : null;
     try {
-      await handlePhotoMessage(ctx, session?.step === 'awaitingAttachments' ? session : undefined);
+      await handlePhotoMessage(ctx);
     } catch (error) {
       console.error('Error procesando foto', error);
       await ctx.reply('❌ No pude guardar la foto. Revisa las credenciales de Drive/Gemini.');
@@ -354,10 +391,8 @@ const setupBotHandlers = () => {
   });
 
   bot.on('document', async (ctx) => {
-    const chatId = ctx.chat?.id;
-    const session = chatId ? patientSessions.get(chatId) : null;
     try {
-      await handleDocumentMessage(ctx, session?.step === 'awaitingAttachments' ? session : undefined);
+      await handleDocumentMessage(ctx);
     } catch (error) {
       console.error('Error procesando archivo', error);
       await ctx.reply('❌ No pude guardar el archivo adjunto. Revisa las credenciales de Drive.');
