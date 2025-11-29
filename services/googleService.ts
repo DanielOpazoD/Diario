@@ -275,6 +275,32 @@ const findOrCreateFolder = async (folderName: string, accessToken: string, paren
   return createData.id;
 };
 
+export const createPatientDriveFolder = async (
+  patientRut: string,
+  patientName: string,
+  accessToken: string
+): Promise<{ id: string; webViewLink: string }> => {
+  const rootId = await findOrCreateFolder("MediDiario", accessToken);
+  const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
+
+  const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
+  const patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
+
+  const infoRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${patientFolderId}?fields=id,name,webViewLink&supportsAllDrives=true`,
+    {
+      headers: { Authorization: 'Bearer ' + accessToken },
+    }
+  );
+
+  if (!infoRes.ok) {
+    return { id: patientFolderId, webViewLink: `https://drive.google.com/drive/folders/${patientFolderId}` };
+  }
+
+  const info = await infoRes.json();
+  return { id: patientFolderId, webViewLink: info.webViewLink || `https://drive.google.com/drive/folders/${patientFolderId}` };
+};
+
 export const uploadFileToDrive = async (
   content: string,
   filename: string,
