@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { BarChart2, Bookmark as BookmarkIcon, Calendar as CalendarIcon, CheckSquare, Cloud, Download, LogOut, Menu, RefreshCw, Search, Settings as SettingsIcon, Upload, X } from 'lucide-react';
+import { BarChart2, Bookmark as BookmarkIcon, Calendar as CalendarIcon, CheckSquare, Cloud, Download, LogOut, Menu, RefreshCw, Search, Settings as SettingsIcon, Upload, Users, X } from 'lucide-react';
 import DateNavigator from '../components/DateNavigator';
 import { ViewMode, PatientRecord, User } from '../types';
 import { downloadDataAsJson } from '../services/storage';
@@ -110,6 +110,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             { id: 'daily', label: 'Agenda Diaria', icon: CalendarIcon },
             { id: 'tasks', label: 'Mis Tareas', icon: CheckSquare },
             { id: 'search', label: 'Buscador Global', icon: Search },
+            { id: 'history', label: 'Historial de Pacientes', icon: Users },
             { id: 'bookmarks', label: 'Marcadores', icon: BookmarkIcon },
             { id: 'stats', label: 'Estadísticas', icon: BarChart2 }
           ].map((item) => (

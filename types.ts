@@ -76,7 +76,7 @@ export interface User {
   avatar: string;
 }
 
-export type ViewMode = 'daily' | 'search' | 'stats' | 'settings' | 'tasks' | 'bookmarks';
+export type ViewMode = 'daily' | 'search' | 'stats' | 'settings' | 'tasks' | 'bookmarks' | 'history';
 
 export interface ToastMessage {
   id: string;
