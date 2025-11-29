@@ -69,8 +69,8 @@ const PatientsHistoryView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-16 px-3 md:px-4 animate-fade-in">
-      <div className="flex items-center justify-between gap-3 mb-4">
+    <div className="max-w-7xl mx-auto pb-16 px-3 md:px-6 animate-fade-in">
+      <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
             <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -85,20 +85,23 @@ const PatientsHistoryView: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
-        <div className="md:col-span-2 relative">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre o RUT..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-          />
+      <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-2 sm:gap-3 mb-3 items-end">
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Nombre o RUT</label>
+          <div className="relative">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Buscar paciente..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Tipo de atención</label>
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Tipo de atención</label>
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
@@ -112,7 +115,7 @@ const PatientsHistoryView: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {filteredGroups.map(group => {
           const typeCounts = group.records.reduce<Record<string, number>>((acc, record) => {
             acc[record.type] = (acc[record.type] || 0) + 1;
@@ -128,30 +131,31 @@ const PatientsHistoryView: React.FC = () => {
             >
               <button
                 onClick={() => setExpandedRut(isExpanded ? null : group.rut)}
-                className="w-full text-left px-3 py-3 sm:px-4 sm:py-3.5 flex flex-col sm:flex-row sm:items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
+                className="w-full text-left px-3.5 py-3 flex flex-col md:flex-row md:items-center gap-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[11px] font-bold bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">{group.rut}</span>
-                    <span className="text-[11px] font-semibold uppercase text-gray-400">{group.records.length} visitas</span>
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 uppercase font-semibold">
+                    <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">{group.rut}</span>
+                    <span>{group.records.length} visitas</span>
+                    <span className="hidden sm:inline">Última: {group.records[0]?.date}</span>
                   </div>
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">{group.name}</h3>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {Object.entries(typeCounts).map(([type, count]) => (
-                      <span
-                        key={type}
-                        className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${getTypeClass(type)}`}
-                      >
-                        {type} · {count}
-                      </span>
-                    ))}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">{group.name}</h3>
+                    <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                      {Object.entries(typeCounts).map(([type, count]) => (
+                        <span
+                          key={type}
+                          className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${getTypeClass(type)}`}
+                        >
+                          {type} · {count}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Última atención</p>
-                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{group.records[0]?.date}</p>
-                  </div>
+                <div className="flex items-center gap-2 text-right md:pl-2">
+                  <div className="text-[11px] text-gray-500 dark:text-gray-400 md:hidden">Última atención</div>
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap">{group.records[0]?.date}</div>
                   <div className={`p-1.5 rounded-full border border-gray-200 dark:border-gray-700 transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-gray-50 dark:bg-gray-700/60' : 'bg-white dark:bg-gray-800'}`}>
                     <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
                   </div>
@@ -159,11 +163,11 @@ const PatientsHistoryView: React.FC = () => {
               </button>
 
               {isExpanded && (
-                <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-900/40">
+                <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/40 w-full">
                   <div className="divide-y divide-gray-100 dark:divide-gray-800">
                     {group.records.map(record => (
-                      <div key={record.id} className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-start gap-2">
-                        <div className="flex items-center gap-2">
+                      <div key={record.id} className="px-3.5 py-3 grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-2 md:gap-3 items-start">
+                        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 font-semibold">
                           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${getTypeClass(record.type)}`}>
                             {record.type}
                           </span>
@@ -176,7 +180,7 @@ const PatientsHistoryView: React.FC = () => {
                           )}
                         </div>
                         {(record.entryTime || record.exitTime) && (
-                          <div className="text-[11px] text-gray-500 dark:text-gray-400 flex flex-col items-start sm:items-end min-w-[110px]">
+                          <div className="text-[11px] text-gray-500 dark:text-gray-400 flex flex-col items-start md:items-end min-w-[110px] whitespace-nowrap">
                             {record.entryTime && <span>Ing.: {record.entryTime}</span>}
                             {record.exitTime && <span>Alta: {record.exitTime}</span>}
                           </div>
