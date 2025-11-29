@@ -5,6 +5,7 @@ import { Calendar as CalendarIcon, Filter, Plus, Copy, MoveRight } from 'lucide-
 import Button from '../../components/Button';
 import CompactPatientCard from '../../components/CompactPatientCard';
 import FilterBar from '../../components/FilterBar';
+import TelegramSyncButton from '../../components/TelegramSyncButton';
 import { PatientRecord, PatientType, PatientTypeConfig } from '../../types';
 import useAppStore from '../../stores/useAppStore';
 
@@ -140,6 +141,7 @@ const DailyView: React.FC<DailyViewProps> = ({
             </p>
           </div>
           <div className="flex flex-wrap gap-2 justify-end">
+            <TelegramSyncButton />
             <Button
               variant={selectionMode ? 'primary' : 'secondary'}
               size="sm"
