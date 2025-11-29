@@ -115,7 +115,7 @@ const PatientsHistoryView: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         {filteredGroups.map(group => {
           const typeCounts = group.records.reduce<Record<string, number>>((acc, record) => {
             acc[record.type] = (acc[record.type] || 0) + 1;
@@ -131,34 +131,37 @@ const PatientsHistoryView: React.FC = () => {
             >
               <button
                 onClick={() => setExpandedRut(isExpanded ? null : group.rut)}
-                className="w-full text-left px-3.5 py-3 flex flex-col md:flex-row md:items-center gap-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
+                className="w-full text-left px-4 py-3 grid gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
               >
-                <div className="flex-1 min-w-0 flex flex-col gap-1">
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 uppercase font-semibold">
-                    <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">{group.rut}</span>
-                    <span>{group.records.length} visitas</span>
-                    <span className="hidden sm:inline">Última: {group.records[0]?.date}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-center">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
                     <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">{group.name}</h3>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
-                      {Object.entries(typeCounts).map(([type, count]) => (
-                        <span
-                          key={type}
-                          className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${getTypeClass(type)}`}
-                        >
-                          {type} · {count}
-                        </span>
-                      ))}
+                    <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 uppercase font-semibold">
+                      <span>{group.records.length} visitas</span>
+                      <span className="hidden sm:inline-flex items-center gap-1">
+                        <span className="h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                        <span>Última: {group.records[0]?.date}</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 text-right">
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400 md:hidden">Última atención</div>
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap">{group.records[0]?.date}</div>
+                    <div className={`p-1.5 rounded-full border border-gray-200 dark:border-gray-700 transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-gray-50 dark:bg-gray-700/60' : 'bg-white dark:bg-gray-800'}`}>
+                      <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-right md:pl-2">
-                  <div className="text-[11px] text-gray-500 dark:text-gray-400 md:hidden">Última atención</div>
-                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap">{group.records[0]?.date}</div>
-                  <div className={`p-1.5 rounded-full border border-gray-200 dark:border-gray-700 transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-gray-50 dark:bg-gray-700/60' : 'bg-white dark:bg-gray-800'}`}>
-                    <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-                  </div>
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 uppercase font-semibold">
+                  <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">{group.rut}</span>
+                  {Object.entries(typeCounts).map(([type, count]) => (
+                    <span
+                      key={type}
+                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${getTypeClass(type)}`}
+                    >
+                      {type} · {count}
+                    </span>
+                  ))}
                 </div>
               </button>
 
@@ -166,7 +169,7 @@ const PatientsHistoryView: React.FC = () => {
                 <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/40 w-full">
                   <div className="divide-y divide-gray-100 dark:divide-gray-800">
                     {group.records.map(record => (
-                      <div key={record.id} className="px-3.5 py-3 grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-2 md:gap-3 items-start">
+                      <div key={record.id} className="px-4 py-3 grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-2 md:gap-3 items-start">
                         <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 font-semibold">
                           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${getTypeClass(record.type)}`}>
                             {record.type}
