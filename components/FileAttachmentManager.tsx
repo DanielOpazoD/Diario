@@ -13,9 +13,10 @@ import {
   List,
   Star,
   RefreshCw,
+  FolderPlus,
 } from 'lucide-react';
 import { AttachedFile } from '../types';
-import { uploadFileForPatient, deleteFileFromDrive, fetchPatientFolderFiles } from '../services/googleService';
+import { createPatientDriveFolder, uploadFileForPatient, deleteFileFromDrive, fetchPatientFolderFiles } from '../services/googleService';
 import AIAttachmentAssistant from './AIAttachmentAssistant';
 import FilePreviewModal from './FilePreviewModal';
 
@@ -43,6 +44,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [showStarredOnly, setShowStarredOnly] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<number | null>(null);
@@ -216,6 +218,31 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     },
     [patientRut, patientName, files, onFilesChange, addToast]
   );
+
+  const handleCreateFolder = async () => {
+    if (!patientRut || !patientName) {
+      addToast('error', 'Completa el Nombre y RUT del paciente para crear la carpeta.');
+      return;
+    }
+
+    const token = sessionStorage.getItem('google_access_token');
+    if (!token) {
+      addToast('error', 'Conecta tu cuenta de Google para crear la carpeta.');
+      return;
+    }
+
+    setIsCreatingFolder(true);
+    try {
+      const { webViewLink } = await createPatientDriveFolder(patientRut, patientName, token);
+      addToast('success', 'Carpeta del paciente lista en Drive.');
+      syncFromDrive({ silent: true });
+      window.open(webViewLink, '_blank');
+    } catch (error: any) {
+      addToast('error', error?.message || 'No se pudo crear la carpeta de Drive.');
+    } finally {
+      setIsCreatingFolder(false);
+    }
+  };
 
   const handleSelectFile = (file: AttachedFile) => {
     setSelectedFile(file);
@@ -395,6 +422,18 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
             >
               {isSyncing ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               {isSyncing ? 'Sincronizando…' : 'Sincronizar Drive'}
+            </button>
+            <button
+              onClick={handleCreateFolder}
+              disabled={isCreatingFolder}
+              className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs font-semibold transition-all shadow-sm ${
+                isCreatingFolder
+                  ? 'bg-green-50 border-green-200 text-green-600'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-green-400'
+              }`}
+            >
+              {isCreatingFolder ? <Loader className="w-4 h-4 animate-spin" /> : <FolderPlus className="w-4 h-4" />}
+              {isCreatingFolder ? 'Creando carpeta…' : 'Crear carpeta en Drive'}
             </button>
             {files.length > 0 && (
               <button
