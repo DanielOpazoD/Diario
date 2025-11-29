@@ -69,36 +69,40 @@ const PatientsHistoryView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto pb-20 px-1 sm:px-3 animate-fade-in">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="p-3 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
-          <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+    <div className="max-w-6xl mx-auto pb-16 px-3 md:px-4 animate-fade-in">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase font-bold text-gray-400 tracking-wider">Vista</p>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white leading-snug">Historial de Pacientes</h2>
+          </div>
         </div>
-        <div>
-          <p className="text-xs uppercase font-bold text-gray-400 tracking-wider">Vista</p>
-          <h2 className="text-2xl font-black text-gray-900 dark:text-white leading-tight">Historial de Pacientes</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Agrupa las atenciones por RUT único para visualizar su historial cronológico.</p>
+        <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <span className="px-2 py-1 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">{filteredGroups.length} pacientes</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
         <div className="md:col-span-2 relative">
-          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
             placeholder="Buscar por nombre o RUT..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tipo de atención</label>
+          <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Tipo de atención</label>
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
-            className="w-full px-3 py-3 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full px-3 py-2.5 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
           >
             <option value="all">Todos los tipos</option>
             {patientTypes.map(type => (
@@ -108,7 +112,7 @@ const PatientsHistoryView: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {filteredGroups.map(group => {
           const typeCounts = group.records.reduce<Record<string, number>>((acc, record) => {
             acc[record.type] = (acc[record.type] || 0) + 1;
@@ -120,23 +124,23 @@ const PatientsHistoryView: React.FC = () => {
           return (
             <div
               key={group.rut}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"
             >
               <button
                 onClick={() => setExpandedRut(isExpanded ? null : group.rut)}
-                className="w-full text-left p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="w-full text-left px-3 py-3 sm:px-4 sm:py-3.5 flex flex-col sm:flex-row sm:items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">{group.rut}</span>
+                    <span className="text-[11px] font-bold bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">{group.rut}</span>
                     <span className="text-[11px] font-semibold uppercase text-gray-400">{group.records.length} visitas</span>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">{group.name}</h3>
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">{group.name}</h3>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
                     {Object.entries(typeCounts).map(([type, count]) => (
                       <span
                         key={type}
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${getTypeClass(type)}`}
+                        className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${getTypeClass(type)}`}
                       >
                         {type} · {count}
                       </span>
@@ -145,11 +149,11 @@ const PatientsHistoryView: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Última atención</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Última atención</p>
                     <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{group.records[0]?.date}</p>
                   </div>
-                  <div className={`p-2 rounded-full border border-gray-200 dark:border-gray-700 transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-gray-50 dark:bg-gray-700/60' : 'bg-white dark:bg-gray-800'}`}>
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  <div className={`p-1.5 rounded-full border border-gray-200 dark:border-gray-700 transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-gray-50 dark:bg-gray-700/60' : 'bg-white dark:bg-gray-800'}`}>
+                    <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
                   </div>
                 </div>
               </button>
@@ -158,22 +162,22 @@ const PatientsHistoryView: React.FC = () => {
                 <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-900/40">
                   <div className="divide-y divide-gray-100 dark:divide-gray-800">
                     {group.records.map(record => (
-                      <div key={record.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start gap-3">
+                      <div key={record.id} className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-start gap-2">
                         <div className="flex items-center gap-2">
-                          <span className={`text-[11px] font-bold px-2 py-1 rounded-full border ${getTypeClass(record.type)}`}>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${getTypeClass(record.type)}`}>
                             {record.type}
                           </span>
                           <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{record.date}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{record.diagnosis}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 leading-snug">{record.diagnosis}</p>
                           {record.clinicalNote && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{record.clinicalNote}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{record.clinicalNote}</p>
                           )}
                         </div>
                         {(record.entryTime || record.exitTime) && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-col items-start sm:items-end min-w-[120px]">
-                            {record.entryTime && <span>Ingreso: {record.entryTime}</span>}
+                          <div className="text-[11px] text-gray-500 dark:text-gray-400 flex flex-col items-start sm:items-end min-w-[110px]">
+                            {record.entryTime && <span>Ing.: {record.entryTime}</span>}
                             {record.exitTime && <span>Alta: {record.exitTime}</span>}
                           </div>
                         )}
@@ -187,8 +191,8 @@ const PatientsHistoryView: React.FC = () => {
         })}
 
         {filteredGroups.length === 0 && (
-          <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-lg font-semibold text-gray-700 dark:text-gray-200">No se encontraron pacientes.</p>
+          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-base font-semibold text-gray-700 dark:text-gray-200">No se encontraron pacientes.</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Ajusta los filtros o registra nuevas atenciones.</p>
           </div>
         )}

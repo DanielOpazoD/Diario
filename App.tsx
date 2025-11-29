@@ -20,7 +20,6 @@ import useAppStore from './stores/useAppStore';
 import { defaultBookmarkCategories } from './stores/slices/bookmarkSlice';
 import MainLayout from './layouts/MainLayout';
 import DailyView from './features/daily/DailyView';
-import SearchView from './features/search/SearchView';
 import StatsView from './features/stats/StatsView';
 import PatientsHistoryView from './features/history/PatientsHistoryView';
 import BookmarksView from './features/bookmarks/BookmarksView';
@@ -336,13 +335,6 @@ const AppContent: React.FC = () => {
             onGenerateReport={handleGeneratePDF}
             onMovePatients={handleMovePatientsToDate}
             onCopyPatients={handleCopyPatientsToDate}
-          />
-        )}
-
-        {viewMode === 'search' && (
-          <SearchView
-            records={records}
-            onEditPatient={(patient) => { setEditingPatient(patient); setIsModalOpen(true); }}
           />
         )}
 
