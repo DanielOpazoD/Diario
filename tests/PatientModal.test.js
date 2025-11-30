@@ -15,12 +15,41 @@ class MemoryStorage {
 test('formatTitleCase capitalizes each word', () => {
   const localStorage = new MemoryStorage();
   const mockStore = { patientTypes: [] };
-  const { formatTitleCase } = loadTsModule('components/PatientModal.tsx', {
+  const { formatTitleCase } = loadTsModule('features/patients/components/PatientModal.tsx', {
     localStorage,
     window: {},
     require: (id) => {
       if (id.endsWith('/Button') || id === './Button') return () => null;
       if (id.endsWith('/FileAttachmentManager') || id === './FileAttachmentManager') return () => null;
+      if (id.includes('shared/types')) return loadTsModule('shared/types/index.ts');
+      if (id.includes('usePatientForm')) {
+        return () => ({
+          name: '',
+          rut: '',
+          birthDate: '',
+          gender: '',
+          type: 'Hospitalizado',
+          entryTime: '',
+          exitTime: '',
+          diagnosis: '',
+          clinicalNote: '',
+          pendingTasks: [],
+          attachedFiles: [],
+          activeTab: 'clinical',
+          setName: () => {},
+          setRut: () => {},
+          setBirthDate: () => {},
+          setGender: () => {},
+          setType: () => {},
+          setEntryTime: () => {},
+          setExitTime: () => {},
+          setDiagnosis: () => {},
+          setClinicalNote: () => {},
+          setPendingTasks: () => {},
+          setAttachedFiles: () => {},
+          setActiveTab: () => {},
+        });
+      }
       if (id.includes('services/geminiService')) {
         return {
           analyzeClinicalNote: async () => ({ structuredDiagnosis: '', extractedTasks: [] }),

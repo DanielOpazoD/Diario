@@ -87,7 +87,7 @@ export default defineConfig(({ mode }) => {
             if (facadeModuleId.includes('features/history')) return 'chunks/history-[hash].js';
             if (facadeModuleId.includes('features/bookmarks')) return 'chunks/bookmarks-[hash].js';
             // Component chunks
-            if (facadeModuleId.includes('components/PatientModal')) return 'chunks/patient-modal-[hash].js';
+            if (facadeModuleId.includes('features/patients/components/PatientModal')) return 'chunks/patient-modal-[hash].js';
             if (facadeModuleId.includes('components/Settings')) return 'chunks/settings-[hash].js';
             if (facadeModuleId.includes('components/TaskDashboard')) return 'chunks/tasks-[hash].js';
             // Service chunks

@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BookmarkPlus, ExternalLink, GripVertical, Plus, Star, Trash2, X } from 'lucide-react';
-import useAppStore from '../stores/useAppStore';
-import { Bookmark } from '../types';
-import BookmarkIconGraphic from './BookmarkIcon';
+import useAppStore from '../../../stores/useAppStore';
+import { Bookmark } from '../../../shared/types/index.ts';
+import BookmarkIconGraphic from '../../../components/BookmarkIcon';
 
 interface BookmarkFormState {
   title: string;

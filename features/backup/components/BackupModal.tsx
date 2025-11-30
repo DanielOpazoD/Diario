@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Cloud, X, Folder, FileText, Loader, FolderPlus, ChevronRight, CheckCircle2 } from 'lucide-react';
-import Button from './Button';
-import { getFolderMetadata, listFolders, DriveEntry, getActiveAccessToken } from '../services/googleService';
-import { DriveFolderPreference } from '../types';
+import Button from '../../../shared/components/Button';
+import { getFolderMetadata, listFolders, DriveEntry, getActiveAccessToken } from '../../../services/googleService';
+import { DriveFolderPreference } from '../../../shared/types/index.ts';
 
 interface BackupModalProps {
   isOpen: boolean;

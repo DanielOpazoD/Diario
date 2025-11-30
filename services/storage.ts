@@ -1,5 +1,5 @@
 
-import { Bookmark, BookmarkCategory, PatientRecord, GeneralTask } from '../types';
+import { Bookmark, BookmarkCategory, PatientRecord, GeneralTask } from '../shared/types/index.ts';
 
 const STORAGE_KEY = 'medidiario_data_v1';
 const GENERAL_TASKS_KEY = 'medidiario_general_tasks_v1';

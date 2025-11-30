@@ -1,5 +1,5 @@
 import { listFolderEntries, downloadFile } from './googleService';
-import { PatientRecord } from '../types';
+import { PatientRecord } from '../shared/types/index.ts';
 
 const INBOX_FOLDER_NAME = 'MediDiario_Inbox';
 

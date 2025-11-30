@@ -3,7 +3,7 @@ import { format, isSameDay, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckSquare, Square, Calendar, ArrowRight, AlertCircle, Clock, Sticker, Plus, Trash2 } from 'lucide-react';
 import Button from './Button';
-import { PatientRecord, PendingTask, GeneralTask } from '../types';
+import { PatientRecord, PendingTask, GeneralTask } from '../shared/types/index.ts';
 import useAppStore from '../stores/useAppStore';
 
 interface TaskDashboardProps {

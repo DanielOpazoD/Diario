@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Sparkles, Send, FileText, CheckCircle, Circle } from 'lucide-react';
-import { AttachedFile } from '../types';
+import { AttachedFile } from '../shared/types/index.ts';
 import { downloadFileAsBase64 } from '../services/googleService';
 import { askAboutImages, FileContent } from '../services/geminiService';
 

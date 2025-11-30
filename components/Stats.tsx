@@ -6,7 +6,7 @@ import { es } from 'date-fns/locale';
 import { Filter, Clock, TrendingUp } from 'lucide-react';
 import Button from './Button';
 import useAppStore from '../stores/useAppStore';
-import { PatientTypeConfig } from '../types';
+import { PatientTypeConfig } from '../shared/types/index.ts';
 
 interface StatsProps {
   currentDate: Date;

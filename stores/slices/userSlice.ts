@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { User } from '../../types';
+import { User } from '../../shared/types/index.ts';
 
 export interface UserSlice {
   user: User | null;

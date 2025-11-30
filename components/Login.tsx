@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, AlertTriangle } from 'lucide-react';
 import { handleGoogleLogin, checkGoogleConfig, initGoogleApi, getUserInfo } from '../services/googleService';
-import { User } from '../types';
+import { User } from '../shared/types/index.ts';
 import useAppStore from '../stores/useAppStore';
 
 const Login: React.FC = () => {

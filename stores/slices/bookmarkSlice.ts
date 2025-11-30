@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { Bookmark, BookmarkCategory } from '../../types';
+import { Bookmark, BookmarkCategory } from '../../shared/types/index.ts';
 
 export interface BookmarksSlice {
   bookmarks: Bookmark[];

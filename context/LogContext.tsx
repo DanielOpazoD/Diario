@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { LogEntry } from '../types';
+import { LogEntry } from '../shared/types/index.ts';
 import { emitStructuredLog, getSessionId, LogLevel } from '../services/logger';
 
 interface LogContextType {

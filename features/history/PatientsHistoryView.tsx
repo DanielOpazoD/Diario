@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronDown, Search as SearchIcon, Users } from 'lucide-react';
-import { PatientRecord } from '../../types';
+import { PatientRecord } from '../../shared/types/index.ts';
 import useAppStore from '../../stores/useAppStore';
 
 interface GroupedHistoryRecord {
