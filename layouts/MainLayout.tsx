@@ -22,6 +22,8 @@ interface MainLayoutProps {
   contentRef?: React.RefObject<HTMLDivElement>;
   showBookmarkBar?: boolean;
   children: React.ReactNode;
+  onPrefetchView?: (view: ViewMode) => void;
+  onPrefetchModal?: (modalType: 'patientModal' | 'backupModal' | 'drivePickerModal' | 'bookmarksModal') => void;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({
@@ -40,6 +42,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   contentRef,
   showBookmarkBar = false,
   children,
+  onPrefetchView,
+  onPrefetchModal,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const localImportInputRef = useRef<HTMLInputElement>(null);
@@ -116,6 +120,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             <button
               key={item.id}
               onClick={() => handleNavigation(item.id as ViewMode)}
+              onMouseEnter={() => onPrefetchView?.(item.id as ViewMode)}
+              onFocus={() => onPrefetchView?.(item.id as ViewMode)}
               className={`w-full flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
                 viewMode === item.id
                   ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 shadow-sm'
@@ -136,6 +142,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700/30 mx-4"></div>
           <button
             onClick={() => handleNavigation('settings')}
+            onMouseEnter={() => onPrefetchView?.('settings')}
+            onFocus={() => onPrefetchView?.('settings')}
             className={`w-full flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
               viewMode === 'settings'
                 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 shadow-sm'
@@ -171,6 +179,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           <div className="space-y-2">
             <button
               onClick={onOpenBackupModal}
+              onMouseEnter={() => onPrefetchModal?.('backupModal')}
+              onFocus={() => onPrefetchModal?.('backupModal')}
               className="w-full flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all shadow-md shadow-green-500/20"
             >
               <Cloud className="w-3.5 h-3.5 mr-2" />
@@ -179,6 +189,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
             <button
               onClick={onOpenDrivePicker}
+              onMouseEnter={() => onPrefetchModal?.('drivePickerModal')}
+              onFocus={() => onPrefetchModal?.('drivePickerModal')}
               className="w-full flex items-center justify-center px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5 mr-2" />
