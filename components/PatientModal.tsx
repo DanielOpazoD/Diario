@@ -474,10 +474,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
                             <CheckSquare className="w-3.5 h-3.5" /> Pendientes & Tareas
                           </h4>
                           <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
-                             {pendingTasks.length === 0 && (
-                                <p className="text-xs text-amber-700/50 italic text-center py-2">No hay tareas pendientes. Agrega una o usa la IA.</p>
-                             )}
-                             {pendingTasks.map(task => (
+                            {pendingTasks.map(task => (
                                <div key={task.id} className="flex items-center group bg-white dark:bg-gray-800 p-2.5 rounded-lg border border-amber-100 dark:border-amber-900/50 shadow-sm hover:shadow-md transition-all">
                                   <button onClick={() => toggleTask(task.id)} className="mr-3 text-gray-400 hover:text-blue-500 transition-colors p-1">
                                      {task.isCompleted ? <CheckSquare className="w-5 h-5 text-green-500"/> : <Square className="w-5 h-5"/>}

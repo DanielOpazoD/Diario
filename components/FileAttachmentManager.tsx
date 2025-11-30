@@ -15,6 +15,7 @@ import {
   RefreshCw,
   FolderPlus,
   Zap,
+  CheckCircle,
 } from 'lucide-react';
 import { AttachedFile } from '../types';
 import { createPatientDriveFolder, uploadFileForPatient, deleteFileFromDrive } from '../services/googleService';
@@ -46,6 +47,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [showStarredOnly, setShowStarredOnly] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [hasDriveFolder, setHasDriveFolder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // React Query hook para caché inteligente de archivos
@@ -85,6 +87,12 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
       }
     }
   }, [cachedFiles, hasCachedData]);
+
+  useEffect(() => {
+    if (hasCachedData || cachedFiles.length > 0 || files.length > 0) {
+      setHasDriveFolder(true);
+    }
+  }, [hasCachedData, cachedFiles, files.length]);
 
   // Timestamp de última sincronización
   const lastSyncedAt = hasCachedData ? Date.now() : null;
@@ -258,6 +266,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     try {
       const { webViewLink } = await createPatientDriveFolder(patientRut, patientName, token);
       addToast('success', 'Carpeta del paciente lista en Drive.');
+      setHasDriveFolder(true);
       refetch(); // Usar React Query para refetch
       window.open(webViewLink, '_blank');
     } catch (error: any) {
@@ -417,6 +426,17 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
             <p className="text-xs text-gray-500">Previsualiza y organiza rápidamente</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-semibold shadow-soft ${
+                hasDriveFolder
+                  ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/30 dark:border-green-800 dark:text-green-200'
+                  : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
+              }`}
+              title={hasDriveFolder ? 'La carpeta del paciente está lista en Drive' : 'Crea la carpeta en Drive para subir archivos'}
+            >
+              {hasDriveFolder ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              <span>{hasDriveFolder ? 'Carpeta creada' : 'Carpeta pendiente'}</span>
+            </div>
             <button
               onClick={() => syncFromDrive()}
               disabled={isSyncing}

@@ -35,7 +35,7 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock, autoLockMinutes }) =>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PIN de seguridad</label>
             <input
@@ -43,6 +43,7 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock, autoLockMinutes }) =>
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               inputMode="numeric"
+              autoComplete="off"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
               placeholder="••••"
               autoFocus

@@ -240,6 +240,7 @@ const Settings: React.FC = () => {
                   value={newPin}
                   onChange={e => setNewPin(e.target.value)}
                   placeholder="Mínimo 4 dígitos"
+                  autoComplete="new-password"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
@@ -250,6 +251,7 @@ const Settings: React.FC = () => {
                   value={confirmPin}
                   onChange={e => setConfirmPin(e.target.value)}
                   placeholder="Repite tu PIN"
+                  autoComplete="new-password"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
