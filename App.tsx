@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useRef, useCallback, lazy, Suspense, useEffect } from 'react';
 import { isSameDay } from 'date-fns';
 import { ViewMode } from './types';
 import { LogProvider, useLogger } from './context/LogContext';
@@ -12,6 +12,7 @@ import useBackupManager from './hooks/useBackupManager';
 import useDriveFolderPreference from './hooks/useDriveFolderPreference';
 import useAppStartup from './hooks/useAppStartup';
 import useViewLifecycle from './hooks/useViewLifecycle';
+import useSecurity from './hooks/useSecurity';
 import ErrorBoundary from './components/ErrorBoundary';
 import Login from './components/Login';
 import Toast from './components/Toast';
@@ -19,6 +20,8 @@ import MainLayout from './layouts/MainLayout';
 import LockScreen from './components/LockScreen';
 import AppViews from './components/AppViews';
 import AppModals from './components/AppModals';
+import MasterPasswordModal from './components/MasterPasswordModal';
+import { SecurityProvider } from './providers/SecurityProvider';
 
 const DebugConsole = lazy(() => import('./components/DebugConsole'));
 const loadReportService = () => import('./services/reportService');
@@ -26,6 +29,13 @@ const loadGoogleService = () => import('./services/googleService');
 
 const AppContent: React.FC = () => {
   const { addLog } = useLogger();
+  const {
+    hasMasterKey,
+    setMasterPassword,
+    requestMasterPassword,
+    isPromptOpen,
+    clearSession,
+  } = useSecurity();
 
   const user = useAppStore(state => state.user);
   const records = useAppStore(state => state.records);
@@ -40,6 +50,15 @@ const AppContent: React.FC = () => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
+  const [shouldPromptMaster, setShouldPromptMaster] = useState(false);
+
+  useEffect(() => {
+    if (user && !hasMasterKey) {
+      setShouldPromptMaster(true);
+    } else {
+      setShouldPromptMaster(false);
+    }
+  }, [hasMasterKey, user]);
 
   const {
     isPatientModalOpen,
@@ -126,12 +145,20 @@ const AppContent: React.FC = () => {
     const { clearStoredToken } = await loadGoogleService();
     clearStoredToken();
     logout();
+    clearSession();
   };
 
   const handleGeneratePDF = async () => {
     const { generateHandoverReport } = await loadReportService();
     generateHandoverReport(dailyRecords, currentDate, user?.name || 'Dr.');
     addToast('success', 'PDF Generado');
+  };
+
+  const handleMasterSubmit = async (password: string) => {
+    if (!user?.email) return;
+    await setMasterPassword(password, user.email);
+    setShouldPromptMaster(false);
+    addToast('success', 'Contraseña maestra activada para esta sesión');
   };
 
   const handleUnlock = (pinAttempt: string) => {
@@ -148,6 +175,8 @@ const AppContent: React.FC = () => {
     setViewMode(view);
   }, []);
 
+  const isMasterModalOpen = shouldPromptMaster || isPromptOpen;
+
   if (!user) return <Login />;
 
   return (
@@ -156,6 +185,13 @@ const AppContent: React.FC = () => {
       <Suspense fallback={null}>
         <DebugConsole />
       </Suspense>
+      {isMasterModalOpen && (
+        <MasterPasswordModal
+          email={user.email}
+          isOpen={isMasterModalOpen}
+          onSubmit={handleMasterSubmit}
+        />
+      )}
       {isLocked && securityPin && (
         <LockScreen onUnlock={handleUnlock} autoLockMinutes={autoLockMinutes} />
       )}
@@ -224,9 +260,11 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => (
   <QueryProvider>
     <LogProvider>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
+      <SecurityProvider>
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
+      </SecurityProvider>
     </LogProvider>
   </QueryProvider>
 );
