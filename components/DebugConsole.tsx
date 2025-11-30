@@ -10,12 +10,14 @@ const DebugConsole: React.FC = () => {
   const [isMinimized, setIsMinimized] = useState(false);
 
   const copyToClipboard = () => {
-    const logText = logs.map(l => 
-      `[${format(l.timestamp, 'HH:mm:ss')}] [${l.level.toUpperCase()}] [${l.source}]: ${l.message} ${l.details ? JSON.stringify(l.details) : ''}`
-    ).join('\n');
-    
+    const logText = logs.map(l => {
+      const context = l.context ? ` context=${JSON.stringify(l.context)}` : '';
+      const error = l.error ? ` error=${JSON.stringify(l.error)}` : '';
+      return `[${format(l.timestamp, 'HH:mm:ss')}] [${l.level.toUpperCase()}] [${l.source}]: ${l.message}${context}${error}`;
+    }).join('\n');
+
     navigator.clipboard.writeText(logText);
-    addLog('info', 'DebugConsole', 'Logs copiados al portapapeles');
+    addLog({ level: 'info', source: 'DebugConsole', message: 'Logs copiados al portapapeles' });
   };
 
   if (!isOpen) {
@@ -86,9 +88,14 @@ const DebugConsole: React.FC = () => {
                 <div className="flex-1 break-all">
                    <p className="font-bold mb-0.5 text-[11px] text-gray-400">[{log.source}]</p>
                    <p>{log.message}</p>
-                   {log.details && (
+                   {log.context && (
                      <pre className="mt-1 p-1 bg-black/30 rounded text-[10px] text-gray-400 overflow-x-auto whitespace-pre-wrap">
-                       {typeof log.details === 'object' ? JSON.stringify(log.details, null, 2) : log.details}
+                       {JSON.stringify(log.context, null, 2)}
+                     </pre>
+                   )}
+                   {log.error && (
+                     <pre className="mt-1 p-1 bg-black/30 rounded text-[10px] text-red-400 overflow-x-auto whitespace-pre-wrap">
+                       {JSON.stringify(log.error, null, 2)}
                      </pre>
                    )}
                 </div>

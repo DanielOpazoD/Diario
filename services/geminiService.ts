@@ -1,4 +1,5 @@
 import { AIAnalysisResult, ExtractedPatientData } from "../types";
+import { fetchWithRetry } from "./apiClient";
 
 interface GeminiStatus {
   status: string;
@@ -7,10 +8,13 @@ interface GeminiStatus {
 }
 
 const callGemini = async <T>(payload: Record<string, unknown>): Promise<T> => {
-  const response = await fetch("/.netlify/functions/gemini", {
+  const response = await fetchWithRetry("/.netlify/functions/gemini", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  }, {
+    retries: 3,
+    backoffMs: 400,
   });
 
   const data = await response.json();

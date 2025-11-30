@@ -13,7 +13,7 @@ import ConfirmationModal from './components/ConfirmationModal';
 import BackupModal from './components/BackupModal';
 import DrivePickerModal from './components/DrivePickerModal';
 import BookmarksModal from './components/BookmarksModal';
-import { LogProvider, useLogger } from './context/LogContext';
+import { useLogger } from './context/LogContext';
 import DebugConsole from './components/DebugConsole';
 import { validateEnvironment } from './services/geminiService';
 import useAppStore from './stores/useAppStore';
@@ -98,8 +98,8 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     validateEnvironment()
-      .then(envStatus => addLog('info', 'App', 'Iniciando Aplicación', envStatus))
-      .catch(error => addLog('error', 'App', 'No se pudo validar el entorno', { message: String(error) }));
+      .then(envStatus => addLog({ level: 'info', source: 'App', message: 'Iniciando Aplicación', context: envStatus }))
+      .catch(error => addLog({ level: 'error', source: 'App', message: 'No se pudo validar el entorno', error }));
   }, [addLog]);
 
   useEffect(() => {
@@ -400,9 +400,7 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <LogProvider>
-    <AppContent />
-  </LogProvider>
+  <AppContent />
 );
 
 export default App;
