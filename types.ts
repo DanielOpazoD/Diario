@@ -104,6 +104,8 @@ export interface DriveFolderPreference {
 export interface SecuritySettings {
   pin: string | null;
   autoLockMinutes: number;
+  masterPasswordHash: string | null;
+  masterPasswordSalt: string | null;
 }
 
 export interface BookmarkCategory {
