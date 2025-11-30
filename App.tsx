@@ -1,12 +1,15 @@
 import React, { useState, useMemo, useLayoutEffect, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { ViewMode, PatientRecord, DriveFolderPreference } from './types';
+import { ViewMode } from './types';
 import { LogProvider, useLogger } from './context/LogContext';
 import { QueryProvider } from './providers/QueryProvider';
 import useAppStore from './stores/useAppStore';
-import { defaultBookmarkCategories } from './stores/slices/bookmarkSlice';
 import useAutoLock from './hooks/useAutoLock';
 import { usePrefetch, prefetchAdjacentViews } from './hooks/usePrefetch';
+import useModalManager from './hooks/useModalManager';
+import usePatientCrud from './hooks/usePatientCrud';
+import useBackupManager from './hooks/useBackupManager';
+import useDriveFolderPreference from './hooks/useDriveFolderPreference';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Critical path components - loaded immediately
@@ -45,20 +48,7 @@ const DebugConsole = lazy(() => import('./components/DebugConsole'));
 // Lazy-loaded services (heavy dependencies)
 const loadReportService = () => import('./services/reportService');
 const loadGoogleService = () => import('./services/googleService');
-const loadStorageService = () => import('./services/storage');
 const loadGeminiService = () => import('./services/geminiService');
-
-const toTitleCase = (str: string) => {
-  return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-};
-
-const formatDateLabel = (dateStr: string) => {
-  try {
-    return format(new Date(dateStr + 'T00:00:00'), 'dd-MM-yyyy');
-  } catch (e) {
-    return dateStr;
-  }
-};
 
 const AppContent: React.FC = () => {
   const { addLog } = useLogger();
@@ -76,24 +66,65 @@ const AppContent: React.FC = () => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<PatientRecord | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
-  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
-  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
-  const [isBookmarksModalOpen, setIsBookmarksModalOpen] = useState(false);
-  const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(null);
-  const [driveFolderPreference, setDriveFolderPreference] = useState<DriveFolderPreference>(() => {
-    const stored = localStorage.getItem('medidiario_drive_folder');
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch (e) {
-        console.warn('No se pudo leer la carpeta preferida de Drive', e);
-      }
-    }
-    return { id: null, name: 'MediDiario Backups' } as DriveFolderPreference;
+
+  const {
+    isPatientModalOpen,
+    editingPatient,
+    patientToDelete,
+    isBackupModalOpen,
+    isDrivePickerOpen,
+    isBookmarksModalOpen,
+    editingBookmarkId,
+    openNewPatientModal,
+    openEditPatientModal,
+    closePatientModal,
+    requestDeletePatient,
+    closeDeleteConfirmation,
+    openBackupModal,
+    closeBackupModal,
+    openDrivePicker,
+    closeDrivePicker,
+    openBookmarksModal,
+    closeBookmarksModal,
+    setEditingPatient,
+    setPatientToDelete,
+  } = useModalManager();
+
+  const { driveFolderPreference, setDriveFolderPreference } = useDriveFolderPreference();
+
+  const {
+    handleSavePatient,
+    handleSaveMultiplePatients,
+    confirmDeletePatient,
+    handleMovePatientsToDate,
+    handleCopyPatientsToDate,
+  } = usePatientCrud({
+    records,
+    editingPatient,
+    patientToDelete,
+    setEditingPatient,
+    setPatientToDelete,
+    setRecords,
+    addPatient,
+    updatePatient,
+    deletePatient,
+    addToast,
+  });
+
+  const { isUploading, handleLocalImport, handleBackupConfirm, handleDriveFileSelect } = useBackupManager({
+    records,
+    generalTasks,
+    patientTypes,
+    bookmarks,
+    bookmarkCategories,
+    setRecords,
+    setGeneralTasks,
+    setBookmarks,
+    setBookmarkCategories,
+    addToast,
+    setIsBackupModalOpen: (open) => (open ? openBackupModal() : closeBackupModal()),
+    setIsDrivePickerOpen: (open) => (open ? openDrivePicker() : closeDrivePicker()),
+    setDriveFolderPreference,
   });
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -115,10 +146,6 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     prefetchAdjacentViews(viewMode);
   }, [viewMode]);
-
-  useEffect(() => {
-    localStorage.setItem('medidiario_drive_folder', JSON.stringify(driveFolderPreference));
-  }, [driveFolderPreference]);
 
   useLayoutEffect(() => {
     if (mainScrollRef.current) {
@@ -148,176 +175,10 @@ const AppContent: React.FC = () => {
     logout();
   };
 
-  const handleSavePatient = (patientData: any) => {
-    const formattedData = {
-      ...patientData,
-      name: toTitleCase(patientData.name)
-    };
-
-    if (editingPatient) {
-      updatePatient({ ...formattedData, id: editingPatient.id, createdAt: editingPatient.createdAt });
-      addToast('success', 'Paciente actualizado');
-    } else {
-      const newPatient: PatientRecord = { ...formattedData, id: crypto.randomUUID(), createdAt: Date.now() };
-      addPatient(newPatient);
-      addToast('success', 'Nuevo paciente registrado');
-    }
-    setEditingPatient(null);
-  };
-
-  const handleSaveMultiplePatients = (patientsData: any[]) => {
-    patientsData.forEach(p => {
-      const newPatient: PatientRecord = {
-        ...p,
-        id: crypto.randomUUID(),
-        createdAt: Date.now(),
-        pendingTasks: p.pendingTasks || []
-      };
-      addPatient(newPatient);
-    });
-    addToast('success', `${patientsData.length} pacientes registrados`);
-  };
-
-  const confirmDeletePatient = () => {
-    if (patientToDelete) {
-      deletePatient(patientToDelete);
-      addToast('info', 'Registro eliminado');
-      setPatientToDelete(null);
-    }
-  };
-
-  const handleLocalImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    try {
-      const { parseUploadedJson } = await loadStorageService();
-      const importedRecords = await parseUploadedJson(file);
-      setRecords(importedRecords);
-      addToast('success', 'Base de datos local restaurada');
-    } catch (err) {
-      console.error(err);
-      addToast('error', 'Error al leer el archivo');
-    } finally {
-      setIsUploading(false);
-      e.target.value = '';
-    }
-  };
-
   const handleGeneratePDF = async () => {
     const { generateHandoverReport } = await loadReportService();
     generateHandoverReport(dailyRecords, currentDate, user?.name || 'Dr.');
     addToast('success', 'PDF Generado');
-  };
-
-  const handleMovePatientsToDate = (patientIds: string[], targetDate: string) => {
-    if (!targetDate) {
-      addToast('error', 'Debes seleccionar una fecha destino.');
-      return;
-    }
-
-    const updatedRecords = records.map(record =>
-      patientIds.includes(record.id)
-        ? { ...record, date: targetDate }
-        : record
-    );
-
-    setRecords(updatedRecords);
-    addToast('success', `Pacientes movidos al ${formatDateLabel(targetDate)}.`);
-  };
-
-  const handleCopyPatientsToDate = (patientIds: string[], targetDate: string) => {
-    if (!targetDate) {
-      addToast('error', 'Debes seleccionar una fecha destino.');
-      return;
-    }
-
-    const selectedPatients = records.filter(record => patientIds.includes(record.id));
-
-    if (selectedPatients.length === 0) {
-      addToast('info', 'No hay pacientes para copiar.');
-      return;
-    }
-
-    const timestamp = Date.now();
-    const clonedPatients = selectedPatients.map((patient, index) => ({
-      ...patient,
-      id: crypto.randomUUID(),
-      date: targetDate,
-      createdAt: timestamp + index,
-      pendingTasks: patient.pendingTasks?.map(task => ({ ...task, id: crypto.randomUUID() })) || [],
-      attachedFiles: patient.attachedFiles?.map(file => ({ ...file, id: crypto.randomUUID() })) || [],
-    }));
-
-    setRecords([...records, ...clonedPatients]);
-    addToast('success', `${clonedPatients.length} pacientes copiados al ${formatDateLabel(targetDate)}.`);
-  };
-
-  const handleBackupConfirm = async (fileName: string, folder: DriveFolderPreference) => {
-    const { getActiveAccessToken, uploadFileToDrive } = await loadGoogleService();
-    const token = getActiveAccessToken();
-    if (!token) {
-      addToast('error', 'No hay sesión de Google activa.');
-      return;
-    }
-    setIsUploading(true);
-    setDriveFolderPreference(folder);
-    try {
-      const backupData = {
-        patients: records,
-        generalTasks: generalTasks,
-        patientTypes: patientTypes,
-        bookmarks,
-        bookmarkCategories,
-      };
-      const finalName = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
-      await uploadFileToDrive(JSON.stringify(backupData, null, 2), finalName, token, folder.name, folder.id);
-      addToast('success', `Respaldo guardado en carpeta "${folder.name}"`);
-      setIsBackupModalOpen(false);
-    } catch (err) {
-      console.error(err);
-      addToast('error', 'Error al subir a Drive');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleDriveFileSelect = async (fileId: string) => {
-    const { getActiveAccessToken, downloadFile } = await loadGoogleService();
-    const token = getActiveAccessToken();
-    if (!token) return;
-
-    setIsUploading(true);
-    try {
-      const data = await downloadFile(fileId, token);
-
-      if (data.patients && Array.isArray(data.patients)) {
-        setRecords(data.patients);
-        if (data.generalTasks) setGeneralTasks(data.generalTasks);
-        if (Array.isArray(data.bookmarks)) setBookmarks(data.bookmarks);
-        if (Array.isArray(data.bookmarkCategories)) {
-          setBookmarkCategories(data.bookmarkCategories);
-        } else {
-          setBookmarkCategories(defaultBookmarkCategories);
-        }
-        addToast('success', 'Respaldo restaurado exitosamente');
-        setIsDrivePickerOpen(false);
-      } else if (Array.isArray(data)) {
-        setRecords(data);
-        setBookmarks([]);
-        setBookmarkCategories(defaultBookmarkCategories);
-        addToast('success', 'Respaldo (formato antiguo) restaurado');
-        setIsDrivePickerOpen(false);
-      } else {
-        throw new Error('Formato de archivo no reconocido');
-      }
-    } catch (err) {
-      console.error(err);
-      addToast('error', 'Error al restaurar desde Drive');
-    } finally {
-      setIsUploading(false);
-    }
   };
 
   const handleUnlock = (pinAttempt: string) => {
@@ -353,12 +214,12 @@ const AppContent: React.FC = () => {
         currentDate={currentDate}
         records={records}
         onDateChange={setCurrentDate}
-        onOpenNewPatient={() => { setEditingPatient(null); setIsModalOpen(true); }}
-        onOpenBackupModal={() => setIsBackupModalOpen(true)}
-        onOpenDrivePicker={() => setIsDrivePickerOpen(true)}
+        onOpenNewPatient={openNewPatientModal}
+        onOpenBackupModal={openBackupModal}
+        onOpenDrivePicker={openDrivePicker}
         onLogout={handleLogout}
         onLocalImport={handleLocalImport}
-        onOpenBookmarksModal={() => { setEditingBookmarkId(null); setIsBookmarksModalOpen(true); }}
+        onOpenBookmarksModal={() => openBookmarksModal(null)}
         contentRef={mainScrollRef}
         showBookmarkBar={showBookmarkBar}
         onPrefetchView={prefetchOnHover}
@@ -370,9 +231,9 @@ const AppContent: React.FC = () => {
               currentDate={currentDate}
               records={records}
               patientTypes={patientTypes}
-              onAddPatient={() => { setEditingPatient(null); setIsModalOpen(true); }}
-              onEditPatient={(patient) => { setEditingPatient(patient); setIsModalOpen(true); }}
-              onDeletePatient={(id) => setPatientToDelete(id)}
+              onAddPatient={openNewPatientModal}
+              onEditPatient={openEditPatientModal}
+              onDeletePatient={requestDeletePatient}
               onGenerateReport={handleGeneratePDF}
               onMovePatients={handleMovePatientsToDate}
               onCopyPatients={handleCopyPatientsToDate}
@@ -394,15 +255,15 @@ const AppContent: React.FC = () => {
 
         {viewMode === 'tasks' && (
           <Suspense fallback={<TasksSkeleton />}>
-            <TaskDashboard onNavigateToPatient={(p) => { setEditingPatient(p); setIsModalOpen(true); }} />
+            <TaskDashboard onNavigateToPatient={openEditPatientModal} />
           </Suspense>
         )}
 
         {viewMode === 'bookmarks' && (
           <Suspense fallback={<BookmarksSkeleton />}>
             <BookmarksView
-              onAdd={() => { setEditingBookmarkId(null); setIsBookmarksModalOpen(true); }}
-              onEdit={(bookmarkId) => { setEditingBookmarkId(bookmarkId); setIsBookmarksModalOpen(true); }}
+              onAdd={() => openBookmarksModal(null)}
+              onEdit={(bookmarkId) => openBookmarksModal(bookmarkId)}
             />
           </Suspense>
         )}
@@ -414,11 +275,11 @@ const AppContent: React.FC = () => {
         )}
       </MainLayout>
 
-      {isModalOpen && (
+      {isPatientModalOpen && (
         <Suspense fallback={<ModalSkeleton />}>
           <PatientModal
-            isOpen={isModalOpen}
-            onClose={() => { setIsModalOpen(false); setEditingPatient(null); }}
+            isOpen={isPatientModalOpen}
+            onClose={closePatientModal}
             onSave={handleSavePatient}
             onSaveMultiple={handleSaveMultiplePatients}
             addToast={addToast}
@@ -431,7 +292,7 @@ const AppContent: React.FC = () => {
         <Suspense fallback={null}>
           <ConfirmationModal
             isOpen={!!patientToDelete}
-            onClose={() => setPatientToDelete(null)}
+            onClose={closeDeleteConfirmation}
             onConfirm={confirmDeletePatient}
             title="Eliminar Paciente"
             message="¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer."
@@ -443,7 +304,7 @@ const AppContent: React.FC = () => {
         <Suspense fallback={<ModalSkeleton />}>
           <BackupModal
             isOpen={isBackupModalOpen}
-            onClose={() => setIsBackupModalOpen(false)}
+            onClose={closeBackupModal}
             onConfirm={handleBackupConfirm}
             defaultFileName={`backup_medidiario_${format(new Date(), 'yyyy-MM-dd')}`}
             isLoading={isUploading}
@@ -456,7 +317,7 @@ const AppContent: React.FC = () => {
         <Suspense fallback={<ModalSkeleton />}>
           <DrivePickerModal
             isOpen={isDrivePickerOpen}
-            onClose={() => setIsDrivePickerOpen(false)}
+            onClose={closeDrivePicker}
             onSelect={handleDriveFileSelect}
             isLoadingProp={isUploading}
             preferredFolder={driveFolderPreference}
@@ -468,7 +329,7 @@ const AppContent: React.FC = () => {
         <Suspense fallback={<ModalSkeleton />}>
           <BookmarksModal
             isOpen={isBookmarksModalOpen}
-            onClose={() => { setIsBookmarksModalOpen(false); setEditingBookmarkId(null); }}
+            onClose={closeBookmarksModal}
             editingBookmarkId={editingBookmarkId}
           />
         </Suspense>
