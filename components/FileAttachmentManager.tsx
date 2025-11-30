@@ -14,9 +14,11 @@ import {
   Star,
   RefreshCw,
   FolderPlus,
+  Zap,
 } from 'lucide-react';
 import { AttachedFile } from '../types';
-import { createPatientDriveFolder, uploadFileForPatient, deleteFileFromDrive, fetchPatientFolderFiles } from '../services/googleService';
+import { createPatientDriveFolder, uploadFileForPatient, deleteFileFromDrive } from '../services/googleService';
+import { usePatientFiles } from '../hooks/usePatientFiles';
 import AIAttachmentAssistant from './AIAttachmentAssistant';
 import FilePreviewModal from './FilePreviewModal';
 
@@ -43,11 +45,49 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [selectedFile, setSelectedFile] = useState<AttachedFile | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [showStarredOnly, setShowStarredOnly] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pollingRef = useRef<number | null>(null);
+
+  // React Query hook para caché inteligente de archivos
+  const {
+    files: cachedFiles,
+    isLoading: isSyncing,
+    isFetching,
+    refetch,
+    updateCache,
+    isFromCache,
+    hasCachedData,
+  } = usePatientFiles({
+    patientRut,
+    patientName,
+    enabled: !!patientRut && !!patientName,
+  });
+
+  // Sincronizar caché de React Query con el estado del componente padre
+  useEffect(() => {
+    if (cachedFiles.length > 0 || hasCachedData) {
+      // Merge: preservar metadata local (tags, estrellas) pero actualizar datos de Drive
+      const localById = new Map(files.map((f) => [f.id, f]));
+      const merged = cachedFiles.map((remote) => {
+        const local = localById.get(remote.id);
+        return local ? { ...remote, isStarred: local.isStarred, description: local.description, tags: local.tags } : remote;
+      });
+
+      // Solo actualizar si hay cambios reales
+      const currentIds = new Set(files.map(f => f.id));
+      const newIds = new Set(merged.map(f => f.id));
+      const hasChanges = merged.length !== files.length ||
+        [...newIds].some(id => !currentIds.has(id)) ||
+        [...currentIds].some(id => !newIds.has(id));
+
+      if (hasChanges) {
+        onFilesChange(merged);
+      }
+    }
+  }, [cachedFiles, hasCachedData]);
+
+  // Timestamp de última sincronización
+  const lastSyncedAt = hasCachedData ? Date.now() : null;
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -105,6 +145,8 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     }
 
     if (newAttachments.length > 0) {
+      // Actualizar caché de React Query y estado local
+      updateCache((oldFiles = []) => [...oldFiles, ...newAttachments]);
       onFilesChange([...files, ...newAttachments]);
       addToast('success', `${successCount} archivos subidos exitosamente.`);
     }
@@ -140,6 +182,8 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     try {
       await deleteFileFromDrive(fileId, token);
       const updatedList = files.filter((f) => f.id !== fileId);
+      // Actualizar caché de React Query y estado local
+      updateCache((oldFiles = []) => oldFiles.filter((f) => f.id !== fileId));
       onFilesChange(updatedList);
       addToast('info', 'Archivo movido a la papelera de Drive');
     } catch (error) {
@@ -164,6 +208,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
   const formatDate = (timestamp: number) => new Date(timestamp).toLocaleDateString();
 
+  // Función de sincronización manual usando React Query
   const syncFromDrive = useCallback(
     async (options?: { silent?: boolean }) => {
       const silent = options?.silent ?? false;
@@ -179,44 +224,22 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
         return;
       }
 
-      setIsSyncing(true);
       try {
-        const remoteFiles = await fetchPatientFolderFiles(token, patientRut, patientName);
-        const localById = new Map(files.map((f) => [f.id, f]));
-        const remoteIds = new Set(remoteFiles.map((f) => f.id));
-
-        const merged: AttachedFile[] = remoteFiles.map((remote) => {
-          const local = localById.get(remote.id);
-          // Preserve local metadata (tags, descripciones, estrellas) pero actualiza datos base desde Drive
-          return local ? { ...local, ...remote } : remote;
-        });
-
-        const newCount = merged.filter((file) => !localById.has(file.id)).length;
-        const removedCount = files.filter((file) => !remoteIds.has(file.id)).length;
-
-        onFilesChange(merged);
-        setLastSyncedAt(Date.now());
-
+        await refetch();
         if (!silent) {
-          if (newCount > 0) {
-            addToast('success', `${newCount} archivo(s) nuevos sincronizados desde Drive.`);
-          }
-          if (removedCount > 0) {
-            addToast('info', `${removedCount} archivo(s) ya no están en Drive y se ocultaron de la lista.`);
-          }
-          if (newCount === 0 && removedCount === 0) {
-            addToast('info', 'Sin cambios nuevos en la carpeta de Drive.');
+          if (isFromCache) {
+            addToast('info', 'Datos cargados desde caché. Actualizando desde Drive...');
+          } else {
+            addToast('success', 'Archivos sincronizados desde Drive.');
           }
         }
       } catch (error: any) {
         if (!silent) {
           addToast('error', error?.message || 'No se pudo sincronizar con Drive.');
         }
-      } finally {
-        setIsSyncing(false);
       }
     },
-    [patientRut, patientName, files, onFilesChange, addToast]
+    [patientRut, patientName, refetch, isFromCache, addToast]
   );
 
   const handleCreateFolder = async () => {
@@ -235,7 +258,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     try {
       const { webViewLink } = await createPatientDriveFolder(patientRut, patientName, token);
       addToast('success', 'Carpeta del paciente lista en Drive.');
-      syncFromDrive({ silent: true });
+      refetch(); // Usar React Query para refetch
       window.open(webViewLink, '_blank');
     } catch (error: any) {
       addToast('error', error?.message || 'No se pudo crear la carpeta de Drive.');
@@ -250,6 +273,10 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
   const handleFileUpdate = (updatedFile: AttachedFile) => {
     const updatedList = files.map((f) => (f.id === updatedFile.id ? updatedFile : f));
+    // Actualizar también el caché de React Query
+    updateCache((oldFiles = []) =>
+      oldFiles.map((f) => (f.id === updatedFile.id ? updatedFile : f))
+    );
     onFilesChange(updatedList);
     setSelectedFile(updatedFile);
   };
@@ -283,27 +310,6 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
       setSelectedFile(filteredFiles[0]);
     }
   }, [filteredFiles, selectedFile]);
-
-  useEffect(() => {
-    if (pollingRef.current) {
-      window.clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-
-    const token = sessionStorage.getItem('google_access_token');
-    if (!token || !patientRut || !patientName) return;
-
-    // Sincroniza una vez al montar y luego cada 5 minutos para detectar nuevos archivos en Drive
-    syncFromDrive({ silent: true });
-    pollingRef.current = window.setInterval(() => syncFromDrive({ silent: true }), 5 * 60 * 1000);
-
-    return () => {
-      if (pollingRef.current) {
-        window.clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-  }, [patientRut, patientName, syncFromDrive]);
 
   const renderGrid = (items: AttachedFile[]) => (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -474,6 +480,18 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
             <Star className={`w-4 h-4 ${showStarredOnly ? 'fill-yellow-400 text-yellow-500' : 'text-gray-400'}`} />
             Solo destacados
           </button>
+          {isFromCache && !isFetching && (
+            <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-[11px] text-green-700 dark:text-green-300">
+              <Zap className="w-3 h-3" />
+              Carga instantánea
+            </span>
+          )}
+          {isFetching && !isSyncing && (
+            <span className="flex items-center gap-1 text-[11px] text-blue-500 dark:text-blue-400">
+              <Loader className="w-3 h-3 animate-spin" />
+              Actualizando...
+            </span>
+          )}
           {lastSyncedAt && (
             <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
               <RefreshCw className="w-3 h-3" />
