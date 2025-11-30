@@ -19,6 +19,8 @@ import MainLayout from './layouts/MainLayout';
 import LockScreen from './components/LockScreen';
 import AppViews from './components/AppViews';
 import AppModals from './components/AppModals';
+import MasterPasswordGate from './components/MasterPasswordGate';
+import { createPasswordRecord, verifyPassword } from './services/cryptoUtils';
 
 const DebugConsole = lazy(() => import('./components/DebugConsole'));
 const loadReportService = () => import('./services/reportService');
@@ -36,6 +38,13 @@ const AppContent: React.FC = () => {
   const showBookmarkBar = useAppStore(state => state.showBookmarkBar);
   const securityPin = useAppStore(state => state.securityPin);
   const autoLockMinutes = useAppStore(state => state.autoLockMinutes);
+  const masterPasswordHash = useAppStore(state => state.masterPasswordHash);
+  const masterPasswordSalt = useAppStore(state => state.masterPasswordSalt);
+  const masterPassword = useAppStore(state => state.masterPasswordSession);
+  const isMasterUnlocked = useAppStore(state => state.isMasterUnlocked);
+  const setMasterUnlocked = useAppStore(state => state.setMasterUnlocked);
+  const setMasterPassword = useAppStore(state => state.setMasterPassword);
+  const setMasterPasswordSession = useAppStore(state => state.setMasterPasswordSession);
   const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient, setBookmarks, setBookmarkCategories } = useAppStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -66,6 +75,38 @@ const AppContent: React.FC = () => {
 
   const { driveFolderPreference, setDriveFolderPreference } = useDriveFolderPreference();
 
+  const hasMasterPassword = useMemo(
+    () => Boolean(masterPasswordHash && masterPasswordSalt),
+    [masterPasswordHash, masterPasswordSalt]
+  );
+
+  const handleMasterPasswordCreation = useCallback(
+    async (password: string) => {
+      const record = await createPasswordRecord(password);
+      setMasterPassword(record.hash, record.salt);
+      setMasterPasswordSession(password);
+      setMasterUnlocked(true);
+      addToast('success', 'Contraseña Maestra configurada');
+      return true;
+    },
+    [addToast, setMasterPassword, setMasterPasswordSession, setMasterUnlocked]
+  );
+
+  const handleMasterPasswordUnlock = useCallback(
+    async (password: string) => {
+      if (!masterPasswordHash || !masterPasswordSalt) return false;
+
+      const isValid = await verifyPassword(password, { hash: masterPasswordHash, salt: masterPasswordSalt });
+      if (isValid) {
+        setMasterUnlocked(true);
+        setMasterPasswordSession(password);
+        addToast('success', 'Sesión protegida desbloqueada');
+      }
+      return isValid;
+    },
+    [addToast, masterPasswordHash, masterPasswordSalt, setMasterPasswordSession, setMasterUnlocked]
+  );
+
   const {
     handleSavePatient,
     handleSaveMultiplePatients,
@@ -91,6 +132,9 @@ const AppContent: React.FC = () => {
     patientTypes,
     bookmarks,
     bookmarkCategories,
+    masterPassword,
+    masterPasswordHash,
+    masterPasswordSalt,
     setRecords,
     setGeneralTasks,
     setBookmarks,
@@ -125,6 +169,8 @@ const AppContent: React.FC = () => {
   const handleLogout = async () => {
     const { clearStoredToken } = await loadGoogleService();
     clearStoredToken();
+    setMasterUnlocked(false);
+    setMasterPasswordSession(null);
     logout();
   };
 
@@ -147,6 +193,16 @@ const AppContent: React.FC = () => {
   const handleNavigation = useCallback((view: ViewMode) => {
     setViewMode(view);
   }, []);
+
+  if (!isMasterUnlocked) {
+    return (
+      <MasterPasswordGate
+        hasMasterPassword={hasMasterPassword}
+        onCreate={handleMasterPasswordCreation}
+        onUnlock={handleMasterPasswordUnlock}
+      />
+    );
+  }
 
   if (!user) return <Login />;
 

@@ -4,6 +4,7 @@ import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon, Lock, Timer, Pencil,
 import useAppStore from '../stores/useAppStore';
 import Button from './Button';
 import { PatientTypeConfig } from '../types';
+import { createPasswordRecord, verifyPassword } from '../services/cryptoUtils';
 
 const AVAILABLE_COLORS = [
   'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
@@ -53,6 +54,12 @@ const Settings: React.FC = () => {
   const setHighlightPendingPatients = useAppStore(state => state.setHighlightPendingPatients);
   const compactStats = useAppStore(state => state.compactStats);
   const setCompactStats = useAppStore(state => state.setCompactStats);
+  const masterPasswordHash = useAppStore(state => state.masterPasswordHash);
+  const masterPasswordSalt = useAppStore(state => state.masterPasswordSalt);
+  const isMasterUnlocked = useAppStore(state => state.isMasterUnlocked);
+  const setMasterPassword = useAppStore(state => state.setMasterPassword);
+  const setMasterUnlocked = useAppStore(state => state.setMasterUnlocked);
+  const setMasterPasswordSession = useAppStore(state => state.setMasterPasswordSession);
 
   const [newTypeLabel, setNewTypeLabel] = useState('');
   const [selectedColor, setSelectedColor] = useState(AVAILABLE_COLORS[0]);
@@ -61,6 +68,9 @@ const Settings: React.FC = () => {
   const [lockMinutes, setLockMinutes] = useState(autoLockMinutes);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [editedLabel, setEditedLabel] = useState('');
+  const [currentMaster, setCurrentMaster] = useState('');
+  const [newMaster, setNewMaster] = useState('');
+  const [confirmMaster, setConfirmMaster] = useState('');
 
   useEffect(() => {
     setLockMinutes(autoLockMinutes);
@@ -111,6 +121,46 @@ const Settings: React.FC = () => {
   const handleCancelEdit = () => {
     setEditingTypeId(null);
     setEditedLabel('');
+  };
+
+  const hasMasterPassword = Boolean(masterPasswordHash && masterPasswordSalt);
+
+  const resetMasterFields = () => {
+    setCurrentMaster('');
+    setNewMaster('');
+    setConfirmMaster('');
+  };
+
+  const handleSaveMasterPassword = async () => {
+    if (hasMasterPassword && !currentMaster) {
+      addToast('error', 'Ingresa tu contraseña actual para actualizarla');
+      return;
+    }
+
+    if (newMaster.length < 8 || !/[A-Z]/.test(newMaster) || !/[0-9]/.test(newMaster)) {
+      addToast('error', 'Usa al menos 8 caracteres, una mayúscula y un número');
+      return;
+    }
+
+    if (newMaster !== confirmMaster) {
+      addToast('error', 'Las contraseñas nuevas no coinciden');
+      return;
+    }
+
+    if (hasMasterPassword) {
+      const valid = await verifyPassword(currentMaster, { hash: masterPasswordHash, salt: masterPasswordSalt });
+      if (!valid) {
+        addToast('error', 'La contraseña actual no es correcta');
+        return;
+      }
+    }
+
+    const record = await createPasswordRecord(newMaster);
+    setMasterPassword(record.hash, record.salt);
+    setMasterPasswordSession(newMaster);
+    setMasterUnlocked(true);
+    resetMasterFields();
+    addToast('success', hasMasterPassword ? 'Contraseña Maestra actualizada' : 'Contraseña Maestra creada');
   };
 
   const handleSavePin = () => {
@@ -216,22 +266,82 @@ const Settings: React.FC = () => {
         {/* Security Settings */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50 col-span-1 md:col-span-2">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-2xl">
-                <Lock className="w-6 h-6 text-purple-600 dark:text-purple-300" />
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-2xl">
+              <Lock className="w-6 h-6 text-purple-600 dark:text-purple-300" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Seguridad y Bloqueo</h3>
+              <p className="text-xs text-gray-500">Configura el PIN y el tiempo de bloqueo automático.</p>
+            </div>
+          </div>
+          <span className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border ${securityPin ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-200 dark:border-green-800/50' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-800/50'}`}>
+            <Lock className="w-4 h-4" />
+            {securityPin ? 'PIN activo' : 'PIN desactivado'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Contraseña Maestra</p>
+            <p className="text-xs text-gray-500">Protege el inicio de sesión y encripta tus respaldos. Mantén el PIN para desbloquear rápidamente.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {hasMasterPassword && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Contraseña actual</label>
+                  <input
+                    type="password"
+                    value={currentMaster}
+                    onChange={(e) => setCurrentMaster(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="••••••"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nueva contraseña</label>
+                <input
+                  type="password"
+                  value={newMaster}
+                  onChange={(e) => setNewMaster(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Mínimo 8 caracteres"
+                />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Seguridad y Bloqueo</h3>
-                <p className="text-xs text-gray-500">Configura el PIN y el tiempo de bloqueo automático.</p>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Confirmar</label>
+                <input
+                  type="password"
+                  value={confirmMaster}
+                  onChange={(e) => setConfirmMaster(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Repite tu contraseña"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={handleSaveMasterPassword}
+                  disabled={!newMaster || !confirmMaster || (hasMasterPassword && !currentMaster)}
+                  icon={<Lock className="w-4 h-4" />}
+                  size="sm"
+                >
+                  {hasMasterPassword ? 'Actualizar Contraseña' : 'Crear Contraseña'}
+                </Button>
+                <p className="text-[11px] text-gray-500">Estado: {hasMasterPassword ? (isMasterUnlocked ? 'Desbloqueada para esta sesión' : 'Protegida') : 'Pendiente de configurar'}</p>
               </div>
             </div>
-            <span className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border ${securityPin ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-200 dark:border-green-800/50' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-800/50'}`}>
-              <Lock className="w-4 h-4" />
-              {securityPin ? 'PIN activo' : 'PIN desactivado'}
-            </span>
           </div>
+          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4 text-sm text-purple-800 dark:text-purple-100">
+            <p className="font-semibold mb-1">Cómo funciona</p>
+            <ul className="list-disc pl-4 space-y-1 text-xs">
+              <li>La Contraseña Maestra se solicita al iniciar y cifra los respaldos JSON.</li>
+              <li>Los adjuntos permanecen sin encriptar para compatibilidad.</li>
+              <li>El PIN numérico solo sirve para desbloquear la pantalla tras inactividad.</li>
+            </ul>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nuevo PIN</label>

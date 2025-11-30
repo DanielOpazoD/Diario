@@ -66,6 +66,8 @@ const getInitialSecuritySettings = (): SecuritySettings => {
   const defaults: SecuritySettings = {
     pin: null,
     autoLockMinutes: 5,
+    masterPasswordHash: null,
+    masterPasswordSalt: null,
   };
 
   if (storedSecurity) {
@@ -74,6 +76,8 @@ const getInitialSecuritySettings = (): SecuritySettings => {
       return {
         pin: typeof parsed.pin === 'string' ? parsed.pin : null,
         autoLockMinutes: typeof parsed.autoLockMinutes === 'number' ? parsed.autoLockMinutes : defaults.autoLockMinutes,
+        masterPasswordHash: typeof parsed.masterPasswordHash === 'string' ? parsed.masterPasswordHash : null,
+        masterPasswordSalt: typeof parsed.masterPasswordSalt === 'string' ? parsed.masterPasswordSalt : null,
       };
     } catch (e) {
       console.error('Error parsing stored security settings', e);
@@ -141,6 +145,10 @@ const useAppStore = create<AppStore>()(
       patientTypes: getInitialPatientTypes(),
       securityPin: initialSecurity.pin,
       autoLockMinutes: initialSecurity.autoLockMinutes,
+      masterPasswordHash: initialSecurity.masterPasswordHash,
+      masterPasswordSalt: initialSecurity.masterPasswordSalt,
+      isMasterUnlocked: false,
+      masterPasswordSession: null,
       highlightPendingPatients: initialPreferences.highlightPendingPatients,
       compactStats: initialPreferences.compactStats,
       showBookmarkBar: initialPreferences.showBookmarkBar,
@@ -176,6 +184,8 @@ useAppStore.subscribe((state) => {
     localStorage.setItem('medidiario_security', JSON.stringify({
       pin: state.securityPin,
       autoLockMinutes: state.autoLockMinutes,
+      masterPasswordHash: state.masterPasswordHash,
+      masterPasswordSalt: state.masterPasswordSalt,
     }));
     localStorage.setItem('medidiario_preferences', JSON.stringify({
       highlightPendingPatients: state.highlightPendingPatients,
