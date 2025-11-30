@@ -6,7 +6,7 @@ import Button from '../../components/Button';
 import CompactPatientCard from '../../components/CompactPatientCard';
 import FilterBar from '../../components/FilterBar';
 import TelegramSyncButton from '../../components/TelegramSyncButton';
-import { PatientRecord, PatientType, PatientTypeConfig } from '../../types';
+import { PatientRecord, PatientTypeConfig } from '../../types';
 import useAppStore from '../../stores/useAppStore';
 
 interface DailyViewProps {
@@ -46,24 +46,29 @@ const DailyView: React.FC<DailyViewProps> = ({
 
   const orderedPatientTypes = useMemo(() => {
     const defaultOrder = [
-      PatientType.HOSPITALIZADO,
-      PatientType.POLICLINICO,
-      PatientType.TURNO,
-      PatientType.EXTRA,
+      'hospitalizado',
+      'policlinico',
+      'turno',
+      'extra',
     ];
-    const mapped = new Map(patientTypes.map(t => [t.label, t]));
+    const mapped = new Map(patientTypes.map(t => [t.id, t]));
     const prioritized = defaultOrder
-      .map(label => mapped.get(label))
+      .map(id => mapped.get(id))
       .filter(Boolean) as PatientTypeConfig[];
-    const remaining = patientTypes.filter(t => !defaultOrder.includes(t.label as PatientType));
+    const remaining = patientTypes.filter(t => !defaultOrder.includes(t.id));
     return [...prioritized, ...remaining];
   }, [patientTypes]);
+
+  const recordMatchesType = (record: PatientRecord, config: PatientTypeConfig) => {
+    if (record.typeId) return record.typeId === config.id;
+    return record.type === config.label;
+  };
 
   const summaryStats = useMemo(
     () => orderedPatientTypes.map(t => ({
       id: t.id,
       label: t.label,
-      count: dailyRecords.filter(r => r.type === t.label).length,
+      count: dailyRecords.filter(r => recordMatchesType(r, t)).length,
       color: t.colorClass,
     })),
     [dailyRecords, orderedPatientTypes]
@@ -72,9 +77,13 @@ const DailyView: React.FC<DailyViewProps> = ({
   const visibleRecords = useMemo(
     () => {
       if (activeFilter === 'all') return dailyRecords;
-      return dailyRecords.filter(r => r.type === activeFilter);
+      return dailyRecords.filter(r => {
+        const targetConfig = orderedPatientTypes.find(t => t.id === activeFilter);
+        if (!targetConfig) return false;
+        return recordMatchesType(r, targetConfig);
+      });
     },
-    [dailyRecords, activeFilter]
+    [dailyRecords, activeFilter, orderedPatientTypes]
   );
 
   useEffect(() => {

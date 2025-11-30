@@ -94,11 +94,12 @@ const Settings: React.FC = () => {
       t.id === type.id ? { ...t, label: trimmedLabel } : t
     );
 
-    const updatedRecords = records.map(record =>
-      record.type.toLowerCase() === type.label.toLowerCase()
-        ? { ...record, type: trimmedLabel }
-        : record
-    );
+    const updatedRecords = records.map(record => {
+      if (record.typeId === type.id || record.type.toLowerCase() === type.label.toLowerCase()) {
+        return { ...record, type: trimmedLabel, typeId: type.id };
+      }
+      return record;
+    });
 
     setPatientTypes(updatedTypes);
     setRecords(updatedRecords);

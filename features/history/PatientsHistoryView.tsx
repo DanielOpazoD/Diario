@@ -48,7 +48,11 @@ const PatientsHistoryView: React.FC = () => {
       .map(group => {
         const recordsByType = typeFilter === 'all'
           ? group.records
-          : group.records.filter(record => record.type === typeFilter);
+          : group.records.filter(record => {
+              if (record.typeId) return record.typeId === typeFilter;
+              const config = patientTypes.find(t => t.id === typeFilter);
+              return record.type === config?.label;
+            });
 
         return {
           ...group,
@@ -63,8 +67,8 @@ const PatientsHistoryView: React.FC = () => {
       .sort((a, b) => new Date(b.records[0].date).getTime() - new Date(a.records[0].date).getTime());
   }, [groupedRecords, searchQuery, typeFilter]);
 
-  const getTypeClass = (type: string) => {
-    const config = patientTypes.find(t => t.label === type);
+  const getTypeClass = (type: string, typeId?: string) => {
+    const config = typeId ? patientTypes.find(t => t.id === typeId) : patientTypes.find(t => t.label === type);
     return config?.colorClass || 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
@@ -109,7 +113,7 @@ const PatientsHistoryView: React.FC = () => {
           >
             <option value="all">Todos los tipos</option>
             {patientTypes.map(type => (
-              <option key={type.id} value={type.label}>{type.label}</option>
+              <option key={type.id} value={type.id}>{type.label}</option>
             ))}
           </select>
         </div>
@@ -118,7 +122,8 @@ const PatientsHistoryView: React.FC = () => {
       <div className="space-y-1">
         {filteredGroups.map(group => {
           const typeCounts = group.records.reduce<Record<string, number>>((acc, record) => {
-            acc[record.type] = (acc[record.type] || 0) + 1;
+            const key = record.typeId || record.type;
+            acc[key] = (acc[key] || 0) + 1;
             return acc;
           }, {});
 
@@ -154,14 +159,18 @@ const PatientsHistoryView: React.FC = () => {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 uppercase font-semibold">
                   <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">{group.rut}</span>
-                  {Object.entries(typeCounts).map(([type, count]) => (
-                    <span
-                      key={type}
-                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${getTypeClass(type)}`}
-                    >
-                      {type} · {count}
-                    </span>
-                  ))}
+                  {Object.entries(typeCounts).map(([typeKey, count]) => {
+                    const config = patientTypes.find(t => t.id === typeKey) || patientTypes.find(t => t.label === typeKey);
+                    const label = config?.label || typeKey;
+                    return (
+                      <span
+                        key={typeKey}
+                        className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${getTypeClass(label, config?.id)}`}
+                      >
+                        {label} · {count}
+                      </span>
+                    );
+                  })}
                 </div>
               </button>
 
@@ -171,7 +180,7 @@ const PatientsHistoryView: React.FC = () => {
                     {group.records.map(record => (
                       <div key={record.id} className="px-4 py-3 grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-2 md:gap-3 items-start">
                         <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 font-semibold">
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${getTypeClass(record.type)}`}>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${getTypeClass(record.type, record.typeId)}`}>
                             {record.type}
                           </span>
                           <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{record.date}</span>

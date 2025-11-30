@@ -29,7 +29,9 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
   const [rut, setRut] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [gender, setGender] = useState('');
+  const defaultTypeId = patientTypes.find(t => t.id === 'policlinico')?.id || patientTypes[0]?.id || '';
   const [type, setType] = useState<string>(PatientType.POLICLINICO);
+  const [typeId, setTypeId] = useState<string>(defaultTypeId);
   const [entryTime, setEntryTime] = useState('');
   const [exitTime, setExitTime] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
@@ -79,7 +81,11 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
         setRut(initialData.rut); 
         setBirthDate(initialData.birthDate || ''); 
         setGender(initialData.gender || ''); 
-        setType(initialData.type); 
+        setType(initialData.type);
+        const resolvedTypeId = initialData.typeId
+          || patientTypes.find(t => t.label === initialData.type)?.id
+          || defaultTypeId;
+        setTypeId(resolvedTypeId);
         setEntryTime(initialData.entryTime || ''); 
         setExitTime(initialData.exitTime || ''); 
         setDiagnosis(initialData.diagnosis); 
@@ -92,7 +98,8 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
         setRut(''); 
         setBirthDate(''); 
         setGender(''); 
-        setType(PatientType.POLICLINICO); 
+        setType(PatientType.POLICLINICO);
+        setTypeId(defaultTypeId);
         setEntryTime(''); 
         setExitTime(''); 
         setDiagnosis(''); 
@@ -207,16 +214,18 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
   const handleSave = () => {
     if (!name.trim()) return addToast('error', 'Nombre requerido');
     const finalName = formatTitleCase(name);
-    const patientData = { 
-      ...(initialData || {}), 
-      name: finalName, 
-      rut, 
-      birthDate, 
-      gender, 
-      type, 
-      entryTime: entryTime || undefined, 
-      exitTime: exitTime || undefined, 
-      diagnosis, 
+    const selectedType = patientTypes.find(t => t.id === typeId);
+    const patientData = {
+      ...(initialData || {}),
+      name: finalName,
+      rut,
+      birthDate,
+      gender,
+      type: selectedType?.label || type,
+      typeId: selectedType?.id || typeId,
+      entryTime: entryTime || undefined,
+      exitTime: exitTime || undefined,
+      diagnosis,
       clinicalNote, 
       pendingTasks, 
       attachedFiles,
@@ -236,7 +245,8 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
   };
 
   // Explicitly check for 'Turno' type to toggle entry/exit times
-  const isTurno = type === 'Turno';
+  const turnoTypeId = patientTypes.find(t => t.id === 'turno')?.id || 'turno';
+  const isTurno = typeId === turnoTypeId;
 
   if (!isOpen) return null;
 
@@ -360,12 +370,12 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
                     <div className="space-y-3">
                        <div className="flex flex-wrap gap-2">
                           {patientTypes.map(t => (
-                            <button 
-                              key={t.id} 
-                              onClick={() => setType(t.label)}
+                            <button
+                              key={t.id}
+                              onClick={() => { setType(t.label); setTypeId(t.id); }}
                               className={`text-xs font-medium py-2 px-3 rounded-lg border transition-all flex-1 md:flex-none justify-center ${
-                                type === t.label 
-                                  ? 'bg-blue-600 text-white border-blue-600 shadow-md transform scale-105' 
+                                typeId === t.id
+                                  ? 'bg-blue-600 text-white border-blue-600 shadow-md transform scale-105'
                                   : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-blue-300'
                               }`}
                             >

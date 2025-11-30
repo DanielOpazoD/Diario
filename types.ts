@@ -48,7 +48,8 @@ export interface PatientRecord {
   birthDate?: string; // YYYY-MM-DD
   gender?: string;
   date: string; // ISO String YYYY-MM-DD
-  type: string; // Dynamic string type
+  type: string; // Display label of the patient type
+  typeId?: string; // Stable identifier of the patient type (for backward compatibility)
   entryTime?: string; // HH:mm
   exitTime?: string; // HH:mm
   diagnosis: string;

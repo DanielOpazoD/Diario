@@ -40,10 +40,10 @@ const FilterBar: React.FC<FilterBarProps> = ({ activeFilter, onFilterChange, sta
         <button
           type="button"
           key={stat.id}
-          onClick={() => onFilterChange(stat.label)}
-          aria-pressed={activeFilter === stat.label}
+          onClick={() => onFilterChange(stat.id)}
+          aria-pressed={activeFilter === stat.id}
           className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-colors border whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-gray-900 ${
-            activeFilter === stat.label
+            activeFilter === stat.id
               ? `bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-50 border-gray-200 dark:border-gray-700 shadow-sm ${stat.color.split(' ')[0].replace('bg-', 'ring-').replace('100', '400')} ring-1`
               : 'bg-white text-gray-700 border-gray-200 shadow-sm hover:border-gray-300 dark:bg-gray-900/80 dark:text-gray-200 dark:border-gray-700'
           }`}
