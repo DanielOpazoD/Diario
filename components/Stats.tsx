@@ -39,6 +39,13 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
      return patientTypes.map(t => t.id);
   }, [patientTypes]);
 
+  const chartTypes = useMemo(() => {
+    return relevantTypes.map((id) => ({
+      id,
+      label: typeConfigById[id]?.label || id,
+    }));
+  }, [relevantTypes, typeConfigById]);
+
   const matchesTypeId = (record: PatientRecord, typeId: string) => {
     if (record.typeId) return record.typeId === typeId;
     const config = typeConfigById[typeId];
@@ -60,14 +67,13 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
         total: dayRecords.length,
       };
 
-      relevantTypes.forEach(typeId => {
-         const label = typeConfigById[typeId]?.label || typeId;
-         dayStats[label] = dayRecords.filter(r => matchesTypeId(r, typeId)).length;
+      chartTypes.forEach(({ id, label }) => {
+         dayStats[label] = dayRecords.filter(r => matchesTypeId(r, id)).length;
       });
 
       return dayStats;
     });
-  }, [records, currentDate, relevantTypes]);
+  }, [records, currentDate, chartTypes]);
 
   const trendData = useMemo(() => {
     const end = new Date();
@@ -114,13 +120,17 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
     });
 
     const hoursByType: Record<string, number> = {};
-    relevantTypes.forEach(t => {
+    const trackedTypes = relevantTypes.filter(t => typeConfigById[t]?.id !== 'extra');
+
+    trackedTypes.forEach(t => {
       const label = typeConfigById[t]?.label || t;
       hoursByType[label] = 0;
     });
 
     rangeRecords.forEach(r => {
        const config = r.typeId ? typeConfigById[r.typeId] : typeConfigByLabel[r.type.toLowerCase()];
+
+       if (config?.id === 'extra') return;
 
        // REGLA DE NEGOCIO:
        // Policlínico = 30 min fijo por paciente
@@ -149,7 +159,7 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
     // Filter out Hospitalized from the visual hours report as requested
     Object.keys(hoursByType).forEach(k => {
        const config = typeConfigByLabel[k.toLowerCase()] || typeConfigById[k];
-       if (config?.id !== 'hospitalizado') {
+       if (config?.id !== 'hospitalizado' && config?.id !== 'extra') {
           formattedHours[k] = (hoursByType[k] / 60).toFixed(1);
        }
     });
@@ -298,15 +308,15 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
                   <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '12px', color: '#f3f4f6', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }} itemStyle={{ color: '#f3f4f6' }} cursor={{fill: 'transparent'}} />
                   <Legend iconType="circle" wrapperStyle={{paddingTop: '20px'}} />
                   
-                  {relevantTypes.map((type, idx) => (
-                    <Bar 
-                      key={type} 
-                      dataKey={type} 
-                      stackId="a" 
-                      fill={COLORS[idx % COLORS.length]} 
-                      name={type} 
-                      radius={[0, 0, 0, 0]} 
-                      maxBarSize={40} 
+                  {chartTypes.map(({ id, label }, idx) => (
+                    <Bar
+                      key={id}
+                      dataKey={label}
+                      stackId="a"
+                      fill={COLORS[idx % COLORS.length]}
+                      name={label}
+                      radius={[0, 0, 0, 0]}
+                      maxBarSize={40}
                     />
                   ))}
                 </BarChart>

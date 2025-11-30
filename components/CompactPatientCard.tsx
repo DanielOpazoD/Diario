@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, differenceInYears } from 'date-fns';
-import { CheckSquare, Square, ChevronDown, Clock, FileText, Trash2 } from 'lucide-react';
+import { CheckSquare, Square, ChevronDown, Clock, FileText, Trash2, Paperclip } from 'lucide-react';
 import { PatientRecord } from '../types';
 import useAppStore from '../stores/useAppStore';
 
@@ -41,6 +41,7 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
 
   const tasks = patient.pendingTasks || [];
   const pendingCount = tasks.filter(t => !t.isCompleted).length;
+  const attachmentsCount = patient.attachedFiles?.length || 0;
 
   const typeConfig = patientTypes.find(t => t.label === patient.type);
   const fullColorClass = typeConfig ? typeConfig.colorClass : 'bg-gray-100 text-gray-800 border-gray-200';
@@ -107,6 +108,15 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
           </div>
 
           <div className="flex items-center gap-3 ml-auto flex-shrink-0 pl-1">
+            {attachmentsCount > 0 && (
+              <div
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/40 text-[10px] font-semibold text-blue-700 dark:text-blue-200"
+                title={`${attachmentsCount} archivos adjuntos`}
+              >
+                <Paperclip className="w-3.5 h-3.5" />
+                <span>{attachmentsCount}</span>
+              </div>
+            )}
             {pendingCount > 0 && (
               <div
                 className="flex flex-col sm:flex-row items-center sm:gap-1 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 sm:py-1 rounded-md border border-amber-100 dark:border-amber-800/30 min-w-[24px] sm:min-w-auto justify-center"
