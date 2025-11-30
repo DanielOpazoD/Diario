@@ -2,6 +2,7 @@ import React, { useState, useMemo, useLayoutEffect, useRef, useCallback, useEffe
 import { format, isSameDay } from 'date-fns';
 import { ViewMode, PatientRecord, DriveFolderPreference } from './types';
 import { LogProvider, useLogger } from './context/LogContext';
+import { QueryProvider } from './providers/QueryProvider';
 import useAppStore from './stores/useAppStore';
 import { defaultBookmarkCategories } from './stores/slices/bookmarkSlice';
 import useAutoLock from './hooks/useAutoLock';
@@ -477,11 +478,13 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <LogProvider>
-    <ErrorBoundary>
-      <AppContent />
-    </ErrorBoundary>
-  </LogProvider>
+  <QueryProvider>
+    <LogProvider>
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
+    </LogProvider>
+  </QueryProvider>
 );
 
 export default App;
