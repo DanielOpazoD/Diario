@@ -1,31 +1,51 @@
-import React, { useState, useMemo, useLayoutEffect, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useLayoutEffect, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { ViewMode, PatientRecord, DriveFolderPreference } from './types';
-import { generateHandoverReport } from './services/reportService';
-import { uploadFileToDrive, downloadFile, getActiveAccessToken, restoreStoredToken, clearStoredToken } from './services/googleService';
-import { parseUploadedJson } from './services/storage';
-import PatientModal from './components/PatientModal';
-import Settings from './components/Settings';
-import Login from './components/Login';
-import Toast from './components/Toast';
-import TaskDashboard from './components/TaskDashboard';
-import ConfirmationModal from './components/ConfirmationModal';
-import BackupModal from './components/BackupModal';
-import DrivePickerModal from './components/DrivePickerModal';
-import BookmarksModal from './components/BookmarksModal';
 import { LogProvider, useLogger } from './context/LogContext';
-import DebugConsole from './components/DebugConsole';
-import { validateEnvironment } from './services/geminiService';
 import useAppStore from './stores/useAppStore';
 import { defaultBookmarkCategories } from './stores/slices/bookmarkSlice';
-import MainLayout from './layouts/MainLayout';
-import DailyView from './features/daily/DailyView';
-import StatsView from './features/stats/StatsView';
-import PatientsHistoryView from './features/history/PatientsHistoryView';
-import BookmarksView from './features/bookmarks/BookmarksView';
-import LockScreen from './components/LockScreen';
 import useAutoLock from './hooks/useAutoLock';
+import { usePrefetch, prefetchAdjacentViews } from './hooks/usePrefetch';
 import ErrorBoundary from './components/ErrorBoundary';
+
+// Critical path components - loaded immediately
+import Login from './components/Login';
+import Toast from './components/Toast';
+import MainLayout from './layouts/MainLayout';
+import LockScreen from './components/LockScreen';
+
+// Loading skeletons for lazy-loaded components
+import {
+  ViewSkeleton,
+  ModalSkeleton,
+  StatsSkeleton,
+  SettingsSkeleton,
+  TasksSkeleton,
+  BookmarksSkeleton,
+  HistorySkeleton,
+} from './components/LoadingSkeletons';
+
+// Lazy-loaded view components (micro-frontends)
+const DailyView = lazy(() => import('./features/daily/DailyView'));
+const StatsView = lazy(() => import('./features/stats/StatsView'));
+const PatientsHistoryView = lazy(() => import('./features/history/PatientsHistoryView'));
+const BookmarksView = lazy(() => import('./features/bookmarks/BookmarksView'));
+const TaskDashboard = lazy(() => import('./components/TaskDashboard'));
+const Settings = lazy(() => import('./components/Settings'));
+
+// Lazy-loaded modal components (loaded on demand)
+const PatientModal = lazy(() => import('./components/PatientModal'));
+const ConfirmationModal = lazy(() => import('./components/ConfirmationModal'));
+const BackupModal = lazy(() => import('./components/BackupModal'));
+const DrivePickerModal = lazy(() => import('./components/DrivePickerModal'));
+const BookmarksModal = lazy(() => import('./components/BookmarksModal'));
+const DebugConsole = lazy(() => import('./components/DebugConsole'));
+
+// Lazy-loaded services (heavy dependencies)
+const loadReportService = () => import('./services/reportService');
+const loadGoogleService = () => import('./services/googleService');
+const loadStorageService = () => import('./services/storage');
+const loadGeminiService = () => import('./services/geminiService');
 
 const toTitleCase = (str: string) => {
   return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -87,6 +107,14 @@ const AppContent: React.FC = () => {
     onUnlock: () => addToast('success', 'Sesión desbloqueada')
   });
 
+  // Prefetching hook for predictive loading
+  const { prefetchOnHover, prefetchModal } = usePrefetch(viewMode);
+
+  // Prefetch adjacent views when view changes
+  useEffect(() => {
+    prefetchAdjacentViews(viewMode);
+  }, [viewMode]);
+
   useEffect(() => {
     localStorage.setItem('medidiario_drive_folder', JSON.stringify(driveFolderPreference));
   }, [driveFolderPreference]);
@@ -98,13 +126,14 @@ const AppContent: React.FC = () => {
   }, [viewMode]);
 
   useEffect(() => {
-    validateEnvironment()
+    loadGeminiService()
+      .then(({ validateEnvironment }) => validateEnvironment())
       .then(envStatus => addLog('info', 'App', 'Iniciando Aplicación', envStatus))
       .catch(error => addLog('error', 'App', 'No se pudo validar el entorno', { message: String(error) }));
   }, [addLog]);
 
   useEffect(() => {
-    restoreStoredToken();
+    loadGoogleService().then(({ restoreStoredToken }) => restoreStoredToken());
   }, []);
 
   const dailyRecords = useMemo(
@@ -112,7 +141,8 @@ const AppContent: React.FC = () => {
     [records, currentDate]
   );
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const { clearStoredToken } = await loadGoogleService();
     clearStoredToken();
     logout();
   };
@@ -161,6 +191,7 @@ const AppContent: React.FC = () => {
 
     setIsUploading(true);
     try {
+      const { parseUploadedJson } = await loadStorageService();
       const importedRecords = await parseUploadedJson(file);
       setRecords(importedRecords);
       addToast('success', 'Base de datos local restaurada');
@@ -173,7 +204,8 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleGeneratePDF = () => {
+  const handleGeneratePDF = async () => {
+    const { generateHandoverReport } = await loadReportService();
     generateHandoverReport(dailyRecords, currentDate, user?.name || 'Dr.');
     addToast('success', 'PDF Generado');
   };
@@ -222,6 +254,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleBackupConfirm = async (fileName: string, folder: DriveFolderPreference) => {
+    const { getActiveAccessToken, uploadFileToDrive } = await loadGoogleService();
     const token = getActiveAccessToken();
     if (!token) {
       addToast('error', 'No hay sesión de Google activa.');
@@ -250,6 +283,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleDriveFileSelect = async (fileId: string) => {
+    const { getActiveAccessToken, downloadFile } = await loadGoogleService();
     const token = getActiveAccessToken();
     if (!token) return;
 
@@ -304,7 +338,9 @@ const AppContent: React.FC = () => {
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">
       <Toast />
-      <DebugConsole />
+      <Suspense fallback={null}>
+        <DebugConsole />
+      </Suspense>
       {isLocked && securityPin && (
         <LockScreen onUnlock={handleUnlock} autoLockMinutes={autoLockMinutes} />
       )}
@@ -324,78 +360,118 @@ const AppContent: React.FC = () => {
         onOpenBookmarksModal={() => { setEditingBookmarkId(null); setIsBookmarksModalOpen(true); }}
         contentRef={mainScrollRef}
         showBookmarkBar={showBookmarkBar}
+        onPrefetchView={prefetchOnHover}
+        onPrefetchModal={prefetchModal}
       >
         {viewMode === 'daily' && (
-          <DailyView
-            currentDate={currentDate}
-            records={records}
-            patientTypes={patientTypes}
-            onAddPatient={() => { setEditingPatient(null); setIsModalOpen(true); }}
-            onEditPatient={(patient) => { setEditingPatient(patient); setIsModalOpen(true); }}
-            onDeletePatient={(id) => setPatientToDelete(id)}
-            onGenerateReport={handleGeneratePDF}
-            onMovePatients={handleMovePatientsToDate}
-            onCopyPatients={handleCopyPatientsToDate}
-          />
+          <Suspense fallback={<ViewSkeleton />}>
+            <DailyView
+              currentDate={currentDate}
+              records={records}
+              patientTypes={patientTypes}
+              onAddPatient={() => { setEditingPatient(null); setIsModalOpen(true); }}
+              onEditPatient={(patient) => { setEditingPatient(patient); setIsModalOpen(true); }}
+              onDeletePatient={(id) => setPatientToDelete(id)}
+              onGenerateReport={handleGeneratePDF}
+              onMovePatients={handleMovePatientsToDate}
+              onCopyPatients={handleCopyPatientsToDate}
+            />
+          </Suspense>
         )}
 
-        {viewMode === 'history' && <PatientsHistoryView />}
+        {viewMode === 'history' && (
+          <Suspense fallback={<HistorySkeleton />}>
+            <PatientsHistoryView />
+          </Suspense>
+        )}
 
-        {viewMode === 'stats' && <StatsView currentDate={currentDate} />}
+        {viewMode === 'stats' && (
+          <Suspense fallback={<StatsSkeleton />}>
+            <StatsView currentDate={currentDate} />
+          </Suspense>
+        )}
 
         {viewMode === 'tasks' && (
-          <TaskDashboard onNavigateToPatient={(p) => { setEditingPatient(p); setIsModalOpen(true); }} />
+          <Suspense fallback={<TasksSkeleton />}>
+            <TaskDashboard onNavigateToPatient={(p) => { setEditingPatient(p); setIsModalOpen(true); }} />
+          </Suspense>
         )}
 
         {viewMode === 'bookmarks' && (
-          <BookmarksView
-            onAdd={() => { setEditingBookmarkId(null); setIsBookmarksModalOpen(true); }}
-            onEdit={(bookmarkId) => { setEditingBookmarkId(bookmarkId); setIsBookmarksModalOpen(true); }}
-          />
+          <Suspense fallback={<BookmarksSkeleton />}>
+            <BookmarksView
+              onAdd={() => { setEditingBookmarkId(null); setIsBookmarksModalOpen(true); }}
+              onEdit={(bookmarkId) => { setEditingBookmarkId(bookmarkId); setIsBookmarksModalOpen(true); }}
+            />
+          </Suspense>
         )}
 
-        {viewMode === 'settings' && <Settings />}
+        {viewMode === 'settings' && (
+          <Suspense fallback={<SettingsSkeleton />}>
+            <Settings />
+          </Suspense>
+        )}
       </MainLayout>
 
-      <PatientModal
-        isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); setEditingPatient(null); }}
-        onSave={handleSavePatient}
-        onSaveMultiple={handleSaveMultiplePatients}
-        addToast={addToast}
-        initialData={editingPatient}
-        selectedDate={format(currentDate, 'yyyy-MM-dd')}
-      />
-      <ConfirmationModal
-        isOpen={!!patientToDelete}
-        onClose={() => setPatientToDelete(null)}
-        onConfirm={confirmDeletePatient}
-        title="Eliminar Paciente"
-        message="¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer."
-        isDangerous={true}
-      />
-      <BackupModal
-        isOpen={isBackupModalOpen}
-        onClose={() => setIsBackupModalOpen(false)}
-        onConfirm={handleBackupConfirm}
-        defaultFileName={`backup_medidiario_${format(new Date(), 'yyyy-MM-dd')}`}
-        isLoading={isUploading}
-        preferredFolder={driveFolderPreference}
-        onFolderChange={setDriveFolderPreference}
-      />
-      <DrivePickerModal
-        isOpen={isDrivePickerOpen}
-        onClose={() => setIsDrivePickerOpen(false)}
-        onSelect={handleDriveFileSelect}
-        isLoadingProp={isUploading}
-        preferredFolder={driveFolderPreference}
-        onFolderChange={setDriveFolderPreference}
-      />
-      <BookmarksModal
-        isOpen={isBookmarksModalOpen}
-        onClose={() => { setIsBookmarksModalOpen(false); setEditingBookmarkId(null); }}
-        editingBookmarkId={editingBookmarkId}
-      />
+      {isModalOpen && (
+        <Suspense fallback={<ModalSkeleton />}>
+          <PatientModal
+            isOpen={isModalOpen}
+            onClose={() => { setIsModalOpen(false); setEditingPatient(null); }}
+            onSave={handleSavePatient}
+            onSaveMultiple={handleSaveMultiplePatients}
+            addToast={addToast}
+            initialData={editingPatient}
+            selectedDate={format(currentDate, 'yyyy-MM-dd')}
+          />
+        </Suspense>
+      )}
+      {patientToDelete && (
+        <Suspense fallback={null}>
+          <ConfirmationModal
+            isOpen={!!patientToDelete}
+            onClose={() => setPatientToDelete(null)}
+            onConfirm={confirmDeletePatient}
+            title="Eliminar Paciente"
+            message="¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer."
+            isDangerous={true}
+          />
+        </Suspense>
+      )}
+      {isBackupModalOpen && (
+        <Suspense fallback={<ModalSkeleton />}>
+          <BackupModal
+            isOpen={isBackupModalOpen}
+            onClose={() => setIsBackupModalOpen(false)}
+            onConfirm={handleBackupConfirm}
+            defaultFileName={`backup_medidiario_${format(new Date(), 'yyyy-MM-dd')}`}
+            isLoading={isUploading}
+            preferredFolder={driveFolderPreference}
+            onFolderChange={setDriveFolderPreference}
+          />
+        </Suspense>
+      )}
+      {isDrivePickerOpen && (
+        <Suspense fallback={<ModalSkeleton />}>
+          <DrivePickerModal
+            isOpen={isDrivePickerOpen}
+            onClose={() => setIsDrivePickerOpen(false)}
+            onSelect={handleDriveFileSelect}
+            isLoadingProp={isUploading}
+            preferredFolder={driveFolderPreference}
+            onFolderChange={setDriveFolderPreference}
+          />
+        </Suspense>
+      )}
+      {isBookmarksModalOpen && (
+        <Suspense fallback={<ModalSkeleton />}>
+          <BookmarksModal
+            isOpen={isBookmarksModalOpen}
+            onClose={() => { setIsBookmarksModalOpen(false); setEditingBookmarkId(null); }}
+            editingBookmarkId={editingBookmarkId}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

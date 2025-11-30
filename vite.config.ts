@@ -52,5 +52,76 @@ export default defineConfig(({ mode }) => {
     server: {
       host: true,
     },
+    // Optimized chunk splitting configuration for micro-frontends architecture
+    build: {
+      // Target modern browsers for smaller bundles
+      target: 'es2020',
+      // Enable minification
+      minify: 'esbuild',
+      // Optimize chunk size
+      chunkSizeWarningLimit: 500,
+      rollupOptions: {
+        output: {
+          // Manual chunk splitting for optimal loading
+          manualChunks: {
+            // Core React runtime - loaded immediately
+            'react-vendor': ['react', 'react-dom'],
+            // State management - critical path
+            'zustand': ['zustand'],
+            // Date utilities - frequently used
+            'date-fns': ['date-fns'],
+            // UI components library
+            'lucide': ['lucide-react'],
+            // Heavy dependencies - lazy loaded
+            'charts': ['recharts'],
+            'pdf': ['jspdf'],
+            // Google services - loaded on demand
+            'google-ai': ['@google/generative-ai'],
+          },
+          // Optimize chunk naming for better caching
+          chunkFileNames: (chunkInfo) => {
+            const facadeModuleId = chunkInfo.facadeModuleId || '';
+            // Feature-based chunks
+            if (facadeModuleId.includes('features/daily')) return 'chunks/daily-[hash].js';
+            if (facadeModuleId.includes('features/stats')) return 'chunks/stats-[hash].js';
+            if (facadeModuleId.includes('features/history')) return 'chunks/history-[hash].js';
+            if (facadeModuleId.includes('features/bookmarks')) return 'chunks/bookmarks-[hash].js';
+            // Component chunks
+            if (facadeModuleId.includes('components/PatientModal')) return 'chunks/patient-modal-[hash].js';
+            if (facadeModuleId.includes('components/Settings')) return 'chunks/settings-[hash].js';
+            if (facadeModuleId.includes('components/TaskDashboard')) return 'chunks/tasks-[hash].js';
+            // Service chunks
+            if (facadeModuleId.includes('services/googleService')) return 'chunks/google-service-[hash].js';
+            if (facadeModuleId.includes('services/geminiService')) return 'chunks/gemini-service-[hash].js';
+            if (facadeModuleId.includes('services/reportService')) return 'chunks/report-service-[hash].js';
+            // Default naming
+            return 'chunks/[name]-[hash].js';
+          },
+          // Entry point naming
+          entryFileNames: 'assets/[name]-[hash].js',
+          // Asset naming
+          assetFileNames: 'assets/[name]-[hash].[ext]',
+        },
+      },
+      // Generate source maps for debugging (can disable in production)
+      sourcemap: false,
+    },
+    // Optimize dependencies pre-bundling
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'zustand',
+        'date-fns',
+        'clsx',
+        'tailwind-merge',
+      ],
+      // Exclude heavy deps that are lazy-loaded
+      exclude: [
+        'recharts',
+        'jspdf',
+        '@google/generative-ai',
+      ],
+    },
   };
 });
