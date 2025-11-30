@@ -124,3 +124,13 @@ export interface Bookmark {
   createdAt: number;
   order: number;
 }
+
+export interface EncryptedBackupPayload {
+  version: number;
+  algorithm: 'AES-GCM';
+  iv: string;
+  salt: string;
+  ciphertext: string;
+  email: string;
+  createdAt: number;
+}

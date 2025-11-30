@@ -2,6 +2,7 @@ import type React from 'react';
 import { useCallback, useState } from 'react';
 import { DriveFolderPreference, PatientRecord } from '../types';
 import { defaultBookmarkCategories } from '../stores/slices/bookmarkSlice';
+import { decryptBackupPayload, encryptBackupPayload, isEncryptedBackup } from '../services/security';
 
 const loadGoogleService = () => import('../services/googleService');
 const loadStorageService = () => import('../services/storage');
@@ -20,6 +21,8 @@ interface UseBackupManagerParams {
   setIsBackupModalOpen: (open: boolean) => void;
   setIsDrivePickerOpen: (open: boolean) => void;
   setDriveFolderPreference: (preference: DriveFolderPreference) => void;
+  masterKey: string | null;
+  userEmail: string | null;
 }
 
 const useBackupManager = ({
@@ -36,6 +39,8 @@ const useBackupManager = ({
   setIsBackupModalOpen,
   setIsDrivePickerOpen,
   setDriveFolderPreference,
+  masterKey,
+  userEmail,
 }: UseBackupManagerParams) => {
   const [isUploading, setIsUploading] = useState(false);
 
@@ -72,6 +77,11 @@ const useBackupManager = ({
       setIsUploading(true);
       setDriveFolderPreference(folder);
       try {
+        if (!masterKey || !userEmail) {
+          addToast('error', 'Necesitas tu Contraseña Maestra para encriptar el respaldo.');
+          return;
+        }
+
         const backupData = {
           patients: records,
           generalTasks: generalTasks,
@@ -79,8 +89,10 @@ const useBackupManager = ({
           bookmarks,
           bookmarkCategories,
         };
+        const encryptedBackup = await encryptBackupPayload(masterKey, userEmail, backupData);
+        const payload = JSON.stringify({ encryptedBackup }, null, 2);
         const finalName = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
-        await uploadFileToDrive(JSON.stringify(backupData, null, 2), finalName, token, folder.name, folder.id);
+        await uploadFileToDrive(payload, finalName, token, folder.name, folder.id);
         addToast('success', `Respaldo guardado en carpeta "${folder.name}"`);
         setIsBackupModalOpen(false);
       } catch (err) {
@@ -90,7 +102,18 @@ const useBackupManager = ({
         setIsUploading(false);
       }
     },
-    [addToast, bookmarkCategories, bookmarks, generalTasks, patientTypes, records, setDriveFolderPreference, setIsBackupModalOpen]
+    [
+      addToast,
+      bookmarkCategories,
+      bookmarks,
+      generalTasks,
+      masterKey,
+      patientTypes,
+      records,
+      setDriveFolderPreference,
+      setIsBackupModalOpen,
+      userEmail,
+    ]
   );
 
   const handleDriveFileSelect = useCallback(
@@ -101,7 +124,22 @@ const useBackupManager = ({
 
       setIsUploading(true);
       try {
-        const data = await downloadFile(fileId, token);
+        let data = await downloadFile(fileId, token);
+
+        if (isEncryptedBackup(data)) {
+          if (!masterKey || !userEmail) {
+            addToast('error', 'Ingresa tu Contraseña Maestra para restaurar este respaldo cifrado.');
+            return;
+          }
+
+          try {
+            data = await decryptBackupPayload(masterKey, userEmail, data.encryptedBackup);
+          } catch (error) {
+            console.error(error);
+            addToast('error', 'No se pudo desencriptar el respaldo. Verifica tu Contraseña Maestra.');
+            return;
+          }
+        }
 
         if (data.patients && Array.isArray(data.patients)) {
           setRecords(data.patients);
@@ -130,7 +168,7 @@ const useBackupManager = ({
         setIsUploading(false);
       }
     },
-    [addToast, setBookmarkCategories, setBookmarks, setGeneralTasks, setIsDrivePickerOpen, setRecords]
+    [addToast, masterKey, setBookmarkCategories, setBookmarks, setGeneralTasks, setIsDrivePickerOpen, setRecords, userEmail]
   );
 
   return {
