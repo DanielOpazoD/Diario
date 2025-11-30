@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronDown, Search as SearchIcon, Users } from 'lucide-react';
+import { ChevronDown, Search as SearchIcon } from 'lucide-react';
 import { PatientRecord } from '../../types';
 import useAppStore from '../../stores/useAppStore';
 
@@ -70,22 +70,17 @@ const PatientsHistoryView: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto pb-16 animate-fade-in">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
-            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <p className="text-[11px] uppercase font-bold text-gray-400 tracking-wider">Vista</p>
-            <h2 className="text-xl font-black text-gray-900 dark:text-white leading-snug">Historial de Pacientes</h2>
+      <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/90 dark:bg-gray-900/70 shadow-md backdrop-blur-sm px-4 py-3.5 mb-3 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Historial</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {filteredGroups.length} pacientes registrados
+            </p>
           </div>
         </div>
-        <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-          <span className="px-2 py-1 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">{filteredGroups.length} pacientes</span>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-2 sm:gap-3 mb-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-2 sm:gap-3 items-end">
         <div className="flex flex-col gap-1">
           <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Nombre o RUT</label>
           <div className="relative">
@@ -112,6 +107,7 @@ const PatientsHistoryView: React.FC = () => {
               <option key={type.id} value={type.label}>{type.label}</option>
             ))}
           </select>
+        </div>
         </div>
       </div>
 

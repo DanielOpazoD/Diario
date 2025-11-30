@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon, Lock, Timer, Pencil, Check, X } from 'lucide-react';
+import { Moon, Sun, Plus, Trash2, Lock, Timer, Pencil, Check, X } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
 import Button from './Button';
 import { PatientTypeConfig } from '../types';
@@ -143,14 +143,11 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-16 animate-fade-in pt-2">
-      <div className="flex items-center gap-3 mb-6 md:mb-8 px-2">
-        <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-2xl">
-          <SettingsIcon className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-        </div>
-        <div>
-           <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Configuración</h2>
-           <p className="text-gray-500 dark:text-gray-400 text-sm">Personaliza tu experiencia en MediDiario</p>
+    <div className="max-w-6xl mx-auto pb-16 animate-fade-in">
+      <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/90 dark:bg-gray-900/70 shadow-md backdrop-blur-sm px-4 py-3.5 mb-6">
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Ajustes</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Personaliza tu experiencia en MediDiario</p>
         </div>
       </div>
 

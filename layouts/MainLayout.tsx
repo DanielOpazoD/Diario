@@ -278,6 +278,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                     {viewMode === 'bookmarks' && 'Marcadores'}
                     {viewMode === 'tasks' && 'Tareas'}
                     {viewMode === 'settings' && 'Ajustes'}
+                    {viewMode === 'history' && 'Historial de Pacientes'}
                   </h2>
                 )}
               </div>

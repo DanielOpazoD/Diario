@@ -130,14 +130,15 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
 
   return (
     <div className="max-w-6xl mx-auto pb-16 space-y-4">
-      <div className="flex flex-col gap-4 xl:flex-row">
-        <div className="flex-1 space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Marcadores</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Organiza tus accesos rápidos clínicos.</p>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap justify-end">
+      <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/90 dark:bg-gray-900/70 shadow-md backdrop-blur-sm px-4 py-3.5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Accesos rápidos</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {bookmarks.length} marcadores • Organiza tus enlaces clínicos
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
               <input
                 type="file"
                 accept="application/json"
@@ -221,9 +222,12 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
                 <Plus className="w-4 h-4" />
                 Nuevo
               </button>
-            </div>
           </div>
+        </div>
+      </div>
 
+      <div className="flex flex-col gap-4 xl:flex-row">
+        <div className="flex-1 space-y-4">
           {viewMode === 'list' ? (
             <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/60 shadow-sm divide-y divide-gray-100 dark:divide-gray-800">
               {filteredBookmarks.length === 0 && (
