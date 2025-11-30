@@ -2,6 +2,8 @@
 // Service to handle Google Auth and Drive API
 
 import { AttachedFile } from "../types";
+import { fetchWithRetry } from "./httpClient";
+import { emitStructuredLog } from "./logger";
 
 const resolveClientId = () => {
   if (typeof import.meta !== 'undefined') {
@@ -47,7 +49,7 @@ const persistGoogleToken = (token: string, expiresIn?: number) => {
 
     localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(payload));
   } catch (error) {
-    console.warn('No se pudo guardar el token de Google en almacenamiento persistente', error);
+    emitStructuredLog('warn', 'GoogleDrive', 'No se pudo guardar el token de Google en almacenamiento persistente', { error });
   }
 };
 
@@ -78,7 +80,7 @@ export const restoreStoredToken = (): string | null => {
       return parsed.accessToken;
     }
   } catch (error) {
-    console.warn('No se pudo leer el token almacenado de Google', error);
+    emitStructuredLog('warn', 'GoogleDrive', 'No se pudo leer el token almacenado de Google', { error });
     localStorage.removeItem(TOKEN_STORAGE_KEY);
   }
 
@@ -141,7 +143,7 @@ export const initGoogleApi = (onInit: () => void) => {
             error_callback: (err: any) => {
               // Fix: Filter out expected user cancellations from console noise
               if (err?.type !== 'popup_closed') {
-                console.error("Google Identity Service Error:", err);
+                emitStructuredLog("error", "GoogleIdentity", "Token client error", { error: err });
               }
               
               // Si hay un intento de login activo, lo rechazamos con el error capturado
@@ -154,7 +156,7 @@ export const initGoogleApi = (onInit: () => void) => {
           gisInited = true;
           if (gapiInited) onInit();
         } catch (e) {
-          console.error("Error initializing Google Token Client:", e);
+          emitStructuredLog("error", "GoogleIdentity", "Failed to initialize token client", { error: e });
         }
     }
   };
@@ -185,7 +187,7 @@ export const handleGoogleLogin = (): Promise<string> => {
               callback: (_resp: any) => {}, // Placeholder
               error_callback: (err: any) => {
                  if (err?.type !== 'popup_closed') {
-                    console.error("Google Identity Service Error (Lazy Init):", err);
+                    emitStructuredLog("error", "GoogleIdentity", "Token client error (lazy init)", { error: err });
                  }
                  if (activeLoginReject) {
                     activeLoginReject(err);
@@ -243,7 +245,7 @@ const findOrCreateFolder = async (folderName: string, accessToken: string, paren
   searchUrl.searchParams.append('q', query);
   searchUrl.searchParams.append('fields', 'files(id, name)');
 
-  const searchRes = await fetch(searchUrl.toString(), {
+  const searchRes = await fetchWithRetry(searchUrl.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
   const searchData = await searchRes.json();
@@ -262,9 +264,9 @@ const findOrCreateFolder = async (folderName: string, accessToken: string, paren
     createMetadata.parents = [parentId];
   }
 
-  const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+  const createRes = await fetchWithRetry('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
-    headers: { 
+    headers: {
       'Authorization': 'Bearer ' + accessToken,
       'Content-Type': 'application/json'
     },
@@ -286,7 +288,7 @@ export const createPatientDriveFolder = async (
   const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
   const patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
 
-  const infoRes = await fetch(
+  const infoRes = await fetchWithRetry(
     `https://www.googleapis.com/drive/v3/files/${patientFolderId}?fields=id,name,webViewLink&supportsAllDrives=true`,
     {
       headers: { Authorization: 'Bearer ' + accessToken },
@@ -315,7 +317,7 @@ export const uploadFileToDrive = async (
       resolvedFolderId = await findOrCreateFolder(folderName, accessToken);
     }
   } catch (e) {
-    console.error("Could not resolve folder, uploading to root", e);
+    emitStructuredLog("warn", "GoogleDrive", "Could not resolve folder, uploading to root", { error: e });
   }
 
   const file = new Blob([content], {type: 'application/json'});
@@ -332,7 +334,7 @@ export const uploadFileToDrive = async (
   form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
   form.append('file', file);
 
-  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+  const response = await fetchWithRetry('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
     method: 'POST',
     headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
     body: form,
@@ -368,7 +370,7 @@ export const uploadFileForPatient = async (
   form.append('file', file);
 
   // 3. Upload
-  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,createdTime,webViewLink,thumbnailLink', {
+  const response = await fetchWithRetry('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,createdTime,webViewLink,thumbnailLink', {
     method: 'POST',
     headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
     body: form,
@@ -418,7 +420,7 @@ export const fetchPatientFolderFiles = async (
   searchUrl.searchParams.append('supportsAllDrives', 'true');
   searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
 
-  const response = await fetch(searchUrl.toString(), {
+  const response = await fetchWithRetry(searchUrl.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
 
@@ -447,9 +449,9 @@ export const fetchPatientFolderFiles = async (
 
 export const deleteFileFromDrive = async (fileId: string, accessToken: string) => {
   // We use 'trash' instead of delete to be safe
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+  const response = await fetchWithRetry(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
     method: 'PATCH',
-    headers: { 
+    headers: {
       'Authorization': 'Bearer ' + accessToken,
       'Content-Type': 'application/json'
     },
@@ -501,7 +503,7 @@ const buildListUrl = (parentId?: string, options?: ListOptions) => {
 };
 
 const fetchListUrl = async (url: URL, accessToken: string) => {
-  const response = await fetch(url.toString(), {
+  const response = await fetchWithRetry(url.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
 
@@ -564,7 +566,7 @@ export const listFolders = async (accessToken: string, parentId?: string) => {
   searchUrl.searchParams.append('supportsAllDrives', 'true');
   searchUrl.searchParams.append('spaces', 'drive');
 
-  const response = await fetch(searchUrl.toString(), {
+  const response = await fetchWithRetry(searchUrl.toString(), {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
 
@@ -576,7 +578,7 @@ export const listFolders = async (accessToken: string, parentId?: string) => {
 };
 
 export const getFolderMetadata = async (accessToken: string, folderId: string) => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents,driveId,mimeType&supportsAllDrives=true`, {
+  const response = await fetchWithRetry(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents,driveId,mimeType&supportsAllDrives=true`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
 
@@ -588,7 +590,7 @@ export const getFolderMetadata = async (accessToken: string, folderId: string) =
 };
 
 export const downloadFile = async (fileId: string, accessToken: string) => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
+  const response = await fetchWithRetry(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
   
@@ -600,7 +602,7 @@ export const downloadFile = async (fileId: string, accessToken: string) => {
 };
 
 export const downloadFileAsBase64 = async (fileId: string, accessToken: string): Promise<string> => {
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
+  const response = await fetchWithRetry(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
 
@@ -624,7 +626,7 @@ export const downloadFileAsBase64 = async (fileId: string, accessToken: string):
 
 export const getUserInfo = async (accessToken: string) => {
    try {
-     const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+     const response = await fetchWithRetry('https://www.googleapis.com/oauth2/v3/userinfo', {
        headers: { 'Authorization': `Bearer ${accessToken}` }
      });
      if (!response.ok) {
@@ -632,7 +634,7 @@ export const getUserInfo = async (accessToken: string) => {
      }
      return await response.json();
    } catch (error) {
-     console.error("Error fetching user info:", error);
+     emitStructuredLog("error", "GoogleDrive", "Error fetching user info", { error });
      throw error;
    }
 }

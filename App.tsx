@@ -25,6 +25,7 @@ import PatientsHistoryView from './features/history/PatientsHistoryView';
 import BookmarksView from './features/bookmarks/BookmarksView';
 import LockScreen from './components/LockScreen';
 import useAutoLock from './hooks/useAutoLock';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const toTitleCase = (str: string) => {
   return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -401,7 +402,9 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => (
   <LogProvider>
-    <AppContent />
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
   </LogProvider>
 );
 
