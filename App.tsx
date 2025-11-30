@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useCallback, lazy, Suspense } from 'r
 import { isSameDay } from 'date-fns';
 import { ViewMode } from './types';
 import { LogProvider, useLogger } from './context/LogContext';
+import { SecurityProvider, useSecurity } from './context/SecurityContext';
 import { QueryProvider } from './providers/QueryProvider';
 import useAppStore from './stores/useAppStore';
 import useAutoLock from './hooks/useAutoLock';
@@ -19,6 +20,7 @@ import MainLayout from './layouts/MainLayout';
 import LockScreen from './components/LockScreen';
 import AppViews from './components/AppViews';
 import AppModals from './components/AppModals';
+import MasterPasswordModal from './components/MasterPasswordModal';
 
 const DebugConsole = lazy(() => import('./components/DebugConsole'));
 const loadReportService = () => import('./services/reportService');
@@ -26,6 +28,7 @@ const loadGoogleService = () => import('./services/googleService');
 
 const AppContent: React.FC = () => {
   const { addLog } = useLogger();
+  const { status: securityStatus } = useSecurity();
 
   const user = useAppStore(state => state.user);
   const records = useAppStore(state => state.records);
@@ -151,11 +154,15 @@ const AppContent: React.FC = () => {
   if (!user) return <Login />;
 
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">
+    <div
+      className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500"
+      data-security-state={securityStatus}
+    >
       <Toast />
       <Suspense fallback={null}>
         <DebugConsole />
       </Suspense>
+      <MasterPasswordModal />
       {isLocked && securityPin && (
         <LockScreen onUnlock={handleUnlock} autoLockMinutes={autoLockMinutes} />
       )}
@@ -224,9 +231,11 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => (
   <QueryProvider>
     <LogProvider>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
+      <SecurityProvider>
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
+      </SecurityProvider>
     </LogProvider>
   </QueryProvider>
 );
