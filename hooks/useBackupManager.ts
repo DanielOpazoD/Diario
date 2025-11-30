@@ -2,6 +2,7 @@ import type React from 'react';
 import { useCallback, useState } from 'react';
 import { DriveFolderPreference, PatientRecord } from '../types';
 import { defaultBookmarkCategories } from '../stores/slices/bookmarkSlice';
+import useSecurity from './useSecurity';
 
 const loadGoogleService = () => import('../services/googleService');
 const loadStorageService = () => import('../services/storage');
@@ -37,6 +38,7 @@ const useBackupManager = ({
   setIsDrivePickerOpen,
   setDriveFolderPreference,
 }: UseBackupManagerParams) => {
+  const { hasMasterKey, encryptBackupPayload, decryptBackupPayload, requestMasterPassword } = useSecurity();
   const [isUploading, setIsUploading] = useState(false);
 
   const handleLocalImport = useCallback(
@@ -69,6 +71,13 @@ const useBackupManager = ({
         addToast('error', 'No hay sesión de Google activa.');
         return;
       }
+
+      if (!hasMasterKey) {
+        addToast('error', 'Configura tu Contraseña Maestra para cifrar el respaldo.');
+        requestMasterPassword();
+        return;
+      }
+
       setIsUploading(true);
       setDriveFolderPreference(folder);
       try {
@@ -80,7 +89,8 @@ const useBackupManager = ({
           bookmarkCategories,
         };
         const finalName = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
-        await uploadFileToDrive(JSON.stringify(backupData, null, 2), finalName, token, folder.name, folder.id);
+        const encryptedPayload = await encryptBackupPayload(backupData);
+        await uploadFileToDrive(encryptedPayload, finalName, token, folder.name, folder.id);
         addToast('success', `Respaldo guardado en carpeta "${folder.name}"`);
         setIsBackupModalOpen(false);
       } catch (err) {
@@ -90,7 +100,19 @@ const useBackupManager = ({
         setIsUploading(false);
       }
     },
-    [addToast, bookmarkCategories, bookmarks, generalTasks, patientTypes, records, setDriveFolderPreference, setIsBackupModalOpen]
+    [
+      addToast,
+      bookmarkCategories,
+      bookmarks,
+      encryptBackupPayload,
+      generalTasks,
+      hasMasterKey,
+      patientTypes,
+      records,
+      requestMasterPassword,
+      setDriveFolderPreference,
+      setIsBackupModalOpen,
+    ]
   );
 
   const handleDriveFileSelect = useCallback(
@@ -99,9 +121,16 @@ const useBackupManager = ({
       const token = getActiveAccessToken();
       if (!token) return;
 
+      if (!hasMasterKey) {
+        addToast('error', 'Ingresa tu Contraseña Maestra para restaurar respaldos seguros.');
+        requestMasterPassword();
+        return;
+      }
+
       setIsUploading(true);
       try {
-        const data = await downloadFile(fileId, token);
+        const downloaded = await downloadFile(fileId, token);
+        const data = await decryptBackupPayload(downloaded);
 
         if (data.patients && Array.isArray(data.patients)) {
           setRecords(data.patients);
@@ -125,12 +154,22 @@ const useBackupManager = ({
         }
       } catch (err) {
         console.error(err);
-        addToast('error', 'Error al restaurar desde Drive');
+        addToast('error', 'Error al restaurar desde Drive. Verifica tu Contraseña Maestra.');
       } finally {
         setIsUploading(false);
       }
     },
-    [addToast, setBookmarkCategories, setBookmarks, setGeneralTasks, setIsDrivePickerOpen, setRecords]
+    [
+      addToast,
+      decryptBackupPayload,
+      hasMasterKey,
+      requestMasterPassword,
+      setBookmarkCategories,
+      setBookmarks,
+      setGeneralTasks,
+      setIsDrivePickerOpen,
+      setRecords,
+    ]
   );
 
   return {
