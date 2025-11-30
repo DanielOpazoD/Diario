@@ -5,7 +5,15 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Readable } from 'node:stream';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const geminiApiKey = process.env.GEMINI_API_KEY;
+
+const resolveGeminiApiKey = () =>
+  process.env.GEMINI_API_KEY ||
+  process.env.GOOGLE_GENAI_API_KEY ||
+  process.env.GOOGLE_API_KEY ||
+  process.env.VITE_GEMINI_API_KEY ||
+  process.env.VITE_API_KEY;
+
+const geminiApiKey = resolveGeminiApiKey();
 
 const clientId = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
