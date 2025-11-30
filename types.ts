@@ -90,7 +90,20 @@ export interface LogEntry {
   level: 'info' | 'warn' | 'error';
   source: string;
   message: string;
-  details?: any;
+  context?: Record<string, unknown>;
+  error?: {
+    name?: string;
+    message: string;
+    stack?: string;
+  };
+}
+
+export interface LogPayload {
+  level: 'info' | 'warn' | 'error';
+  source: string;
+  message: string;
+  context?: Record<string, unknown>;
+  error?: unknown;
 }
 
 export interface DriveFolderPreference {
