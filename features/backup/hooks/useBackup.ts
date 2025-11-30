@@ -1,12 +1,12 @@
 import type React from 'react';
 import { useCallback, useState } from 'react';
-import { DriveFolderPreference, PatientRecord } from '../types';
-import { defaultBookmarkCategories } from '../stores/slices/bookmarkSlice';
+import { DriveFolderPreference, PatientRecord } from '../../../shared/types';
+import { defaultBookmarkCategories } from '../../../stores/slices/bookmarkSlice';
 
-const loadGoogleService = () => import('../services/googleService');
-const loadStorageService = () => import('../services/storage');
+const loadGoogleService = () => import('../../../services/googleService');
+const loadStorageService = () => import('../../../services/storage');
 
-interface UseBackupManagerParams {
+interface UseBackupParams {
   records: PatientRecord[];
   generalTasks: any[];
   patientTypes: any[];
@@ -22,7 +22,7 @@ interface UseBackupManagerParams {
   setDriveFolderPreference: (preference: DriveFolderPreference) => void;
 }
 
-const useBackupManager = ({
+const useBackup = ({
   records,
   generalTasks,
   patientTypes,
@@ -36,7 +36,7 @@ const useBackupManager = ({
   setIsBackupModalOpen,
   setIsDrivePickerOpen,
   setDriveFolderPreference,
-}: UseBackupManagerParams) => {
+}: UseBackupParams) => {
   const [isUploading, setIsUploading] = useState(false);
 
   const handleLocalImport = useCallback(
@@ -141,4 +141,4 @@ const useBackupManager = ({
   } as const;
 };
 
-export default useBackupManager;
+export default useBackup;

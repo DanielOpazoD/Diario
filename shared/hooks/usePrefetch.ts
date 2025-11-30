@@ -3,16 +3,16 @@ import { ViewMode } from '../types';
 
 // Module prefetch functions - these match the lazy imports in App.tsx
 const prefetchModules = {
-  daily: () => import('../features/daily/DailyView'),
-  stats: () => import('../features/stats/StatsView'),
-  history: () => import('../features/history/PatientsHistoryView'),
-  bookmarks: () => import('../features/bookmarks/BookmarksView'),
+  daily: () => import('../features/daily').then(m => m.DailyView),
+  stats: () => import('../features/stats').then(m => m.StatsView),
+  history: () => import('../features/history').then(m => m.PatientsHistoryView),
+  bookmarks: () => import('../features/bookmarks').then(m => m.BookmarksView),
   tasks: () => import('../components/TaskDashboard'),
   settings: () => import('../components/Settings'),
-  patientModal: () => import('../components/PatientModal'),
-  backupModal: () => import('../components/BackupModal'),
-  drivePickerModal: () => import('../components/DrivePickerModal'),
-  bookmarksModal: () => import('../components/BookmarksModal'),
+  patientModal: () => import('../features/patients').then(m => m.PatientModal),
+  backupModal: () => import('../features/backup').then(m => m.BackupModal),
+  drivePickerModal: () => import('../features/backup').then(m => m.DrivePickerModal),
+  bookmarksModal: () => import('../features/bookmarks').then(m => m.BookmarksModal),
 };
 
 // Service prefetch functions

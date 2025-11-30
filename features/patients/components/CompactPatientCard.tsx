@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { format, differenceInYears } from 'date-fns';
 import { CheckSquare, Square, ChevronDown, Clock, FileText, Trash2 } from 'lucide-react';
-import { PatientRecord } from '../types';
-import useAppStore from '../stores/useAppStore';
+import { PatientRecord } from '../../../shared/types';
+import useAppStore from '../../../stores/useAppStore';
 
 export const parseLocalYMD = (dateStr: string) => {
   if (!dateStr) return new Date();
