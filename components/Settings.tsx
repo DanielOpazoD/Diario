@@ -18,6 +18,23 @@ const AVAILABLE_COLORS = [
 
 const AUTO_LOCK_OPTIONS = [0, 1, 3, 5, 10, 15, 30];
 
+export const validateTypeLabel = (
+  label: string,
+  patientTypes: PatientTypeConfig[],
+  excludeId?: string,
+) => {
+  const trimmed = label.trim();
+  if (!trimmed) return 'El nombre es requerido';
+
+  const duplicate = patientTypes.some(
+    (t) => t.id !== excludeId && t.label.toLowerCase() === trimmed.toLowerCase()
+  );
+
+  if (duplicate) return 'Ya existe un tipo con este nombre';
+
+  return null;
+};
+
 const Settings: React.FC = () => {
   const theme = useAppStore(state => state.theme);
   const toggleTheme = useAppStore(state => state.toggleTheme);
@@ -50,14 +67,8 @@ const Settings: React.FC = () => {
   }, [autoLockMinutes]);
 
   const handleAddType = () => {
-    if (!newTypeLabel.trim()) {
-      addToast('error', 'El nombre es requerido');
-      return;
-    }
-    if (patientTypes.some(t => t.label.toLowerCase() === newTypeLabel.toLowerCase())) {
-      addToast('error', 'Ya existe un tipo con este nombre');
-      return;
-    }
+    const error = validateTypeLabel(newTypeLabel, patientTypes);
+    if (error) return addToast('error', error);
 
     const newType: PatientTypeConfig = {
       id: crypto.randomUUID(),
@@ -76,20 +87,8 @@ const Settings: React.FC = () => {
 
   const handleSaveType = (type: PatientTypeConfig) => {
     const trimmedLabel = editedLabel.trim();
-
-    if (!trimmedLabel) {
-      addToast('error', 'El nombre es requerido');
-      return;
-    }
-
-    const duplicate = patientTypes.some(
-      t => t.id !== type.id && t.label.toLowerCase() === trimmedLabel.toLowerCase()
-    );
-
-    if (duplicate) {
-      addToast('error', 'Ya existe un tipo con este nombre');
-      return;
-    }
+    const error = validateTypeLabel(trimmedLabel, patientTypes, type.id);
+    if (error) return addToast('error', error);
 
     const updatedTypes = patientTypes.map(t =>
       t.id === type.id ? { ...t, label: trimmedLabel } : t
