@@ -4,7 +4,7 @@ import { CheckSquare, Square, ChevronDown, Clock, FileText, Trash2 } from 'lucid
 import { PatientRecord } from '../types';
 import useAppStore from '../stores/useAppStore';
 
-const parseLocalYMD = (dateStr: string) => {
+export const parseLocalYMD = (dateStr: string) => {
   if (!dateStr) return new Date();
   const parts = dateStr.split('-');
   if (parts.length === 3) {
@@ -13,10 +13,11 @@ const parseLocalYMD = (dateStr: string) => {
   return new Date(dateStr);
 };
 
-const calculateAge = (birthDateStr?: string) => {
+export const calculateAge = (birthDateStr?: string) => {
   if (!birthDateStr) return '';
   try {
     const age = differenceInYears(new Date(), parseLocalYMD(birthDateStr));
+    if (Number.isNaN(age)) return '';
     return `${age} años`;
   } catch (e) {
     return '';

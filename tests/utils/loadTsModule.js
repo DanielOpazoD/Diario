@@ -15,25 +15,32 @@ export function loadTsModule(tsPath, overrides = {}) {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES2020,
+      jsx: ts.JsxEmit.ReactJSX,
     },
     fileName: absolutePath,
   });
 
   const module = { exports: {} };
   const localRequire = createRequire(absolutePath);
-  if (!localRequire.extensions['.ts']) {
-    localRequire.extensions['.ts'] = (moduleInstance, filename) => {
-      const tsSource = fs.readFileSync(filename, 'utf8');
-      const compiled = ts.transpileModule(tsSource, {
-        compilerOptions: {
-          module: ts.ModuleKind.CommonJS,
-          target: ts.ScriptTarget.ES2020,
-        },
-        fileName: filename,
-      });
-      moduleInstance._compile(compiled.outputText, filename);
-    };
-  }
+  const registerTs = (ext) => {
+    if (!localRequire.extensions[ext]) {
+      localRequire.extensions[ext] = (moduleInstance, filename) => {
+        const tsSource = fs.readFileSync(filename, 'utf8');
+        const compiled = ts.transpileModule(tsSource, {
+          compilerOptions: {
+            module: ts.ModuleKind.CommonJS,
+            target: ts.ScriptTarget.ES2020,
+            jsx: ts.JsxEmit.ReactJSX,
+          },
+          fileName: filename,
+        });
+        moduleInstance._compile(compiled.outputText, filename);
+      };
+    }
+  };
+
+  registerTs('.ts');
+  registerTs('.tsx');
   const sandbox = {
     module,
     exports: module.exports,

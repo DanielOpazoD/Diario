@@ -18,6 +18,10 @@ interface PatientModalProps {
   selectedDate: string;
 }
 
+export const formatTitleCase = (str: string) => {
+  return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+};
+
 const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, addToast, initialData, selectedDate }) => {
   const patientTypes = useAppStore(state => state.patientTypes);
 
@@ -126,11 +130,6 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
     } finally {
       setIsAnalyzing(false);
     }
-  };
-
-  // Format Title Case Helper
-  const formatTitleCase = (str: string) => {
-    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
   };
 
   const handleNameBlur = () => {
