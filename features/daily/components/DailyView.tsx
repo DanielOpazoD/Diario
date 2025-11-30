@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { format, isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Filter, Plus, Copy, MoveRight } from 'lucide-react';
-import Button from '../../components/Button';
-import CompactPatientCard from '../../components/CompactPatientCard';
-import FilterBar from '../../components/FilterBar';
-import TelegramSyncButton from '../../components/TelegramSyncButton';
-import { PatientRecord, PatientType, PatientTypeConfig } from '../../types';
-import useAppStore from '../../stores/useAppStore';
+import Button from '../../../shared/components/Button';
+import TelegramSyncButton from '../../../components/TelegramSyncButton';
+import { PatientRecord, PatientType, PatientTypeConfig } from '../../../shared/types';
+import useAppStore from '../../../stores/useAppStore';
+import DailyPatientList from './DailyPatientList';
+import DailyFilters from './DailyFilters';
+import { useDailyRecords } from '../hooks/useDailyRecords';
 
 interface DailyViewProps {
   currentDate: Date;
@@ -39,10 +40,7 @@ const DailyView: React.FC<DailyViewProps> = ({
 
   const addToast = useAppStore(state => state.addToast);
 
-  const dailyRecords = useMemo(
-    () => records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), currentDate)),
-    [records, currentDate]
-  );
+  const dailyRecords = useDailyRecords(records, currentDate);
 
   const orderedPatientTypes = useMemo(() => {
     const defaultOrder = [
@@ -163,7 +161,7 @@ const DailyView: React.FC<DailyViewProps> = ({
           </div>
         </div>
 
-        <FilterBar
+        <DailyFilters
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
           stats={summaryStats}
@@ -232,19 +230,14 @@ const DailyView: React.FC<DailyViewProps> = ({
         </div>
       ) : (
         <div className="flex-1 pb-20 md:pb-4 animate-fade-in">
-          <div className="space-y-2">
-            {visibleRecords.map(patient => (
-              <CompactPatientCard
-                key={patient.id}
-                patient={patient}
-                onEdit={() => onEditPatient(patient)}
-                onDelete={() => onDeletePatient(patient.id)}
-                selectionMode={selectionMode}
-                selected={selectedPatients.has(patient.id)}
-                onToggleSelect={() => togglePatientSelection(patient.id)}
-              />
-            ))}
-          </div>
+          <DailyPatientList
+            patients={visibleRecords}
+            selectionMode={selectionMode}
+            selectedPatients={selectedPatients}
+            onEditPatient={onEditPatient}
+            onDeletePatient={onDeletePatient}
+            onToggleSelect={togglePatientSelection}
+          />
         </div>
       )}
     </div>

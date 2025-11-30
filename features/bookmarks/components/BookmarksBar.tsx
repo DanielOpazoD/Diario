@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Bookmark as BookmarkIcon, LayoutGrid, Plus } from 'lucide-react';
-import useAppStore from '../stores/useAppStore';
-import BookmarkIconGraphic from './BookmarkIcon';
+import useAppStore from '../../../stores/useAppStore';
+import BookmarkIconGraphic from '../../../components/BookmarkIcon';
 
 interface BookmarksBarProps {
   onOpenManager: () => void;

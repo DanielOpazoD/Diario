@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Cloud, X, FileJson, Clock, Loader, Download, Search, Folder, ChevronRight, CheckCircle2 } from 'lucide-react';
-import Button from './Button';
-import { listFolderEntries, getFolderMetadata, DriveEntry, getActiveAccessToken, clearStoredToken } from '../services/googleService';
+import Button from '../../../shared/components/Button';
+import { listFolderEntries, getFolderMetadata, DriveEntry, getActiveAccessToken, clearStoredToken } from '../../../services/googleService';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { DriveFolderPreference } from '../types';
+import { DriveFolderPreference } from '../../../shared/types';
 
 interface DrivePickerModalProps {
   isOpen: boolean;

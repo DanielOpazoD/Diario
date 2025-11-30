@@ -94,7 +94,7 @@ const createHookRenderer = () => {
     cleanupStore.length = 0;
   };
 
-  const hookModule = loadTsModule('hooks/useAutoLock.ts', {
+  const hookModule = loadTsModule('shared/hooks/useAutoLock.ts', {
     require: (specifier) => (specifier === 'react' ? ReactMock : realRequire(specifier)),
     window: globalThis.window,
   });
