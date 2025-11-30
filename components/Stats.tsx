@@ -152,7 +152,7 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 animate-fade-in pb-14 pt-1.5 max-w-6xl mx-auto">
+    <div className="space-y-4 md:space-y-6 animate-fade-in pb-16 pt-1.5 max-w-6xl mx-auto">
       <div className={`rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/85 dark:bg-gray-900/65 shadow-md backdrop-blur-sm ${compactStats ? 'px-3 py-2.5' : 'px-4 py-3'}`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-0.5">

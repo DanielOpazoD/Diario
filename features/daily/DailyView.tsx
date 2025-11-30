@@ -128,7 +128,7 @@ const DailyView: React.FC<DailyViewProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col max-w-5xl mx-auto">
+    <div className="h-full flex flex-col max-w-6xl mx-auto">
       <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/90 dark:bg-gray-900/70 shadow-md backdrop-blur-sm px-4 py-3.5 mb-3 animate-fade-in space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">

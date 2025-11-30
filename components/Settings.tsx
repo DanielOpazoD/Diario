@@ -143,7 +143,7 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-20 animate-fade-in pt-2">
+    <div className="max-w-6xl mx-auto pb-16 animate-fade-in pt-2">
       <div className="flex items-center gap-3 mb-6 md:mb-8 px-2">
         <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-2xl">
           <SettingsIcon className="w-6 h-6 text-gray-700 dark:text-gray-300" />

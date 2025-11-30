@@ -129,7 +129,7 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-6xl mx-auto pb-16 space-y-4">
       <div className="flex flex-col gap-4 xl:flex-row">
         <div className="flex-1 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">

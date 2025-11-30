@@ -69,7 +69,7 @@ const PatientsHistoryView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto pb-16 px-3 md:px-6 animate-fade-in">
+    <div className="max-w-6xl mx-auto pb-16 animate-fade-in">
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
