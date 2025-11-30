@@ -4,6 +4,7 @@ import { ViewMode } from './types';
 import { LogProvider, useLogger } from './context/LogContext';
 import { QueryProvider } from './providers/QueryProvider';
 import useAppStore from './stores/useAppStore';
+import { SecurityProvider, useSecurity } from './context/SecurityContext';
 import useAutoLock from './hooks/useAutoLock';
 import { usePrefetch } from './hooks/usePrefetch';
 import useModalManager from './hooks/useModalManager';
@@ -19,6 +20,7 @@ import MainLayout from './layouts/MainLayout';
 import LockScreen from './components/LockScreen';
 import AppViews from './components/AppViews';
 import AppModals from './components/AppModals';
+import MasterPasswordModal from './components/MasterPasswordModal';
 
 const DebugConsole = lazy(() => import('./components/DebugConsole'));
 const loadReportService = () => import('./services/reportService');
@@ -28,6 +30,7 @@ const AppContent: React.FC = () => {
   const { addLog } = useLogger();
 
   const user = useAppStore(state => state.user);
+  const { masterKey, needsMasterKey, onboardingMode, setMasterKey } = useSecurity();
   const records = useAppStore(state => state.records);
   const generalTasks = useAppStore(state => state.generalTasks);
   const patientTypes = useAppStore(state => state.patientTypes);
@@ -99,6 +102,8 @@ const AppContent: React.FC = () => {
     setIsBackupModalOpen: (open) => (open ? openBackupModal() : closeBackupModal()),
     setIsDrivePickerOpen: (open) => (open ? openDrivePicker() : closeDrivePicker()),
     setDriveFolderPreference,
+    masterKey,
+    userEmail: user?.email || null,
   });
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -126,6 +131,11 @@ const AppContent: React.FC = () => {
     const { clearStoredToken } = await loadGoogleService();
     clearStoredToken();
     logout();
+  };
+
+  const handleMasterKeySubmit = (value: string) => {
+    setMasterKey(value);
+    addToast('success', 'Contraseña Maestra en memoria');
   };
 
   const handleGeneratePDF = async () => {
@@ -156,7 +166,15 @@ const AppContent: React.FC = () => {
       <Suspense fallback={null}>
         <DebugConsole />
       </Suspense>
-      {isLocked && securityPin && (
+      {needsMasterKey && user && (
+        <MasterPasswordModal
+          mode={onboardingMode}
+          email={user.email}
+          onSubmit={handleMasterKeySubmit}
+          onLogout={handleLogout}
+        />
+      )}
+      {!needsMasterKey && isLocked && securityPin && (
         <LockScreen onUnlock={handleUnlock} autoLockMinutes={autoLockMinutes} />
       )}
 
@@ -224,9 +242,11 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => (
   <QueryProvider>
     <LogProvider>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
+      <SecurityProvider>
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
+      </SecurityProvider>
     </LogProvider>
   </QueryProvider>
 );
