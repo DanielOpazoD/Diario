@@ -15,7 +15,7 @@ type GeminiRequest =
   | { action: 'extractPatientList'; base64Image: string; mimeType: string }
   | { action: 'askAboutImages'; prompt: string; images: any[] };
 
-const MODEL_NAME = 'gemini-1.5-flash';
+const MODEL_NAME = 'gemini-2.0-flash';
 const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_API_KEY || '';
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 

@@ -65,11 +65,12 @@ export const extractMultiplePatientsFromImage = async (
   mimeType: string
 ): Promise<ExtractedPatientData[]> => {
   try {
-    return await callGemini<ExtractedPatientData[]>({
+    const result = await callGemini<{ patients: ExtractedPatientData[] }>({
       action: "extractPatientList",
       base64Image,
       mimeType,
     });
+    return result.patients || [];
   } catch (error: any) {
     emitStructuredLog("error", "Gemini", "Vision list extraction failed", { error: String(error) });
     throw new Error("Error al procesar la lista de pacientes.");
