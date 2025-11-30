@@ -1,9 +1,10 @@
 
 import React, { useEffect, useState } from 'react';
-import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon, Lock, Timer, Pencil, Check, X } from 'lucide-react';
+import { Moon, Sun, Plus, Trash2, Settings as SettingsIcon, Lock, LockKeyhole, ShieldCheck, Timer, Pencil, Check, X } from 'lucide-react';
 import useAppStore from '../stores/useAppStore';
 import Button from './Button';
 import { PatientTypeConfig } from '../types';
+import { deriveEncryptionKey, generateSalt, hashPassword, verifyPassword } from '../services/securityService';
 
 const AVAILABLE_COLORS = [
   'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
@@ -49,6 +50,12 @@ const Settings: React.FC = () => {
   const autoLockMinutes = useAppStore(state => state.autoLockMinutes);
   const setSecurityPin = useAppStore(state => state.setSecurityPin);
   const setAutoLockMinutes = useAppStore(state => state.setAutoLockMinutes);
+  const masterPasswordSalt = useAppStore(state => state.masterPasswordSalt);
+  const masterPasswordHash = useAppStore(state => state.masterPasswordHash);
+  const setMasterPasswordData = useAppStore(state => state.setMasterPasswordData);
+  const setMasterUnlocked = useAppStore(state => state.setMasterUnlocked);
+  const setMasterKey = useAppStore(state => state.setMasterKey);
+  const resetMasterPassword = useAppStore(state => state.resetMasterPassword);
   const highlightPendingPatients = useAppStore(state => state.highlightPendingPatients);
   const setHighlightPendingPatients = useAppStore(state => state.setHighlightPendingPatients);
   const compactStats = useAppStore(state => state.compactStats);
@@ -58,6 +65,10 @@ const Settings: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState(AVAILABLE_COLORS[0]);
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+  const [currentMasterPassword, setCurrentMasterPassword] = useState('');
+  const [newMasterPassword, setNewMasterPassword] = useState('');
+  const [confirmMasterPassword, setConfirmMasterPassword] = useState('');
+  const [isSavingMasterPassword, setIsSavingMasterPassword] = useState(false);
   const [lockMinutes, setLockMinutes] = useState(autoLockMinutes);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [editedLabel, setEditedLabel] = useState('');
@@ -111,6 +122,50 @@ const Settings: React.FC = () => {
   const handleCancelEdit = () => {
     setEditingTypeId(null);
     setEditedLabel('');
+  };
+
+  const handleSaveMasterPassword = async () => {
+    if (newMasterPassword.length < 12) {
+      addToast('error', 'La contraseña maestra debe tener al menos 12 caracteres.');
+      return;
+    }
+
+    if (newMasterPassword !== confirmMasterPassword) {
+      addToast('error', 'Las contraseñas no coinciden.');
+      return;
+    }
+
+    setIsSavingMasterPassword(true);
+    try {
+      if (masterPasswordSalt && masterPasswordHash) {
+        const isValid = await verifyPassword(currentMasterPassword, masterPasswordSalt, masterPasswordHash);
+        if (!isValid) {
+          addToast('error', 'La contraseña actual no es correcta.');
+          return;
+        }
+      }
+
+      const salt = generateSalt();
+      const hash = await hashPassword(newMasterPassword, salt);
+      const key = await deriveEncryptionKey(newMasterPassword, salt);
+      setMasterPasswordData(salt, hash);
+      setMasterUnlocked(true);
+      setMasterKey(key);
+      addToast('success', 'Contraseña maestra actualizada. Los próximos respaldos se cifrarán automáticamente.');
+      setCurrentMasterPassword('');
+      setNewMasterPassword('');
+      setConfirmMasterPassword('');
+    } catch (error) {
+      console.error(error);
+      addToast('error', 'No se pudo actualizar la contraseña maestra.');
+    } finally {
+      setIsSavingMasterPassword(false);
+    }
+  };
+
+  const handleRemoveMasterPassword = () => {
+    resetMasterPassword();
+    addToast('info', 'La contraseña maestra fue eliminada. Activa una nueva para proteger el inicio de sesión y los respaldos.');
   };
 
   const handleSavePin = () => {
@@ -232,6 +287,65 @@ const Settings: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <LockKeyhole className="w-4 h-4 text-purple-500" />
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Contraseña Maestra</p>
+              </div>
+              {masterPasswordSalt && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Contraseña actual</label>
+                  <input
+                    type="password"
+                    value={currentMasterPassword}
+                    onChange={(e) => setCurrentMasterPassword(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Requerida para cambiarla"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nueva contraseña maestra</label>
+                <input
+                  type="password"
+                  value={newMasterPassword}
+                  onChange={(e) => setNewMasterPassword(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Mínimo 12 caracteres"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Confirmar contraseña</label>
+                <input
+                  type="password"
+                  value={confirmMasterPassword}
+                  onChange={(e) => setConfirmMasterPassword(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Repite la contraseña"
+                />
+                <p className="text-xs text-gray-500 mt-2">Se usará para iniciar sesión y cifrar los respaldos (.json). Los adjuntos se mantienen sin cifrar.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={handleSaveMasterPassword}
+                  icon={<ShieldCheck className="w-4 h-4" />}
+                  size="sm"
+                  loading={isSavingMasterPassword}
+                >
+                  Guardar contraseña
+                </Button>
+                {masterPasswordSalt && (
+                  <Button
+                    onClick={handleRemoveMasterPassword}
+                    variant="secondary"
+                    size="sm"
+                    icon={<Trash2 className="w-4 h-4" />}
+                  >
+                    Eliminar protección
+                  </Button>
+                )}
+              </div>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nuevo PIN</label>
