@@ -91,6 +91,7 @@ export interface LogEntry {
   source: string;
   message: string;
   details?: any;
+  sessionId?: string;
 }
 
 export interface DriveFolderPreference {

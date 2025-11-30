@@ -1,4 +1,6 @@
 import { AIAnalysisResult, ExtractedPatientData } from "../types";
+import { fetchWithRetry } from "./httpClient";
+import { emitStructuredLog } from "./logger";
 
 interface GeminiStatus {
   status: string;
@@ -7,7 +9,7 @@ interface GeminiStatus {
 }
 
 const callGemini = async <T>(payload: Record<string, unknown>): Promise<T> => {
-  const response = await fetch("/.netlify/functions/gemini", {
+  const response = await fetchWithRetry("/.netlify/functions/gemini", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -28,7 +30,7 @@ export const validateEnvironment = async (): Promise<GeminiStatus> => {
     const status = await callGemini<GeminiStatus>({ action: "status" });
     return status;
   } catch (error) {
-    console.error("Gemini status error:", error);
+    emitStructuredLog("error", "Gemini", "Status check failed", { error: String(error) });
     return { status: "Missing", length: 0, keyPreview: "none" };
   }
 };
@@ -37,7 +39,7 @@ export const analyzeClinicalNote = async (noteText: string): Promise<AIAnalysisR
   try {
     return await callGemini<AIAnalysisResult>({ action: "analyzeNote", noteText });
   } catch (error: any) {
-    console.error("Gemini Error:", error);
+    emitStructuredLog("error", "Gemini", "Analyze note failed", { error: String(error) });
     throw new Error("Error al analizar la nota clínica.");
   }
 };
@@ -53,7 +55,7 @@ export const extractPatientDataFromImage = async (
       mimeType,
     });
   } catch (error: any) {
-    console.error("Gemini Vision Error:", error);
+    emitStructuredLog("error", "Gemini", "Vision extraction failed", { error: String(error) });
     throw new Error("Error al leer la imagen.");
   }
 };
@@ -69,7 +71,7 @@ export const extractMultiplePatientsFromImage = async (
       mimeType,
     });
   } catch (error: any) {
-    console.error("Gemini Vision List Error:", error);
+    emitStructuredLog("error", "Gemini", "Vision list extraction failed", { error: String(error) });
     throw new Error("Error al procesar la lista de pacientes.");
   }
 };
@@ -85,7 +87,7 @@ export const askAboutImages = async (prompt: string, images: FileContent[]): Pro
   try {
     return await callGemini<string>({ action: "askAboutImages", prompt, images });
   } catch (error: any) {
-    console.error("Gemini Chat Error:", error);
+    emitStructuredLog("error", "Gemini", "Ask about images failed", { error: String(error) });
     return "No se pudo generar respuesta sobre las imágenes.";
   }
 };

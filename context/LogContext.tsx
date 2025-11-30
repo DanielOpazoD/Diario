@@ -1,33 +1,27 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { LogEntry } from '../types';
+import { emitStructuredLog, getSessionId, LogLevel } from '../services/logger';
 
 interface LogContextType {
   logs: LogEntry[];
-  addLog: (level: 'info' | 'warn' | 'error', source: string, message: string, details?: any) => void;
+  addLog: (level: LogLevel, source: string, message: string, details?: any) => void;
   clearLogs: () => void;
 }
 
-const LogContext = createContext<LogContextType | undefined>(undefined);
+export const LogContext = createContext<LogContextType | undefined>(undefined);
 
 export const LogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
-  const addLog = useCallback((level: 'info' | 'warn' | 'error', source: string, message: string, details?: any) => {
+  const addLog = useCallback((level: LogLevel, source: string, message: string, details?: any) => {
+    const structured = emitStructuredLog(level, source, message, details);
+
     const newLog: LogEntry = {
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-      level,
-      source,
-      message,
-      details
+      ...structured,
+      sessionId: getSessionId(),
     };
-    
-    // Keep only last 50 logs to avoid memory issues
-    setLogs(prev => [newLog, ...prev].slice(0, 50));
-    
-    // Also log to browser console
-    const style = level === 'error' ? 'color: red; font-weight: bold' : 'color: blue';
-    console.log(`%c[${source}] ${message}`, style, details || '');
+
+    setLogs(prev => [newLog, ...prev].slice(0, 100));
   }, []);
 
   const clearLogs = useCallback(() => {
