@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, CheckSquare, Square, Camera, Mic, Clock, Users, Paperclip, FileText } from 'lucide-react';
-import { PatientRecord, PatientType, PendingTask, AttachedFile } from '../types';
-import Button from './Button';
-import { analyzeClinicalNote, extractPatientDataFromImage, extractMultiplePatientsFromImage } from '../services/geminiService';
-import { fileToBase64 } from '../services/storage';
-import FileAttachmentManager from './FileAttachmentManager';
-import useAppStore from '../stores/useAppStore';
+import { PatientRecord, PatientType, PendingTask, AttachedFile } from '../../../shared/types/index.ts';
+import Button from '../../../shared/components/Button';
+import { analyzeClinicalNote, extractPatientDataFromImage, extractMultiplePatientsFromImage } from '../../../services/geminiService';
+import { fileToBase64 } from '../../../services/storage';
+import FileAttachmentManager from '../../../components/FileAttachmentManager';
+import useAppStore from '../../../stores/useAppStore';
+import usePatientForm from '../hooks/usePatientForm';
 
 interface PatientModalProps {
   isOpen: boolean;
@@ -25,20 +26,32 @@ export const formatTitleCase = (str: string) => {
 const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, addToast, initialData, selectedDate }) => {
   const patientTypes = useAppStore(state => state.patientTypes);
 
-  const [name, setName] = useState('');
-  const [rut, setRut] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-  const [gender, setGender] = useState('');
-  const [type, setType] = useState<string>(PatientType.POLICLINICO);
-  const [entryTime, setEntryTime] = useState('');
-  const [exitTime, setExitTime] = useState('');
-  const [diagnosis, setDiagnosis] = useState('');
-  const [clinicalNote, setClinicalNote] = useState('');
-  const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
-  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-  
-  // UI State
-  const [activeTab, setActiveTab] = useState<'clinical' | 'files'>('clinical');
+  const {
+    name,
+    setName,
+    rut,
+    setRut,
+    birthDate,
+    setBirthDate,
+    gender,
+    setGender,
+    type,
+    setType,
+    entryTime,
+    setEntryTime,
+    exitTime,
+    setExitTime,
+    diagnosis,
+    setDiagnosis,
+    clinicalNote,
+    setClinicalNote,
+    pendingTasks,
+    setPendingTasks,
+    attachedFiles,
+    setAttachedFiles,
+    activeTab,
+    setActiveTab,
+  } = usePatientForm({ initialData, isOpen });
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
@@ -70,39 +83,6 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
       };
     }
   }, []);
-
-  // Reset form strictly when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        setName(initialData.name); 
-        setRut(initialData.rut); 
-        setBirthDate(initialData.birthDate || ''); 
-        setGender(initialData.gender || ''); 
-        setType(initialData.type); 
-        setEntryTime(initialData.entryTime || ''); 
-        setExitTime(initialData.exitTime || ''); 
-        setDiagnosis(initialData.diagnosis); 
-        setClinicalNote(initialData.clinicalNote); 
-        setPendingTasks(initialData.pendingTasks);
-        setAttachedFiles(initialData.attachedFiles || []);
-      } else {
-        // Always start from zero for new patient
-        setName(''); 
-        setRut(''); 
-        setBirthDate(''); 
-        setGender(''); 
-        setType(PatientType.POLICLINICO); 
-        setEntryTime(''); 
-        setExitTime(''); 
-        setDiagnosis(''); 
-        setClinicalNote(''); 
-        setPendingTasks([]); 
-        setAttachedFiles([]);
-      }
-      setActiveTab('clinical');
-    }
-  }, [isOpen, initialData]);
 
   const toggleListening = () => {
     if (!recognitionRef.current) return addToast('error', 'Navegador no soporta voz');

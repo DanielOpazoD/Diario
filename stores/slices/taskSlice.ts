@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { GeneralTask } from '../../types';
+import { GeneralTask } from '../../shared/types/index.ts';
 
 export interface TaskSlice {
   generalTasks: GeneralTask[];

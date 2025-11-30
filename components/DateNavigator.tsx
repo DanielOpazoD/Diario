@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { format, addDays, isSameDay, isToday, addYears, getYear, getMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { PatientRecord, PatientType } from '../types';
+import { PatientRecord, PatientType } from '../shared/types/index.ts';
 import { ChevronLeft, ChevronRight, Calendar, Disc } from 'lucide-react';
 
 interface DateNavigatorProps {

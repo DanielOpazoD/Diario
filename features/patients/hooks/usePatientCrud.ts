@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { format } from 'date-fns';
-import { PatientRecord } from '../types';
+import { PatientRecord } from '../../../shared/types/index.ts';
 
 const toTitleCase = (str: string) => str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 

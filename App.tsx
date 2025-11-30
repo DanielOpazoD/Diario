@@ -1,20 +1,20 @@
 import React, { useState, useMemo, useLayoutEffect, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { ViewMode } from './types';
+import { ViewMode } from './shared/types/index.ts';
 import { LogProvider, useLogger } from './context/LogContext';
 import { QueryProvider } from './providers/QueryProvider';
 import useAppStore from './stores/useAppStore';
-import useAutoLock from './hooks/useAutoLock';
-import { usePrefetch, prefetchAdjacentViews } from './hooks/usePrefetch';
+import useAutoLock from './shared/hooks/useAutoLock';
+import { usePrefetch, prefetchAdjacentViews } from './shared/hooks/usePrefetch';
 import useModalManager from './hooks/useModalManager';
-import usePatientCrud from './hooks/usePatientCrud';
-import useBackupManager from './hooks/useBackupManager';
+import { usePatientCrud } from './features/patients';
+import { useBackup } from './features/backup';
 import useDriveFolderPreference from './hooks/useDriveFolderPreference';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Critical path components - loaded immediately
 import Login from './components/Login';
-import Toast from './components/Toast';
+import Toast from './shared/components/Toast';
 import MainLayout from './layouts/MainLayout';
 import LockScreen from './components/LockScreen';
 
@@ -27,22 +27,22 @@ import {
   TasksSkeleton,
   BookmarksSkeleton,
   HistorySkeleton,
-} from './components/LoadingSkeletons';
+} from './shared/components/LoadingSkeletons';
 
 // Lazy-loaded view components (micro-frontends)
-const DailyView = lazy(() => import('./features/daily/DailyView'));
+const DailyView = lazy(() => import('./features/daily').then(module => ({ default: module.DailyView })));
 const StatsView = lazy(() => import('./features/stats/StatsView'));
 const PatientsHistoryView = lazy(() => import('./features/history/PatientsHistoryView'));
-const BookmarksView = lazy(() => import('./features/bookmarks/BookmarksView'));
+const BookmarksView = lazy(() => import('./features/bookmarks').then(module => ({ default: module.BookmarksView })));
 const TaskDashboard = lazy(() => import('./components/TaskDashboard'));
 const Settings = lazy(() => import('./components/Settings'));
 
 // Lazy-loaded modal components (loaded on demand)
-const PatientModal = lazy(() => import('./components/PatientModal'));
-const ConfirmationModal = lazy(() => import('./components/ConfirmationModal'));
-const BackupModal = lazy(() => import('./components/BackupModal'));
-const DrivePickerModal = lazy(() => import('./components/DrivePickerModal'));
-const BookmarksModal = lazy(() => import('./components/BookmarksModal'));
+const PatientModal = lazy(() => import('./features/patients').then(module => ({ default: module.PatientModal })));
+const ConfirmationModal = lazy(() => import('./shared/components/ConfirmationModal'));
+const BackupModal = lazy(() => import('./features/backup').then(module => ({ default: module.BackupModal })));
+const DrivePickerModal = lazy(() => import('./features/backup').then(module => ({ default: module.DrivePickerModal })));
+const BookmarksModal = lazy(() => import('./features/bookmarks').then(module => ({ default: module.BookmarksModal })));
 const DebugConsole = lazy(() => import('./components/DebugConsole'));
 
 // Lazy-loaded services (heavy dependencies)
@@ -111,7 +111,7 @@ const AppContent: React.FC = () => {
     addToast,
   });
 
-  const { isUploading, handleLocalImport, handleBackupConfirm, handleDriveFileSelect } = useBackupManager({
+  const { isUploading, handleLocalImport, handleBackupConfirm, handleDriveFileSelect } = useBackup({
     records,
     generalTasks,
     patientTypes,

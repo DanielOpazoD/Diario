@@ -11,7 +11,7 @@ class MemoryStorage {
   removeItem(key) { this.store.delete(key); }
 }
 
-const { parseLocalYMD, calculateAge } = loadTsModule('components/CompactPatientCard.tsx', {
+const { parseLocalYMD, calculateAge } = loadTsModule('features/patients/components/CompactPatientCard.tsx', {
   localStorage: new MemoryStorage(),
   window: { matchMedia: () => ({ matches: false }) },
   require: (id) => {

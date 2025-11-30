@@ -16,7 +16,7 @@ import {
   FolderPlus,
   Zap,
 } from 'lucide-react';
-import { AttachedFile } from '../types';
+import { AttachedFile } from '../shared/types/index.ts';
 import { createPatientDriveFolder, uploadFileForPatient, deleteFileFromDrive } from '../services/googleService';
 import { usePatientFiles } from '../hooks/usePatientFiles';
 import AIAttachmentAssistant from './AIAttachmentAssistant';

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import Button from '../../components/Button';
-import { PatientRecord } from '../../types';
+import Button from '../../shared/components/Button';
+import { PatientRecord } from '../../shared/types/index.ts';
 
 interface SearchViewProps {
   records: PatientRecord[];

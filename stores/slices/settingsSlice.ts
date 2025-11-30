@@ -1,6 +1,6 @@
 
 import { StateCreator } from 'zustand';
-import { PatientTypeConfig, PatientType } from '../../types';
+import { PatientTypeConfig, PatientType } from '../../shared/types/index.ts';
 import { PATIENT_TYPE_COLORS } from '../../constants';
 
 export interface SettingsSlice {

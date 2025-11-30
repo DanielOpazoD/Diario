@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { PatientRecord } from '../types';
+import { PatientRecord } from '../shared/types/index.ts';
 
 const useModalManager = () => {
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);

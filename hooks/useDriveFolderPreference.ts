@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DriveFolderPreference } from '../types';
+import { DriveFolderPreference } from '../shared/types/index.ts';
 
 const DEFAULT_DRIVE_FOLDER: DriveFolderPreference = {
   id: null,

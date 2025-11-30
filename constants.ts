@@ -1,4 +1,4 @@
-import { PatientType } from './types';
+import { PatientType } from './shared/types/index.ts';
 
 export const APP_NAME = "MediDiario AI";
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Edit3, File, FileText, Image as ImageIcon, Star, X } from 'lucide-react';
-import { AttachedFile } from '../types';
+import { AttachedFile } from '../shared/types/index.ts';
 
 interface FilePreviewModalProps {
   file: AttachedFile | null;

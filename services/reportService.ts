@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { PatientRecord } from "../types";
+import { PatientRecord } from "../shared/types/index.ts";
 
 export const generateHandoverReport = (records: PatientRecord[], date: Date, doctorName: string) => {
   const doc = new jsPDF();

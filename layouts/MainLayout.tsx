@@ -1,9 +1,9 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { BarChart2, Bookmark as BookmarkIcon, Calendar as CalendarIcon, CheckSquare, Cloud, Download, LogOut, Menu, RefreshCw, Settings as SettingsIcon, Upload, Users, X } from 'lucide-react';
 import DateNavigator from '../components/DateNavigator';
-import { ViewMode, PatientRecord, User } from '../types';
+import { ViewMode, PatientRecord, User } from '../shared/types/index.ts';
 import { downloadDataAsJson } from '../services/storage';
-import BookmarksBar from '../components/BookmarksBar';
+import { BookmarksBar } from '../features/bookmarks';
 import GoogleConnectionStatus from '../components/GoogleConnectionStatus';
 
 interface MainLayoutProps {

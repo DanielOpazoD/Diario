@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { PatientRecord } from '../../types';
+import { PatientRecord } from '../../shared/types/index.ts';
 
 export interface PatientSlice {
   records: PatientRecord[];

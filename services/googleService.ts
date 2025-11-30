@@ -1,7 +1,7 @@
 
 // Service to handle Google Auth and Drive API
 
-import { AttachedFile } from "../types";
+import { AttachedFile } from "../shared/types/index.ts";
 import { fetchWithRetry } from "./httpClient";
 import { emitStructuredLog } from "./logger";
 

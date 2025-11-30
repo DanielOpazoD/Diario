@@ -1,13 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { format, isSameDay } from 'date-fns';
+import React, { useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Filter, Plus, Copy, MoveRight } from 'lucide-react';
-import Button from '../../components/Button';
-import CompactPatientCard from '../../components/CompactPatientCard';
-import FilterBar from '../../components/FilterBar';
-import TelegramSyncButton from '../../components/TelegramSyncButton';
-import { PatientRecord, PatientType, PatientTypeConfig } from '../../types';
-import useAppStore from '../../stores/useAppStore';
+import Button from '../../../shared/components/Button';
+import DailyFilters from './DailyFilters';
+import DailyPatientList from './DailyPatientList';
+import TelegramSyncButton from '../../../components/TelegramSyncButton';
+import { PatientRecord, PatientTypeConfig } from '../../../shared/types/index.ts';
+import useAppStore from '../../../stores/useAppStore';
+import useDailyRecords from '../hooks/useDailyRecords';
 
 interface DailyViewProps {
   currentDate: Date;
@@ -39,52 +40,16 @@ const DailyView: React.FC<DailyViewProps> = ({
 
   const addToast = useAppStore(state => state.addToast);
 
-  const dailyRecords = useMemo(
-    () => records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), currentDate)),
-    [records, currentDate]
-  );
-
-  const orderedPatientTypes = useMemo(() => {
-    const defaultOrder = [
-      PatientType.HOSPITALIZADO,
-      PatientType.POLICLINICO,
-      PatientType.TURNO,
-      PatientType.EXTRA,
-    ];
-    const mapped = new Map(patientTypes.map(t => [t.label, t]));
-    const prioritized = defaultOrder
-      .map(label => mapped.get(label))
-      .filter(Boolean) as PatientTypeConfig[];
-    const remaining = patientTypes.filter(t => !defaultOrder.includes(t.label as PatientType));
-    return [...prioritized, ...remaining];
-  }, [patientTypes]);
-
-  const summaryStats = useMemo(
-    () => orderedPatientTypes.map(t => ({
-      id: t.id,
-      label: t.label,
-      count: dailyRecords.filter(r => r.type === t.label).length,
-      color: t.colorClass,
-    })),
-    [dailyRecords, orderedPatientTypes]
-  );
-
-  const visibleRecords = useMemo(
-    () => {
-      if (activeFilter === 'all') return dailyRecords;
-      return dailyRecords.filter(r => r.type === activeFilter);
-    },
-    [dailyRecords, activeFilter]
-  );
+  const { dailyRecords, summaryStats, visibleRecords, pendingTasks } = useDailyRecords({
+    records,
+    currentDate,
+    patientTypes,
+    activeFilter,
+  });
 
   useEffect(() => {
     setTargetDate(format(currentDate, 'yyyy-MM-dd'));
   }, [currentDate]);
-
-  const pendingTasks = useMemo(
-    () => dailyRecords.reduce((acc, record) => acc + (record.pendingTasks?.filter(t => !t.isCompleted).length || 0), 0),
-    [dailyRecords]
-  );
 
   const toggleSelectionMode = () => {
     setSelectionMode(prev => {
@@ -163,10 +128,10 @@ const DailyView: React.FC<DailyViewProps> = ({
           </div>
         </div>
 
-        <FilterBar
+        <DailyFilters
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
-          stats={summaryStats}
+          summaryStats={summaryStats}
           totalCount={dailyRecords.length}
         />
       </div>
@@ -231,21 +196,14 @@ const DailyView: React.FC<DailyViewProps> = ({
           )}
         </div>
       ) : (
-        <div className="flex-1 pb-20 md:pb-4 animate-fade-in">
-          <div className="space-y-2">
-            {visibleRecords.map(patient => (
-              <CompactPatientCard
-                key={patient.id}
-                patient={patient}
-                onEdit={() => onEditPatient(patient)}
-                onDelete={() => onDeletePatient(patient.id)}
-                selectionMode={selectionMode}
-                selected={selectedPatients.has(patient.id)}
-                onToggleSelect={() => togglePatientSelection(patient.id)}
-              />
-            ))}
-          </div>
-        </div>
+        <DailyPatientList
+          patients={visibleRecords}
+          selectionMode={selectionMode}
+          selectedPatients={selectedPatients}
+          onEditPatient={onEditPatient}
+          onDeletePatient={onDeletePatient}
+          onToggleSelect={togglePatientSelection}
+        />
       )}
     </div>
   );

@@ -5,7 +5,7 @@ import { createTaskSlice, TaskSlice } from './slices/taskSlice';
 import { createUserSlice, UserSlice } from './slices/userSlice';
 import { createSettingsSlice, SettingsSlice, defaultPatientTypes } from './slices/settingsSlice';
 import { BookmarksSlice, createBookmarkSlice, defaultBookmarkCategories } from './slices/bookmarkSlice';
-import { BookmarkCategory, SecuritySettings, ToastMessage } from '../types';
+import { BookmarkCategory, SecuritySettings, ToastMessage } from '../shared/types/index.ts';
 import {
   loadRecordsFromLocal,
   loadGeneralTasksFromLocal,

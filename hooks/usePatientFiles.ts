@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { AttachedFile } from '../types';
+import { AttachedFile } from '../shared/types/index.ts';
 import {
   fetchPatientFolderFiles,
   uploadFileForPatient,

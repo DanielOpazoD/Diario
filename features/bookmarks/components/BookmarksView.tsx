@@ -1,8 +1,8 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Bookmark, Edit3, ExternalLink, FileDown, FileUp, LayoutGrid, List, Plus, Search, Star, Trash2 } from 'lucide-react';
-import useAppStore from '../../stores/useAppStore';
-import BookmarkIconGraphic from '../../components/BookmarkIcon';
-import { defaultBookmarkCategories } from '../../stores/slices/bookmarkSlice';
+import BookmarkIconGraphic from '../../../components/BookmarkIcon';
+import { defaultBookmarkCategories } from '../../../stores/slices/bookmarkSlice';
+import useBookmarks from '../hooks/useBookmarks';
 
 interface BookmarksViewProps {
   onAdd: () => void;
@@ -23,7 +23,7 @@ const BookmarksView: React.FC<BookmarksViewProps> = ({ onAdd, onEdit }) => {
     showBookmarkBar,
     setShowBookmarkBar,
     addToast,
-  } = useAppStore();
+  } = useBookmarks();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');

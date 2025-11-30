@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bookmark } from '../types';
+import { Bookmark } from '../shared/types/index.ts';
 
 interface BookmarkIconProps {
   bookmark: Pick<Bookmark, 'url' | 'icon'>;

@@ -1,4 +1,4 @@
-import { AIAnalysisResult, ExtractedPatientData } from "../types";
+import { AIAnalysisResult, ExtractedPatientData } from "../shared/types/index.ts";
 import { fetchWithRetry } from "./httpClient";
 import { emitStructuredLog } from "./logger";
 
