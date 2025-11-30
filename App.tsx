@@ -16,6 +16,7 @@ import BookmarksModal from './components/BookmarksModal';
 import { LogProvider, useLogger } from './context/LogContext';
 import DebugConsole from './components/DebugConsole';
 import { validateEnvironment } from './services/geminiService';
+import { requestNotificationPermission } from './services/notificationService';
 import useAppStore from './stores/useAppStore';
 import { defaultBookmarkCategories } from './stores/slices/bookmarkSlice';
 import MainLayout from './layouts/MainLayout';
@@ -101,6 +102,12 @@ const AppContent: React.FC = () => {
     validateEnvironment()
       .then(envStatus => addLog('info', 'App', 'Iniciando Aplicación', envStatus))
       .catch(error => addLog('error', 'App', 'No se pudo validar el entorno', { message: String(error) }));
+  }, [addLog]);
+
+  useEffect(() => {
+    requestNotificationPermission()
+      .then(granted => addLog('info', 'Notificaciones', 'Permiso de notificaciones', { granted }))
+      .catch(error => addLog('error', 'Notificaciones', 'No se pudieron solicitar permisos', { message: String(error) }));
   }, [addLog]);
 
   useEffect(() => {
