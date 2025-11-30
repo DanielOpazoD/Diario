@@ -6,7 +6,7 @@ import { es } from 'date-fns/locale';
 import { Filter, Clock, TrendingUp } from 'lucide-react';
 import Button from './Button';
 import useAppStore from '../stores/useAppStore';
-import { PatientTypeConfig } from '../types';
+import { PatientRecord, PatientTypeConfig } from '../types';
 
 interface StatsProps {
   currentDate: Date;
@@ -22,6 +22,13 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
       return acc;
     }, {});
   }, [patientTypes]);
+
+  const typeConfigById = useMemo(() => {
+    return patientTypes.reduce<Record<string, PatientTypeConfig>>((acc, type) => {
+      acc[type.id] = type;
+      return acc;
+    }, {});
+  }, [patientTypes]);
   
   const [startDate, setStartDate] = useState(format(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(endOfMonth(currentDate), 'yyyy-MM-dd'));
@@ -29,8 +36,14 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
 
   // Determine which types are actually relevant (either configured or exist in records)
   const relevantTypes = useMemo(() => {
-     return patientTypes.map(t => t.label);
+     return patientTypes.map(t => t.id);
   }, [patientTypes]);
+
+  const matchesTypeId = (record: PatientRecord, typeId: string) => {
+    if (record.typeId) return record.typeId === typeId;
+    const config = typeConfigById[typeId];
+    return record.type === config?.label;
+  };
 
   const COLORS = ['#ef4444', '#3b82f6', '#9333ea', '#10b981', '#f59e0b', '#ec4899', '#6366f1', '#6b7280'];
 
@@ -47,8 +60,9 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
         total: dayRecords.length,
       };
 
-      relevantTypes.forEach(type => {
-         dayStats[type] = dayRecords.filter(r => r.type === type).length;
+      relevantTypes.forEach(typeId => {
+         const label = typeConfigById[typeId]?.label || typeId;
+         dayStats[label] = dayRecords.filter(r => matchesTypeId(r, typeId)).length;
       });
 
       return dayStats;
@@ -76,10 +90,13 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
       return d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear();
     });
 
-    return relevantTypes.map(type => ({
-       name: type,
-       value: monthRecords.filter(r => r.type === type).length
-    })).filter(d => d.value > 0);
+    return relevantTypes.map(typeId => {
+      const label = typeConfigById[typeId]?.label || typeId;
+      return {
+        name: label,
+        value: monthRecords.filter(r => matchesTypeId(r, typeId)).length
+      };
+    }).filter(d => d.value > 0);
   }, [records, currentDate, relevantTypes]);
 
   const monthTotal = useMemo(
@@ -97,15 +114,18 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
     });
 
     const hoursByType: Record<string, number> = {};
-    relevantTypes.forEach(t => hoursByType[t] = 0);
+    relevantTypes.forEach(t => {
+      const label = typeConfigById[t]?.label || t;
+      hoursByType[label] = 0;
+    });
 
     rangeRecords.forEach(r => {
-       const config = typeConfigByLabel[r.type.toLowerCase()];
+       const config = r.typeId ? typeConfigById[r.typeId] : typeConfigByLabel[r.type.toLowerCase()];
 
        // REGLA DE NEGOCIO:
        // Policlínico = 30 min fijo por paciente
        if (config?.id === 'policlinico') {
-          hoursByType[r.type] += 30;
+          hoursByType[config.label] += 30;
        }
        // Turno = Diferencia entre entrada y salida
        else if (config?.id === 'turno') {
@@ -114,7 +134,7 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
             const [endH, endM] = r.exitTime.split(':').map(Number);
             let diffMins = (endH * 60 + endM) - (startH * 60 + startM);
             if (diffMins < 0) diffMins += 24 * 60; // Cruzó medianoche
-            hoursByType[r.type] += diffMins;
+            hoursByType[config.label] += diffMins;
           }
        }
        // Hospitalizado = NO SUMA TIEMPO (0)
@@ -128,7 +148,7 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
     const formattedHours: Record<string, string> = {};
     // Filter out Hospitalized from the visual hours report as requested
     Object.keys(hoursByType).forEach(k => {
-       const config = typeConfigByLabel[k.toLowerCase()];
+       const config = typeConfigByLabel[k.toLowerCase()] || typeConfigById[k];
        if (config?.id !== 'hospitalizado') {
           formattedHours[k] = (hoursByType[k] / 60).toFixed(1);
        }

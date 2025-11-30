@@ -59,10 +59,10 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
 
   const getIndicators = (date: Date) => {
     const dayRecords = records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), date));
-    const hasHosp = dayRecords.some(r => r.type === PatientType.HOSPITALIZADO);
-    const hasPoli = dayRecords.some(r => r.type === PatientType.POLICLINICO);
-    const hasExtra = dayRecords.some(r => r.type === PatientType.EXTRA);
-    const hasTurno = dayRecords.some(r => r.type === PatientType.TURNO);
+    const hasHosp = dayRecords.some(r => r.typeId === 'hospitalizado' || (!r.typeId && r.type === PatientType.HOSPITALIZADO));
+    const hasPoli = dayRecords.some(r => r.typeId === 'policlinico' || (!r.typeId && r.type === PatientType.POLICLINICO));
+    const hasExtra = dayRecords.some(r => r.typeId === 'extra' || (!r.typeId && r.type === PatientType.EXTRA));
+    const hasTurno = dayRecords.some(r => r.typeId === 'turno' || (!r.typeId && r.type === PatientType.TURNO));
     return { hasHosp, hasPoli, hasExtra, hasTurno, count: dayRecords.length };
   };
 
