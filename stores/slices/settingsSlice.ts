@@ -10,8 +10,16 @@ export interface SettingsSlice {
   setPatientTypes: (types: PatientTypeConfig[]) => void;
   securityPin: string | null;
   autoLockMinutes: number;
+  masterPasswordSalt: string | null;
+  masterPasswordHash: string | null;
+  masterKey: string | null;
+  isMasterUnlocked: boolean;
   setSecurityPin: (pin: string | null) => void;
   setAutoLockMinutes: (minutes: number) => void;
+  setMasterPasswordData: (salt: string, hash: string) => void;
+  setMasterUnlocked: (value: boolean) => void;
+  setMasterKey: (value: string | null) => void;
+  resetMasterPassword: () => void;
   highlightPendingPatients: boolean;
   compactStats: boolean;
   setHighlightPendingPatients: (value: boolean) => void;
@@ -31,6 +39,10 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   patientTypes: defaultPatientTypes,
   securityPin: null,
   autoLockMinutes: 5,
+  masterPasswordSalt: null,
+  masterPasswordHash: null,
+  masterKey: null,
+  isMasterUnlocked: false,
   highlightPendingPatients: true,
   compactStats: true,
   showBookmarkBar: false,
@@ -43,6 +55,15 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   })),
   setSecurityPin: (pin) => set({ securityPin: pin }),
   setAutoLockMinutes: (minutes) => set({ autoLockMinutes: minutes }),
+  setMasterPasswordData: (salt, hash) => set({ masterPasswordSalt: salt, masterPasswordHash: hash }),
+  setMasterUnlocked: (value) => set({ isMasterUnlocked: value }),
+  setMasterKey: (value) => set({ masterKey: value }),
+  resetMasterPassword: () => set({
+    masterPasswordSalt: null,
+    masterPasswordHash: null,
+    masterKey: null,
+    isMasterUnlocked: false,
+  }),
   setHighlightPendingPatients: (value) => set({ highlightPendingPatients: value }),
   setCompactStats: (value) => set({ compactStats: value }),
   setShowBookmarkBar: (value) => set({ showBookmarkBar: value }),

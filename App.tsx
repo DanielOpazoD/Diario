@@ -19,6 +19,7 @@ import MainLayout from './layouts/MainLayout';
 import LockScreen from './components/LockScreen';
 import AppViews from './components/AppViews';
 import AppModals from './components/AppModals';
+import MasterPasswordGate from './components/MasterPasswordGate';
 
 const DebugConsole = lazy(() => import('./components/DebugConsole'));
 const loadReportService = () => import('./services/reportService');
@@ -36,7 +37,13 @@ const AppContent: React.FC = () => {
   const showBookmarkBar = useAppStore(state => state.showBookmarkBar);
   const securityPin = useAppStore(state => state.securityPin);
   const autoLockMinutes = useAppStore(state => state.autoLockMinutes);
+  const masterPasswordHash = useAppStore(state => state.masterPasswordHash);
+  const masterPasswordSalt = useAppStore(state => state.masterPasswordSalt);
+  const isMasterUnlocked = useAppStore(state => state.isMasterUnlocked);
+  const masterKey = useAppStore(state => state.masterKey);
   const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient, setBookmarks, setBookmarkCategories } = useAppStore();
+  const setMasterUnlocked = useAppStore((state) => state.setMasterUnlocked);
+  const setMasterKey = useAppStore((state) => state.setMasterKey);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
@@ -91,6 +98,7 @@ const AppContent: React.FC = () => {
     patientTypes,
     bookmarks,
     bookmarkCategories,
+    masterKey,
     setRecords,
     setGeneralTasks,
     setBookmarks,
@@ -113,6 +121,8 @@ const AppContent: React.FC = () => {
     onUnlock: () => addToast('success', 'Sesión desbloqueada')
   });
 
+  const requiresMasterGate = Boolean(masterPasswordSalt && masterPasswordHash && !isMasterUnlocked);
+
   const { prefetchOnHover, prefetchModal } = usePrefetch(viewMode);
   useViewLifecycle(viewMode, mainScrollRef);
   useAppStartup(addLog);
@@ -125,6 +135,8 @@ const AppContent: React.FC = () => {
   const handleLogout = async () => {
     const { clearStoredToken } = await loadGoogleService();
     clearStoredToken();
+    setMasterUnlocked(false);
+    setMasterKey(null);
     logout();
   };
 
@@ -149,6 +161,7 @@ const AppContent: React.FC = () => {
   }, []);
 
   if (!user) return <Login />;
+  if (requiresMasterGate) return <MasterPasswordGate />;
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">

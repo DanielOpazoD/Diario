@@ -5,6 +5,7 @@ import { defaultBookmarkCategories } from '../stores/slices/bookmarkSlice';
 
 const loadGoogleService = () => import('../services/googleService');
 const loadStorageService = () => import('../services/storage');
+const loadSecurityService = () => import('../services/securityService');
 
 interface UseBackupManagerParams {
   records: PatientRecord[];
@@ -12,6 +13,7 @@ interface UseBackupManagerParams {
   patientTypes: any[];
   bookmarks: any[];
   bookmarkCategories: any[];
+  masterKey: string | null;
   setRecords: (records: PatientRecord[]) => void;
   setGeneralTasks: (tasks: any[]) => void;
   setBookmarks: (bookmarks: any[]) => void;
@@ -28,6 +30,7 @@ const useBackupManager = ({
   patientTypes,
   bookmarks,
   bookmarkCategories,
+  masterKey,
   setRecords,
   setGeneralTasks,
   setBookmarks,
@@ -69,9 +72,14 @@ const useBackupManager = ({
         addToast('error', 'No hay sesión de Google activa.');
         return;
       }
+      if (!masterKey) {
+        addToast('error', 'Debes desbloquear la Contraseña Maestra para cifrar el respaldo.');
+        return;
+      }
       setIsUploading(true);
       setDriveFolderPreference(folder);
       try {
+        const { encryptPayload } = await loadSecurityService();
         const backupData = {
           patients: records,
           generalTasks: generalTasks,
@@ -80,8 +88,15 @@ const useBackupManager = ({
           bookmarkCategories,
         };
         const finalName = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
-        await uploadFileToDrive(JSON.stringify(backupData, null, 2), finalName, token, folder.name, folder.id);
-        addToast('success', `Respaldo guardado en carpeta "${folder.name}"`);
+        const cipher = await encryptPayload(JSON.stringify(backupData), masterKey);
+        const encryptedPayload = JSON.stringify({
+          encrypted: true,
+          version: '1.0',
+          cipher,
+          hint: 'Adjuntos no cifrados, solo datos de respaldo (.json)',
+        }, null, 2);
+        await uploadFileToDrive(encryptedPayload, finalName, token, folder.name, folder.id);
+        addToast('success', `Respaldo cifrado guardado en carpeta "${folder.name}"`);
         setIsBackupModalOpen(false);
       } catch (err) {
         console.error(err);
@@ -90,7 +105,7 @@ const useBackupManager = ({
         setIsUploading(false);
       }
     },
-    [addToast, bookmarkCategories, bookmarks, generalTasks, patientTypes, records, setDriveFolderPreference, setIsBackupModalOpen]
+    [addToast, bookmarkCategories, bookmarks, generalTasks, masterKey, patientTypes, records, setDriveFolderPreference, setIsBackupModalOpen]
   );
 
   const handleDriveFileSelect = useCallback(
@@ -101,7 +116,18 @@ const useBackupManager = ({
 
       setIsUploading(true);
       try {
-        const data = await downloadFile(fileId, token);
+        const rawData = await downloadFile(fileId, token);
+        let data = rawData;
+
+        if (rawData?.encrypted) {
+          if (!masterKey) {
+            addToast('error', 'Necesitas la Contraseña Maestra para descifrar este respaldo.');
+            return;
+          }
+          const { decryptPayload } = await loadSecurityService();
+          const plain = await decryptPayload(rawData.cipher, masterKey);
+          data = JSON.parse(plain);
+        }
 
         if (data.patients && Array.isArray(data.patients)) {
           setRecords(data.patients);
@@ -130,7 +156,7 @@ const useBackupManager = ({
         setIsUploading(false);
       }
     },
-    [addToast, setBookmarkCategories, setBookmarks, setGeneralTasks, setIsDrivePickerOpen, setRecords]
+    [addToast, masterKey, setBookmarkCategories, setBookmarks, setGeneralTasks, setIsDrivePickerOpen, setRecords]
   );
 
   return {
