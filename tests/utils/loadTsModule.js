@@ -11,11 +11,14 @@ export function loadTsModule(tsPath, overrides = {}) {
   const source = fs.readFileSync(absolutePath, 'utf8');
   const importMetaPreface = 'const importMeta = { env: {} };\n';
   const sanitizedSource = importMetaPreface + source.replace(/import\.meta/g, 'importMeta');
+  const compilerOptions = {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2020,
+    jsx: ts.JsxEmit.ReactJSX,
+  };
+
   const { outputText } = ts.transpileModule(sanitizedSource, {
-    compilerOptions: {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2020,
-    },
+    compilerOptions,
     fileName: absolutePath,
   });
 
@@ -25,14 +28,14 @@ export function loadTsModule(tsPath, overrides = {}) {
     localRequire.extensions['.ts'] = (moduleInstance, filename) => {
       const tsSource = fs.readFileSync(filename, 'utf8');
       const compiled = ts.transpileModule(tsSource, {
-        compilerOptions: {
-          module: ts.ModuleKind.CommonJS,
-          target: ts.ScriptTarget.ES2020,
-        },
+        compilerOptions,
         fileName: filename,
       });
       moduleInstance._compile(compiled.outputText, filename);
     };
+  }
+  if (!localRequire.extensions['.tsx']) {
+    localRequire.extensions['.tsx'] = localRequire.extensions['.ts'];
   }
   const sandbox = {
     module,
