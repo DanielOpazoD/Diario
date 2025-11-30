@@ -1,54 +1,28 @@
-import React, { useState, useMemo, useLayoutEffect, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
-import { format, isSameDay } from 'date-fns';
+import React, { useState, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
+import { isSameDay } from 'date-fns';
 import { ViewMode } from './types';
 import { LogProvider, useLogger } from './context/LogContext';
 import { QueryProvider } from './providers/QueryProvider';
 import useAppStore from './stores/useAppStore';
 import useAutoLock from './hooks/useAutoLock';
-import { usePrefetch, prefetchAdjacentViews } from './hooks/usePrefetch';
+import { usePrefetch } from './hooks/usePrefetch';
 import useModalManager from './hooks/useModalManager';
 import usePatientCrud from './hooks/usePatientCrud';
 import useBackupManager from './hooks/useBackupManager';
 import useDriveFolderPreference from './hooks/useDriveFolderPreference';
+import useAppStartup from './hooks/useAppStartup';
+import useViewLifecycle from './hooks/useViewLifecycle';
 import ErrorBoundary from './components/ErrorBoundary';
-
-// Critical path components - loaded immediately
 import Login from './components/Login';
 import Toast from './components/Toast';
 import MainLayout from './layouts/MainLayout';
 import LockScreen from './components/LockScreen';
+import AppViews from './components/AppViews';
+import AppModals from './components/AppModals';
 
-// Loading skeletons for lazy-loaded components
-import {
-  ViewSkeleton,
-  ModalSkeleton,
-  StatsSkeleton,
-  SettingsSkeleton,
-  TasksSkeleton,
-  BookmarksSkeleton,
-  HistorySkeleton,
-} from './components/LoadingSkeletons';
-
-// Lazy-loaded view components (micro-frontends)
-const DailyView = lazy(() => import('./features/daily/DailyView'));
-const StatsView = lazy(() => import('./features/stats/StatsView'));
-const PatientsHistoryView = lazy(() => import('./features/history/PatientsHistoryView'));
-const BookmarksView = lazy(() => import('./features/bookmarks/BookmarksView'));
-const TaskDashboard = lazy(() => import('./components/TaskDashboard'));
-const Settings = lazy(() => import('./components/Settings'));
-
-// Lazy-loaded modal components (loaded on demand)
-const PatientModal = lazy(() => import('./components/PatientModal'));
-const ConfirmationModal = lazy(() => import('./components/ConfirmationModal'));
-const BackupModal = lazy(() => import('./components/BackupModal'));
-const DrivePickerModal = lazy(() => import('./components/DrivePickerModal'));
-const BookmarksModal = lazy(() => import('./components/BookmarksModal'));
 const DebugConsole = lazy(() => import('./components/DebugConsole'));
-
-// Lazy-loaded services (heavy dependencies)
 const loadReportService = () => import('./services/reportService');
 const loadGoogleService = () => import('./services/googleService');
-const loadGeminiService = () => import('./services/geminiService');
 
 const AppContent: React.FC = () => {
   const { addLog } = useLogger();
@@ -139,30 +113,9 @@ const AppContent: React.FC = () => {
     onUnlock: () => addToast('success', 'Sesión desbloqueada')
   });
 
-  // Prefetching hook for predictive loading
   const { prefetchOnHover, prefetchModal } = usePrefetch(viewMode);
-
-  // Prefetch adjacent views when view changes
-  useEffect(() => {
-    prefetchAdjacentViews(viewMode);
-  }, [viewMode]);
-
-  useLayoutEffect(() => {
-    if (mainScrollRef.current) {
-      mainScrollRef.current.scrollTop = 0;
-    }
-  }, [viewMode]);
-
-  useEffect(() => {
-    loadGeminiService()
-      .then(({ validateEnvironment }) => validateEnvironment())
-      .then(envStatus => addLog('info', 'App', 'Iniciando Aplicación', envStatus))
-      .catch(error => addLog('error', 'App', 'No se pudo validar el entorno', { message: String(error) }));
-  }, [addLog]);
-
-  useEffect(() => {
-    loadGoogleService().then(({ restoreStoredToken }) => restoreStoredToken());
-  }, []);
+  useViewLifecycle(viewMode, mainScrollRef);
+  useAppStartup(addLog);
 
   const dailyRecords = useMemo(
     () => records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), currentDate)),
@@ -225,115 +178,45 @@ const AppContent: React.FC = () => {
         onPrefetchView={prefetchOnHover}
         onPrefetchModal={prefetchModal}
       >
-        {viewMode === 'daily' && (
-          <Suspense fallback={<ViewSkeleton />}>
-            <DailyView
-              currentDate={currentDate}
-              records={records}
-              patientTypes={patientTypes}
-              onAddPatient={openNewPatientModal}
-              onEditPatient={openEditPatientModal}
-              onDeletePatient={requestDeletePatient}
-              onGenerateReport={handleGeneratePDF}
-              onMovePatients={handleMovePatientsToDate}
-              onCopyPatients={handleCopyPatientsToDate}
-            />
-          </Suspense>
-        )}
-
-        {viewMode === 'history' && (
-          <Suspense fallback={<HistorySkeleton />}>
-            <PatientsHistoryView />
-          </Suspense>
-        )}
-
-        {viewMode === 'stats' && (
-          <Suspense fallback={<StatsSkeleton />}>
-            <StatsView currentDate={currentDate} />
-          </Suspense>
-        )}
-
-        {viewMode === 'tasks' && (
-          <Suspense fallback={<TasksSkeleton />}>
-            <TaskDashboard onNavigateToPatient={openEditPatientModal} />
-          </Suspense>
-        )}
-
-        {viewMode === 'bookmarks' && (
-          <Suspense fallback={<BookmarksSkeleton />}>
-            <BookmarksView
-              onAdd={() => openBookmarksModal(null)}
-              onEdit={(bookmarkId) => openBookmarksModal(bookmarkId)}
-            />
-          </Suspense>
-        )}
-
-        {viewMode === 'settings' && (
-          <Suspense fallback={<SettingsSkeleton />}>
-            <Settings />
-          </Suspense>
-        )}
+        <AppViews
+          viewMode={viewMode}
+          currentDate={currentDate}
+          records={records}
+          patientTypes={patientTypes}
+          onAddPatient={openNewPatientModal}
+          onEditPatient={openEditPatientModal}
+          onDeletePatient={requestDeletePatient}
+          onGenerateReport={handleGeneratePDF}
+          onMovePatients={handleMovePatientsToDate}
+          onCopyPatients={handleCopyPatientsToDate}
+          onOpenBookmarksModal={openBookmarksModal}
+        />
       </MainLayout>
 
-      {isPatientModalOpen && (
-        <Suspense fallback={<ModalSkeleton />}>
-          <PatientModal
-            isOpen={isPatientModalOpen}
-            onClose={closePatientModal}
-            onSave={handleSavePatient}
-            onSaveMultiple={handleSaveMultiplePatients}
-            addToast={addToast}
-            initialData={editingPatient}
-            selectedDate={format(currentDate, 'yyyy-MM-dd')}
-          />
-        </Suspense>
-      )}
-      {patientToDelete && (
-        <Suspense fallback={null}>
-          <ConfirmationModal
-            isOpen={!!patientToDelete}
-            onClose={closeDeleteConfirmation}
-            onConfirm={confirmDeletePatient}
-            title="Eliminar Paciente"
-            message="¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer."
-            isDangerous={true}
-          />
-        </Suspense>
-      )}
-      {isBackupModalOpen && (
-        <Suspense fallback={<ModalSkeleton />}>
-          <BackupModal
-            isOpen={isBackupModalOpen}
-            onClose={closeBackupModal}
-            onConfirm={handleBackupConfirm}
-            defaultFileName={`backup_medidiario_${format(new Date(), 'yyyy-MM-dd')}`}
-            isLoading={isUploading}
-            preferredFolder={driveFolderPreference}
-            onFolderChange={setDriveFolderPreference}
-          />
-        </Suspense>
-      )}
-      {isDrivePickerOpen && (
-        <Suspense fallback={<ModalSkeleton />}>
-          <DrivePickerModal
-            isOpen={isDrivePickerOpen}
-            onClose={closeDrivePicker}
-            onSelect={handleDriveFileSelect}
-            isLoadingProp={isUploading}
-            preferredFolder={driveFolderPreference}
-            onFolderChange={setDriveFolderPreference}
-          />
-        </Suspense>
-      )}
-      {isBookmarksModalOpen && (
-        <Suspense fallback={<ModalSkeleton />}>
-          <BookmarksModal
-            isOpen={isBookmarksModalOpen}
-            onClose={closeBookmarksModal}
-            editingBookmarkId={editingBookmarkId}
-          />
-        </Suspense>
-      )}
+      <AppModals
+        currentDate={currentDate}
+        isPatientModalOpen={isPatientModalOpen}
+        editingPatient={editingPatient}
+        patientToDelete={patientToDelete}
+        isBackupModalOpen={isBackupModalOpen}
+        isDrivePickerOpen={isDrivePickerOpen}
+        isBookmarksModalOpen={isBookmarksModalOpen}
+        editingBookmarkId={editingBookmarkId}
+        isUploading={isUploading}
+        preferredFolder={driveFolderPreference}
+        onToast={addToast}
+        onClosePatientModal={closePatientModal}
+        onSavePatient={handleSavePatient}
+        onSaveMultiplePatients={handleSaveMultiplePatients}
+        onCloseDeleteConfirmation={closeDeleteConfirmation}
+        onConfirmDelete={confirmDeletePatient}
+        onCloseBackupModal={closeBackupModal}
+        onConfirmBackup={handleBackupConfirm}
+        onCloseDrivePicker={closeDrivePicker}
+        onSelectDriveFile={handleDriveFileSelect}
+        onFolderChange={setDriveFolderPreference}
+        onCloseBookmarksModal={closeBookmarksModal}
+      />
     </div>
   );
 };
