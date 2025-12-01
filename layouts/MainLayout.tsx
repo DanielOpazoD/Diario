@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { BarChart2, Bookmark as BookmarkIcon, Calendar as CalendarIcon, CheckSquare, Cloud, Download, LogOut, Menu, RefreshCw, Settings as SettingsIcon, Upload, Users, X } from 'lucide-react';
 import DateNavigator from '../components/DateNavigator';
-import { ViewMode, PatientRecord, User } from '../types';
+import { ViewMode, PatientRecord, User, GeneralTask, PatientTypeConfig, Bookmark, BookmarkCategory } from '../types';
 import { downloadDataAsJson } from '../services/storage';
 import BookmarksBar from '../components/BookmarksBar';
 import GoogleConnectionStatus from '../components/GoogleConnectionStatus';
@@ -12,6 +12,10 @@ interface MainLayoutProps {
   user: User;
   currentDate: Date;
   records: PatientRecord[];
+  generalTasks: GeneralTask[];
+  patientTypes: PatientTypeConfig[];
+  bookmarks: Bookmark[];
+  bookmarkCategories: BookmarkCategory[];
   onDateChange: (date: Date) => void;
   onOpenNewPatient: () => void;
   onOpenBackupModal: () => void;
@@ -32,6 +36,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   user,
   currentDate,
   records,
+  generalTasks,
+  patientTypes,
+  bookmarks,
+  bookmarkCategories,
   onDateChange,
   onOpenNewPatient,
   onOpenBackupModal,
@@ -199,7 +207,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button
-                onClick={() => downloadDataAsJson(records)}
+                onClick={() =>
+                  downloadDataAsJson({
+                    patients: records,
+                    generalTasks,
+                    patientTypes,
+                    bookmarks,
+                    bookmarkCategories,
+                  })
+                }
                 className="flex items-center justify-center px-2 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all"
                 title="Descargar Local"
               >

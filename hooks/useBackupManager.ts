@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useCallback, useState } from 'react';
-import { DriveFolderPreference, PatientRecord } from '../types';
+import { DriveFolderPreference, PatientRecord, PatientTypeConfig } from '../types';
 import { defaultBookmarkCategories } from '../stores/slices/bookmarkSlice';
 
 const loadGoogleService = () => import('../services/googleService');
@@ -9,11 +9,12 @@ const loadStorageService = () => import('../services/storage');
 interface UseBackupManagerParams {
   records: PatientRecord[];
   generalTasks: any[];
-  patientTypes: any[];
+  patientTypes: PatientTypeConfig[];
   bookmarks: any[];
   bookmarkCategories: any[];
   setRecords: (records: PatientRecord[]) => void;
   setGeneralTasks: (tasks: any[]) => void;
+  setPatientTypes: (types: PatientTypeConfig[]) => void;
   setBookmarks: (bookmarks: any[]) => void;
   setBookmarkCategories: (categories: any[]) => void;
   addToast: (type: 'success' | 'error' | 'info', message: string) => void;
@@ -30,6 +31,7 @@ const useBackupManager = ({
   bookmarkCategories,
   setRecords,
   setGeneralTasks,
+  setPatientTypes,
   setBookmarks,
   setBookmarkCategories,
   addToast,
@@ -47,8 +49,16 @@ const useBackupManager = ({
       setIsUploading(true);
       try {
         const { parseUploadedJson } = await loadStorageService();
-        const importedRecords = await parseUploadedJson(file);
-        setRecords(importedRecords);
+        const importedData = await parseUploadedJson(file);
+        setRecords(importedData.patients);
+        setGeneralTasks(importedData.generalTasks || []);
+        if (importedData.patientTypes) setPatientTypes(importedData.patientTypes);
+        setBookmarks(importedData.bookmarks || []);
+        setBookmarkCategories(
+          importedData.bookmarkCategories && importedData.bookmarkCategories.length > 0
+            ? importedData.bookmarkCategories
+            : defaultBookmarkCategories
+        );
         addToast('success', 'Base de datos local restaurada');
       } catch (err) {
         console.error(err);
@@ -58,7 +68,7 @@ const useBackupManager = ({
         e.target.value = '';
       }
     },
-    [addToast, setRecords]
+    [addToast, setBookmarkCategories, setBookmarks, setGeneralTasks, setPatientTypes, setRecords]
   );
 
   const handleBackupConfirm = useCallback(
@@ -106,6 +116,7 @@ const useBackupManager = ({
         if (data.patients && Array.isArray(data.patients)) {
           setRecords(data.patients);
           if (data.generalTasks) setGeneralTasks(data.generalTasks);
+          if (data.patientTypes) setPatientTypes(data.patientTypes);
           if (Array.isArray(data.bookmarks)) setBookmarks(data.bookmarks);
           if (Array.isArray(data.bookmarkCategories)) {
             setBookmarkCategories(data.bookmarkCategories);
@@ -116,6 +127,7 @@ const useBackupManager = ({
           setIsDrivePickerOpen(false);
         } else if (Array.isArray(data)) {
           setRecords(data);
+          setGeneralTasks([]);
           setBookmarks([]);
           setBookmarkCategories(defaultBookmarkCategories);
           addToast('success', 'Respaldo (formato antiguo) restaurado');
@@ -130,7 +142,7 @@ const useBackupManager = ({
         setIsUploading(false);
       }
     },
-    [addToast, setBookmarkCategories, setBookmarks, setGeneralTasks, setIsDrivePickerOpen, setRecords]
+    [addToast, setBookmarkCategories, setBookmarks, setGeneralTasks, setIsDrivePickerOpen, setPatientTypes, setRecords]
   );
 
   return {
