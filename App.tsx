@@ -36,7 +36,7 @@ const AppContent: React.FC = () => {
   const showBookmarkBar = useAppStore(state => state.showBookmarkBar);
   const securityPin = useAppStore(state => state.securityPin);
   const autoLockMinutes = useAppStore(state => state.autoLockMinutes);
-  const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient, setBookmarks, setBookmarkCategories } = useAppStore();
+  const { logout, addToast, setRecords, setGeneralTasks, addPatient, updatePatient, deletePatient, setBookmarks, setBookmarkCategories, setPatientTypes } = useAppStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
@@ -93,6 +93,7 @@ const AppContent: React.FC = () => {
     bookmarkCategories,
     setRecords,
     setGeneralTasks,
+    setPatientTypes,
     setBookmarks,
     setBookmarkCategories,
     addToast,
@@ -166,6 +167,10 @@ const AppContent: React.FC = () => {
         user={user}
         currentDate={currentDate}
         records={records}
+        generalTasks={generalTasks}
+        patientTypes={patientTypes}
+        bookmarks={bookmarks}
+        bookmarkCategories={bookmarkCategories}
         onDateChange={setCurrentDate}
         onOpenNewPatient={openNewPatientModal}
         onOpenBackupModal={openBackupModal}
