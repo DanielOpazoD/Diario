@@ -1,6 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader, RefreshCw } from 'lucide-react';
-import { getActiveAccessToken, handleGoogleLogin } from '../services/googleService';
+import {
+  getActiveAccessToken,
+  getTokenExpiry,
+  handleGoogleLogin,
+  renewGoogleToken,
+} from '../services/googleService';
 
 type ConnectionStatus = 'checking' | 'connected' | 'disconnected' | 'expired';
 
@@ -34,10 +39,11 @@ const statusConfig: Record<ConnectionStatus, {
 const GoogleConnectionStatus: React.FC = () => {
   const [status, setStatus] = useState<ConnectionStatus>('checking');
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [nextRefreshAt, setNextRefreshAt] = useState<number | null>(null);
 
   const config = useMemo(() => statusConfig[status], [status]);
 
-  const checkConnection = async () => {
+  const checkConnection = useCallback(async () => {
     const token = getActiveAccessToken();
 
     if (!token) {
@@ -52,6 +58,7 @@ const GoogleConnectionStatus: React.FC = () => {
 
       if (response.ok) {
         setStatus('connected');
+        setNextRefreshAt(getTokenExpiry());
       } else if (response.status === 401) {
         setStatus('expired');
       } else {
@@ -61,13 +68,35 @@ const GoogleConnectionStatus: React.FC = () => {
       console.error('Error al verificar conexión con Google Drive', error);
       setStatus('disconnected');
     }
-  };
+  }, []);
+
+  const scheduleTokenRefresh = useCallback(() => {
+    const expiresAt = getTokenExpiry();
+    setNextRefreshAt(expiresAt ?? null);
+  }, []);
+
+  const attemptSilentRefresh = useCallback(async () => {
+    try {
+      await renewGoogleToken();
+      setStatus('connected');
+      scheduleTokenRefresh();
+      await checkConnection();
+    } catch (error) {
+      console.error('No se pudo renovar el token de Google', error);
+      setStatus('expired');
+    }
+  }, [checkConnection, scheduleTokenRefresh]);
 
   const handleReconnect = async () => {
     setIsReconnecting(true);
     try {
-      await handleGoogleLogin();
+      try {
+        await renewGoogleToken();
+      } catch (_error) {
+        await handleGoogleLogin();
+      }
       await checkConnection();
+      scheduleTokenRefresh();
     } catch (error) {
       console.error('Error reconectando con Google', error);
       setStatus('disconnected');
@@ -80,7 +109,24 @@ const GoogleConnectionStatus: React.FC = () => {
     checkConnection();
     const interval = setInterval(checkConnection, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [checkConnection]);
+
+  useEffect(() => {
+    scheduleTokenRefresh();
+  }, [status, scheduleTokenRefresh]);
+
+  useEffect(() => {
+    if (!nextRefreshAt) return;
+
+    const bufferMs = 2 * 60 * 1000;
+    const delay = Math.max(nextRefreshAt - Date.now() - bufferMs, 0);
+
+    const timer = setTimeout(() => {
+      attemptSilentRefresh();
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [nextRefreshAt, attemptSilentRefresh]);
 
   return (
     <div
