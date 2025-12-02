@@ -53,35 +53,40 @@ const persistGoogleToken = (token: string, expiresIn?: number) => {
   }
 };
 
+const readStoredToken = (): StoredToken | null => {
+  const raw = localStorage.getItem(TOKEN_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as StoredToken;
+  } catch (error) {
+    emitStructuredLog('warn', 'GoogleDrive', 'No se pudo interpretar el token de Google almacenado', { error });
+    return null;
+  }
+};
+
 export const restoreStoredToken = (): string | null => {
   // Priorizar el token en memoria de la sesión si existe
   const active = sessionStorage.getItem('google_access_token');
   if (active) return active;
 
-  const raw = localStorage.getItem(TOKEN_STORAGE_KEY);
-  if (!raw) return null;
+  const parsed = readStoredToken();
+  if (!parsed) return null;
 
-  try {
-    const parsed = JSON.parse(raw) as StoredToken;
-
-    if (!parsed.version || parsed.version !== TOKEN_VERSION) {
-      sessionStorage.removeItem('google_access_token');
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      return null;
-    }
-
-    if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      return null;
-    }
-
-    if (parsed.accessToken) {
-      sessionStorage.setItem('google_access_token', parsed.accessToken);
-      return parsed.accessToken;
-    }
-  } catch (error) {
-    emitStructuredLog('warn', 'GoogleDrive', 'No se pudo leer el token almacenado de Google', { error });
+  if (!parsed.version || parsed.version !== TOKEN_VERSION) {
+    sessionStorage.removeItem('google_access_token');
     localStorage.removeItem(TOKEN_STORAGE_KEY);
+    return null;
+  }
+
+  if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    return null;
+  }
+
+  if (parsed.accessToken) {
+    sessionStorage.setItem('google_access_token', parsed.accessToken);
+    return parsed.accessToken;
   }
 
   return null;
@@ -89,6 +94,11 @@ export const restoreStoredToken = (): string | null => {
 
 export const getActiveAccessToken = () => {
   return restoreStoredToken();
+};
+
+export const getTokenExpiry = () => {
+  const parsed = readStoredToken();
+  return parsed?.expiresAt ?? null;
 };
 
 export const clearStoredToken = () => {
@@ -231,7 +241,66 @@ export const handleGoogleLogin = (): Promise<string> => {
   });
 };
 
-const findOrCreateFolder = async (folderName: string, accessToken: string, parentId?: string): Promise<string> => {
+export const renewGoogleToken = (): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!tokenClient) {
+      reject('Google API not initialized');
+      return;
+    }
+
+    tokenClient.callback = async (resp: any) => {
+      if (resp.error !== undefined) {
+        reject(resp);
+        return;
+      }
+      persistGoogleToken(resp.access_token, resp.expires_in);
+      resolve(resp.access_token);
+    };
+
+    try {
+      tokenClient.requestAccessToken({ prompt: '' });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+const findFolderId = async (
+  folderName: string,
+  accessToken: string,
+  parentId?: string
+): Promise<string | null> => {
+  const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
+  const safeName = folderName.replace(/'/g, "\\'");
+
+  let query = `mimeType='application/vnd.google-apps.folder' and name='${safeName}' and trashed=false`;
+  if (parentId) {
+    query += ` and '${parentId}' in parents`;
+  }
+
+  searchUrl.searchParams.append('q', query);
+  searchUrl.searchParams.append('fields', 'files(id,name)');
+  searchUrl.searchParams.append('supportsAllDrives', 'true');
+  searchUrl.searchParams.append('includeItemsFromAllDrives', 'true');
+
+  const searchRes = await fetchWithRetry(searchUrl.toString(), {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  });
+  const searchData = await searchRes.json();
+
+  if (searchData.files && searchData.files.length > 0) {
+    return searchData.files[0].id;
+  }
+
+  return null;
+};
+
+const findOrCreateFolder = async (
+  folderName: string,
+  accessToken: string,
+  parentId?: string,
+  createIfMissing: boolean = true
+): Promise<string> => {
   // 1. Search for the folder
   const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
   // Ensure we escape single quotes in folder name to prevent query injection/errors
@@ -252,6 +321,10 @@ const findOrCreateFolder = async (folderName: string, accessToken: string, paren
 
   if (searchData.files && searchData.files.length > 0) {
     return searchData.files[0].id;
+  }
+
+  if (!createIfMissing) {
+    throw new Error('Folder not found and creation disabled');
   }
 
   // 2. Create if not exists
@@ -394,16 +467,31 @@ export const uploadFileForPatient = async (
   };
 };
 
-export const ensurePatientFolder = async (
+export const resolvePatientFolderId = async (
   patientRut: string,
   patientName: string,
-  accessToken: string
-): Promise<string> => {
-  const rootId = await findOrCreateFolder("MediDiario", accessToken);
-  const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
+  accessToken: string,
+  options?: { createIfMissing?: boolean }
+): Promise<string | null> => {
+  const { createIfMissing = true } = options || {};
 
   const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
-  return await findOrCreateFolder(safeFolder, accessToken, pacientesId);
+
+  const rootId = createIfMissing
+    ? await findOrCreateFolder('MediDiario', accessToken)
+    : await findFolderId('MediDiario', accessToken);
+  if (!rootId) return null;
+
+  const pacientesId = createIfMissing
+    ? await findOrCreateFolder('Pacientes', accessToken, rootId)
+    : await findFolderId('Pacientes', accessToken, rootId);
+  if (!pacientesId) return null;
+
+  if (createIfMissing) {
+    return await findOrCreateFolder(safeFolder, accessToken, pacientesId, true);
+  }
+
+  return await findFolderId(safeFolder, accessToken, pacientesId);
 };
 
 export const fetchPatientFolderFiles = async (
@@ -411,7 +499,11 @@ export const fetchPatientFolderFiles = async (
   patientRut: string,
   patientName: string
 ): Promise<AttachedFile[]> => {
-  const patientFolderId = await ensurePatientFolder(patientRut, patientName, accessToken);
+  const patientFolderId = await resolvePatientFolderId(patientRut, patientName, accessToken, { createIfMissing: false });
+
+  if (!patientFolderId) {
+    return [];
+  }
 
   const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
   searchUrl.searchParams.append('q', `'${patientFolderId}' in parents and trashed=false`);
