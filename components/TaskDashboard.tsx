@@ -147,7 +147,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-16 h-[calc(100vh-120px)] flex flex-col">
+    <div className="max-w-6xl mx-auto pb-16 flex flex-col min-h-0 h-full">
        <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/85 dark:bg-gray-900/65 shadow-md backdrop-blur-sm px-4 py-3 mb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
