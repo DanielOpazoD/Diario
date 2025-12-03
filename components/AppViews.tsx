@@ -1,5 +1,7 @@
 import React, { Suspense, lazy } from 'react';
-import { ViewMode, PatientRecord } from '../types';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { PatientRecord, PatientTypeConfig } from '../types';
+import { DEFAULT_ROUTE, VIEW_ROUTES } from '../routes';
 import {
   ViewSkeleton,
   StatsSkeleton,
@@ -17,10 +19,9 @@ const TaskDashboard = lazy(() => import('./TaskDashboard'));
 const Settings = lazy(() => import('./Settings'));
 
 interface AppViewsProps {
-  viewMode: ViewMode;
   currentDate: Date;
   records: PatientRecord[];
-  patientTypes: any[];
+  patientTypes: PatientTypeConfig[];
   onAddPatient: () => void;
   onEditPatient: (patient: PatientRecord) => void;
   onDeletePatient: (patientId: string) => void;
@@ -31,7 +32,6 @@ interface AppViewsProps {
 }
 
 const AppViews: React.FC<AppViewsProps> = ({
-  viewMode,
   currentDate,
   records,
   patientTypes,
@@ -43,68 +43,72 @@ const AppViews: React.FC<AppViewsProps> = ({
   onCopyPatients,
   onOpenBookmarksModal,
 }) => {
-  if (viewMode === 'daily') {
-    return (
-      <Suspense fallback={<ViewSkeleton />}>
-        <DailyView
-          currentDate={currentDate}
-          records={records}
-          patientTypes={patientTypes}
-          onAddPatient={onAddPatient}
-          onEditPatient={onEditPatient}
-          onDeletePatient={onDeletePatient}
-          onGenerateReport={onGenerateReport}
-          onMovePatients={onMovePatients}
-          onCopyPatients={onCopyPatients}
-        />
-      </Suspense>
-    );
-  }
-
-  if (viewMode === 'history') {
-    return (
-      <Suspense fallback={<HistorySkeleton />}>
-        <PatientsHistoryView />
-      </Suspense>
-    );
-  }
-
-  if (viewMode === 'stats') {
-    return (
-      <Suspense fallback={<StatsSkeleton />}>
-        <StatsView currentDate={currentDate} />
-      </Suspense>
-    );
-  }
-
-  if (viewMode === 'tasks') {
-    return (
-      <Suspense fallback={<TasksSkeleton />}>
-        <TaskDashboard onNavigateToPatient={onEditPatient} />
-      </Suspense>
-    );
-  }
-
-  if (viewMode === 'bookmarks') {
-    return (
-      <Suspense fallback={<BookmarksSkeleton />}>
-        <BookmarksView
-          onAdd={() => onOpenBookmarksModal(null)}
-          onEdit={(bookmarkId) => onOpenBookmarksModal(bookmarkId)}
-        />
-      </Suspense>
-    );
-  }
-
-  if (viewMode === 'settings') {
-    return (
-      <Suspense fallback={<SettingsSkeleton />}>
-        <Settings />
-      </Suspense>
-    );
-  }
-
-  return null;
+  return (
+    <Routes>
+      <Route
+        path={VIEW_ROUTES.daily}
+        element={(
+          <Suspense fallback={<ViewSkeleton />}>
+            <DailyView
+              currentDate={currentDate}
+              records={records}
+              patientTypes={patientTypes}
+              onAddPatient={onAddPatient}
+              onEditPatient={onEditPatient}
+              onDeletePatient={onDeletePatient}
+              onGenerateReport={onGenerateReport}
+              onMovePatients={onMovePatients}
+              onCopyPatients={onCopyPatients}
+            />
+          </Suspense>
+        )}
+      />
+      <Route
+        path={VIEW_ROUTES.history}
+        element={(
+          <Suspense fallback={<HistorySkeleton />}>
+            <PatientsHistoryView />
+          </Suspense>
+        )}
+      />
+      <Route
+        path={VIEW_ROUTES.stats}
+        element={(
+          <Suspense fallback={<StatsSkeleton />}>
+            <StatsView currentDate={currentDate} />
+          </Suspense>
+        )}
+      />
+      <Route
+        path={VIEW_ROUTES.tasks}
+        element={(
+          <Suspense fallback={<TasksSkeleton />}>
+            <TaskDashboard onNavigateToPatient={onEditPatient} />
+          </Suspense>
+        )}
+      />
+      <Route
+        path={VIEW_ROUTES.bookmarks}
+        element={(
+          <Suspense fallback={<BookmarksSkeleton />}>
+            <BookmarksView
+              onAdd={() => onOpenBookmarksModal(null)}
+              onEdit={(bookmarkId) => onOpenBookmarksModal(bookmarkId)}
+            />
+          </Suspense>
+        )}
+      />
+      <Route
+        path={VIEW_ROUTES.settings}
+        element={(
+          <Suspense fallback={<SettingsSkeleton />}>
+            <Settings />
+          </Suspense>
+        )}
+      />
+      <Route path="*" element={<Navigate to={DEFAULT_ROUTE} replace />} />
+    </Routes>
+  );
 };
 
 export default AppViews;
