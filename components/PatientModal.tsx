@@ -7,6 +7,7 @@ import { analyzeClinicalNote, extractPatientDataFromImage, extractMultiplePatien
 import { fileToBase64 } from '../services/storage';
 import FileAttachmentManager from './FileAttachmentManager';
 import useAppStore from '../stores/useAppStore';
+import { downloadFileAsBase64 } from '../services/googleService';
 
 interface PatientModalProps {
   isOpen: boolean;
@@ -46,6 +47,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
   const [isScanning, setIsScanning] = useState(false);
   const [isScanningMulti, setIsScanningMulti] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isExtractingFromFiles, setIsExtractingFromFiles] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
@@ -166,6 +168,64 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
     } finally {
       setIsScanning(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleExtractFromAttachments = async () => {
+    if (!attachedFiles.length) {
+      return addToast('info', 'Primero agrega adjuntos del paciente.');
+    }
+
+    const supportedFiles = attachedFiles.filter(file => file.mimeType.startsWith('image/') || file.mimeType === 'application/pdf');
+    if (!supportedFiles.length) {
+      return addToast('info', 'Los adjuntos actuales no son compatibles (solo imágenes o PDF).');
+    }
+
+    const token = sessionStorage.getItem('google_access_token');
+    if (!token) {
+      return addToast('error', 'Conecta tu cuenta de Google para leer los adjuntos.');
+    }
+
+    setIsExtractingFromFiles(true);
+
+    try {
+      const updatedFields = new Set<string>();
+
+      for (const file of supportedFiles) {
+        try {
+          const base64 = await downloadFileAsBase64(file.id, token);
+          const extractedData = await extractPatientDataFromImage(base64, file.mimeType);
+
+          if (extractedData) {
+            if (extractedData.name && extractedData.name !== name) {
+              setName(formatTitleCase(extractedData.name));
+              updatedFields.add('Nombre');
+            }
+            if (extractedData.rut && extractedData.rut !== rut) {
+              setRut(extractedData.rut);
+              updatedFields.add('RUT');
+            }
+            if (extractedData.birthDate && extractedData.birthDate !== birthDate) {
+              setBirthDate(extractedData.birthDate);
+              updatedFields.add('Nacimiento');
+            }
+          }
+
+          if (updatedFields.has('Nombre') && updatedFields.has('RUT') && updatedFields.has('Nacimiento')) {
+            break;
+          }
+        } catch (error) {
+          console.error('Error extracting from file', file.name, error);
+        }
+      }
+
+      if (updatedFields.size > 0) {
+        addToast('success', `Datos completados desde adjuntos: ${Array.from(updatedFields).join(', ')}`);
+      } else {
+        addToast('info', 'No se encontraron datos identificatorios en los adjuntos.');
+      }
+    } finally {
+      setIsExtractingFromFiles(false);
     }
   };
 
@@ -318,6 +378,16 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
                     <h3 className="text-xs font-bold uppercase text-gray-400 mb-4 flex items-center gap-2 tracking-wider">
                       <Users className="w-3.5 h-3.5" /> Identificación
                     </h3>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      <button
+                        onClick={handleExtractFromAttachments}
+                        disabled={isExtractingFromFiles}
+                        className="text-[11px] inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <Sparkles className={`w-3.5 h-3.5 ${isExtractingFromFiles ? 'animate-spin' : ''}`} />
+                        {isExtractingFromFiles ? 'Leyendo adjuntos...' : 'Completar con adjuntos'}
+                      </button>
+                    </div>
                     <div className="space-y-4">
                        <div>
                           <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nombre Completo</label>
