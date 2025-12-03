@@ -1,185 +1,35 @@
 
-import React, { useMemo, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { endOfMonth, eachDayOfInterval, format, isSameDay, isWithinInterval, addDays } from 'date-fns';
+import React from 'react';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Filter, Clock, TrendingUp } from 'lucide-react';
 import Button from './Button';
-import useAppStore from '../stores/useAppStore';
-import { PatientRecord, PatientTypeConfig } from '../types';
+import { useStatsData } from '../hooks/useStatsData';
 
 interface StatsProps {
   currentDate: Date;
 }
 
 const Stats: React.FC<StatsProps> = ({ currentDate }) => {
-  const records = useAppStore(state => state.records);
-  const patientTypes = useAppStore(state => state.patientTypes);
-
-  const typeConfigByLabel = useMemo(() => {
-    return patientTypes.reduce<Record<string, PatientTypeConfig>>((acc, type) => {
-      acc[type.label.toLowerCase()] = type;
-      return acc;
-    }, {});
-  }, [patientTypes]);
-
-  const typeConfigById = useMemo(() => {
-    return patientTypes.reduce<Record<string, PatientTypeConfig>>((acc, type) => {
-      acc[type.id] = type;
-      return acc;
-    }, {});
-  }, [patientTypes]);
-  
-  const [startDate, setStartDate] = useState(format(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(endOfMonth(currentDate), 'yyyy-MM-dd'));
-  const compactStats = useAppStore(state => state.compactStats);
-
-  // Determine which types are actually relevant (either configured or exist in records)
-  const relevantTypes = useMemo(() => {
-     return patientTypes.map(t => t.id);
-  }, [patientTypes]);
-
-  const chartTypes = useMemo(() => {
-    return relevantTypes.map((id) => ({
-      id,
-      label: typeConfigById[id]?.label || id,
-    }));
-  }, [relevantTypes, typeConfigById]);
-
-  const matchesTypeId = (record: PatientRecord, typeId: string) => {
-    if (record.typeId) return record.typeId === typeId;
-    const config = typeConfigById[typeId];
-    return record.type === config?.label;
-  };
+  const {
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
+    chartTypes,
+    monthlyData,
+    trendData,
+    typeDistribution,
+    monthTotal,
+    reportData,
+    compactStats,
+    resetToCurrentMonth,
+    setLastSevenDays,
+    totalRecords,
+  } = useStatsData(currentDate);
 
   const COLORS = ['#ef4444', '#3b82f6', '#9333ea', '#10b981', '#f59e0b', '#ec4899', '#6366f1', '#6b7280'];
-
-  const monthlyData = useMemo(() => {
-    const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const end = endOfMonth(currentDate);
-    const days = eachDayOfInterval({ start, end });
-
-    return days.map(day => {
-      const dayRecords = records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), day));
-
-      const dayStats: Record<string, number | string> = {
-        date: format(day, 'd', { locale: es }),
-        total: dayRecords.length,
-      };
-
-      chartTypes.forEach(({ id, label }) => {
-         dayStats[label] = dayRecords.filter(r => matchesTypeId(r, id)).length;
-      });
-
-      return dayStats;
-    });
-  }, [records, currentDate, chartTypes]);
-
-  const trendData = useMemo(() => {
-    const end = new Date();
-    const start = addDays(end, -6);
-    const days = eachDayOfInterval({ start, end });
-
-    return days.map(day => {
-        const count = records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), day)).length;
-        return {
-            day: format(day, 'EEE', { locale: es }),
-            dateFull: format(day, 'd MMM'),
-            count
-        };
-    });
-  }, [records]);
-
-  const typeDistribution = useMemo(() => {
-    const monthRecords = records.filter(r => {
-      const d = new Date(r.date + 'T00:00:00');
-      return d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear();
-    });
-
-    return relevantTypes.map(typeId => {
-      const label = typeConfigById[typeId]?.label || typeId;
-      return {
-        name: label,
-        value: monthRecords.filter(r => matchesTypeId(r, typeId)).length
-      };
-    }).filter(d => d.value > 0);
-  }, [records, currentDate, relevantTypes]);
-
-  const monthTotal = useMemo(
-    () => typeDistribution.reduce((acc, curr) => acc + curr.value, 0),
-    [typeDistribution]
-  );
-
-  const reportData = useMemo(() => {
-    const start = new Date(startDate + 'T00:00:00');
-    const end = new Date(endDate + 'T00:00:00');
-
-    const rangeRecords = records.filter(r => {
-       const rDate = new Date(r.date + 'T00:00:00');
-       return isWithinInterval(rDate, { start, end });
-    });
-
-    const hoursByType: Record<string, number> = {};
-    const trackedTypes = relevantTypes.filter(t => typeConfigById[t]?.id !== 'extra');
-
-    trackedTypes.forEach(t => {
-      const label = typeConfigById[t]?.label || t;
-      hoursByType[label] = 0;
-    });
-
-    rangeRecords.forEach(r => {
-       const config = r.typeId ? typeConfigById[r.typeId] : typeConfigByLabel[r.type.toLowerCase()];
-
-       if (config?.id === 'extra') return;
-
-       // REGLA DE NEGOCIO:
-       // Policlínico = 30 min fijo por paciente
-       if (config?.id === 'policlinico') {
-          hoursByType[config.label] += 30;
-       }
-       // Turno = Diferencia entre entrada y salida
-       else if (config?.id === 'turno') {
-          if (r.entryTime && r.exitTime) {
-            const [startH, startM] = r.entryTime.split(':').map(Number);
-            const [endH, endM] = r.exitTime.split(':').map(Number);
-            let diffMins = (endH * 60 + endM) - (startH * 60 + startM);
-            if (diffMins < 0) diffMins += 24 * 60; // Cruzó medianoche
-            hoursByType[config.label] += diffMins;
-          }
-       }
-       // Hospitalizado = NO SUMA TIEMPO (0)
-       else if (config?.id === 'hospitalizado') {
-          // hoursByType[r.type] += 0;
-       }
-       // Otros (Extra) = Asumimos 0 o cálculo genérico si hay horas?
-       // Por ahora solo los especificados suman.
-    });
-
-    const formattedHours: Record<string, string> = {};
-    // Filter out Hospitalized from the visual hours report as requested
-    Object.keys(hoursByType).forEach(k => {
-       const config = typeConfigByLabel[k.toLowerCase()] || typeConfigById[k];
-       if (config?.id !== 'hospitalizado' && config?.id !== 'extra') {
-          formattedHours[k] = (hoursByType[k] / 60).toFixed(1);
-       }
-    });
-
-    return {
-       count: rangeRecords.length,
-       hours: formattedHours
-    };
-
-  }, [records, startDate, endDate, relevantTypes]);
-
-  const resetToCurrentMonth = () => {
-    setStartDate(format(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1), 'yyyy-MM-dd'));
-    setEndDate(format(endOfMonth(currentDate), 'yyyy-MM-dd'));
-  };
-
-  const setLastSevenDays = () => {
-    setEndDate(format(new Date(), 'yyyy-MM-dd'));
-    setStartDate(format(addDays(new Date(), -6), 'yyyy-MM-dd'));
-  };
 
   return (
     <div className="space-y-4 md:space-y-6 animate-fade-in pb-14 pt-1.5 max-w-6xl mx-auto">
@@ -188,7 +38,7 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
           <div className="space-y-0.5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Contexto</p>
             <h2 className={`font-bold text-gray-900 dark:text-white leading-tight ${compactStats ? 'text-lg' : 'text-xl'}`}>Estadísticas del mes</h2>
-            <p className={`text-gray-600 dark:text-gray-300 ${compactStats ? 'text-[13px]' : 'text-sm'}`}>{records.length} registros totales • {monthTotal} en el mes actual</p>
+            <p className={`text-gray-600 dark:text-gray-300 ${compactStats ? 'text-[13px]' : 'text-sm'}`}>{totalRecords} registros totales • {monthTotal} en el mes actual</p>
           </div>
           <div className="flex flex-wrap gap-1.5 justify-end text-xs">
             <Button variant="secondary" size="sm" className="rounded-pill px-3" onClick={resetToCurrentMonth}>
