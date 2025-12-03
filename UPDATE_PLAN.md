@@ -9,7 +9,7 @@ Este proyecto se migrará en tres etapas secuenciales. Cada fase debe completars
 
 2. **Modularización de PatientModal**
    - [x] Extraer formularios y pestañas en subcomponentes (`PatientForm`, `ClinicalNote`, `FileAttachmentManager`) dejando a `PatientModal` como coordinador de estado y acciones.
-   - [ ] Revisar estilos y accesibilidad de los subcomponentes para asegurar paridad visual.
+   - [x] Revisar estilos y accesibilidad de los subcomponentes para asegurar paridad visual.
 
 3. **Hooks tipados para lógica de vistas**
    - [x] Mover filtros y cálculos diarios a hooks (`usePatientFilter`, `useDailyMetrics`, `useDailyRange`) eliminando usos de `any`.

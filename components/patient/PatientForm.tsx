@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { Clock, Users } from 'lucide-react';
 import { PatientTypeConfig } from '../../types';
 
@@ -41,6 +41,13 @@ const PatientForm: React.FC<PatientFormProps> = ({
   onEntryTimeChange,
   onExitTimeChange,
 }) => {
+  const nameId = useId();
+  const rutId = useId();
+  const birthDateId = useId();
+  const genderId = useId();
+  const entryTimeId = useId();
+  const exitTimeId = useId();
+
   return (
     <div className="space-y-4">
       <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
@@ -49,8 +56,11 @@ const PatientForm: React.FC<PatientFormProps> = ({
         </h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nombre Completo</label>
+            <label htmlFor={nameId} className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              Nombre Completo
+            </label>
             <input
+              id={nameId}
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
               onBlur={onNameBlur}
@@ -60,8 +70,11 @@ const PatientForm: React.FC<PatientFormProps> = ({
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">RUT</label>
+              <label htmlFor={rutId} className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                RUT
+              </label>
               <input
+                id={rutId}
                 value={rut}
                 onChange={(e) => onRutChange(e.target.value)}
                 placeholder="12.345.678-9"
@@ -70,17 +83,23 @@ const PatientForm: React.FC<PatientFormProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nacimiento</label>
+                <label htmlFor={birthDateId} className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Nacimiento
+                </label>
                 <input
                   type="date"
+                  id={birthDateId}
                   value={birthDate}
                   onChange={(e) => onBirthDateChange(e.target.value)}
                   className="w-full px-2 py-3 md:py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Género</label>
+                <label htmlFor={genderId} className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Género
+                </label>
                 <select
+                  id={genderId}
                   value={gender}
                   onChange={(e) => onGenderChange(e.target.value)}
                   className="w-full px-2 py-3 md:py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -106,6 +125,9 @@ const PatientForm: React.FC<PatientFormProps> = ({
               <button
                 key={patientType.id}
                 onClick={() => onSelectType(patientType.id, patientType.label)}
+                type="button"
+                aria-pressed={typeId === patientType.id}
+                aria-label={`Seleccionar tipo ${patientType.label}`}
                 className={`text-xs font-medium py-2 px-3 rounded-lg border transition-all flex-1 md:flex-none justify-center ${
                   typeId === patientType.id
                     ? 'bg-blue-600 text-white border-blue-600 shadow-md transform scale-105'
@@ -120,18 +142,24 @@ const PatientForm: React.FC<PatientFormProps> = ({
           {isTurno && (
             <div className="grid grid-cols-2 gap-3 animate-fade-in pt-2 border-t border-blue-100 dark:border-blue-800/30">
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">Hora Ingreso</label>
+                <label htmlFor={entryTimeId} className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">
+                  Hora Ingreso
+                </label>
                 <input
                   type="time"
+                  id={entryTimeId}
                   value={entryTime}
                   onChange={(e) => onEntryTimeChange(e.target.value)}
                   className="w-full p-2 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs outline-none"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">Hora Egreso</label>
+                <label htmlFor={exitTimeId} className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">
+                  Hora Egreso
+                </label>
                 <input
                   type="time"
+                  id={exitTimeId}
                   value={exitTime}
                   onChange={(e) => onExitTimeChange(e.target.value)}
                   className="w-full p-2 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs outline-none"

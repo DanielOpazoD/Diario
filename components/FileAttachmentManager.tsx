@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback, useId } from 'react';
 import {
   Upload,
   File,
@@ -49,6 +49,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [hasDriveFolder, setHasDriveFolder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropzoneDescriptionId = useId();
 
   // React Query hook para caché inteligente de archivos
   const {
@@ -528,6 +529,16 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-busy={isUploading}
+            aria-describedby={dropzoneDescriptionId}
             className={`
               relative flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed transition-all cursor-pointer mb-2
               ${
@@ -551,7 +562,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
                 <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Subiendo archivos ({uploadProgress}%)...</p>
               </div>
             ) : (
-              <div className="text-center pointer-events-none space-y-1">
+              <div className="text-center pointer-events-none space-y-1" id={dropzoneDescriptionId}>
                 <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto">
                   <Upload className="w-5 h-5" />
                 </div>
