@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { CheckSquare, Mic, Sparkles, Square, X, Paperclip, FileText } from 'lucide-react';
 import { PendingTask } from '../../types';
 
@@ -37,11 +37,22 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
   onChangeTab,
   attachmentsCount,
 }) => {
+  const diagnosisId = useId();
+  const noteId = useId();
+  const addTaskId = useId();
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4 space-x-6 sticky top-0 bg-gray-50/30 dark:bg-gray-900/10 backdrop-blur-sm z-10 pt-2">
+      <div
+        className="flex border-b border-gray-200 dark:border-gray-700 mb-4 space-x-6 sticky top-0 bg-gray-50/30 dark:bg-gray-900/10 backdrop-blur-sm z-10 pt-2"
+        role="tablist"
+        aria-label="Secciones de la ficha"
+      >
         <button
           onClick={() => onChangeTab('clinical')}
+          role="tab"
+          type="button"
+          aria-selected={activeTab === 'clinical'}
           className={`flex items-center gap-2 pb-3 text-sm font-bold transition-all relative px-2 ${
             activeTab === 'clinical'
               ? 'text-blue-600 dark:text-blue-400'
@@ -53,6 +64,9 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
         </button>
         <button
           onClick={() => onChangeTab('files')}
+          role="tab"
+          type="button"
+          aria-selected={activeTab === 'files'}
           className={`flex items-center gap-2 pb-3 text-sm font-bold transition-all relative px-2 ${
             activeTab === 'files'
               ? 'text-blue-600 dark:text-blue-400'
@@ -71,8 +85,11 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
       </div>
 
       <div className="mb-5">
-        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Diagnóstico Principal</label>
+        <label htmlFor={diagnosisId} className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
+          Diagnóstico Principal
+        </label>
         <input
+          id={diagnosisId}
           value={diagnosis}
           onChange={(e) => onDiagnosisChange(e.target.value)}
           placeholder="Ej. Neumonía Adquirida en la Comunidad, HTA descompensada..."
@@ -116,6 +133,7 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
 
           <div className="relative flex-1 min-h-[200px] group">
             <textarea
+              id={noteId}
               value={clinicalNote}
               onChange={(e) => onClinicalNoteChange(e.target.value)}
               placeholder="Escribe la evolución del paciente. Usa el botón de IA para extraer tareas automáticamente."
@@ -136,6 +154,8 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
                   <button
                     onClick={() => onToggleTask(task.id)}
                     className="mr-3 text-gray-400 hover:text-blue-500 transition-colors p-1"
+                    aria-pressed={task.isCompleted}
+                    aria-label={task.isCompleted ? 'Marcar tarea como pendiente' : 'Marcar tarea como completada'}
                   >
                     {task.isCompleted ? <CheckSquare className="w-5 h-5 text-green-500" /> : <Square className="w-5 h-5" />}
                   </button>
@@ -149,6 +169,7 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
                   <button
                     onClick={() => onDeleteTask(task.id)}
                     className="md:opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1.5 transition-opacity"
+                    aria-label="Eliminar tarea"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -158,10 +179,14 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
             <div className="relative mt-3 shrink-0">
               <input
                 type="text"
+                id={addTaskId}
                 placeholder="+ Escribe tarea y presiona Enter..."
                 onKeyDown={onAddTask}
                 className="w-full px-3 py-3 md:py-2 text-sm bg-white dark:bg-gray-800 rounded-lg border border-transparent hover:border-amber-200 focus:border-amber-400 outline-none shadow-sm placeholder-gray-400"
               />
+              <label htmlFor={addTaskId} className="sr-only">
+                Agregar nueva tarea clínica
+              </label>
             </div>
           </div>
         </div>
