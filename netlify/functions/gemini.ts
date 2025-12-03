@@ -108,7 +108,8 @@ const handler: Handler = async (event) => {
               role: 'user',
               parts: [
                 {
-                  text: 'Extract data: name (Format: Name Surname1 Surname2, Title Case), rut, birthDate (YYYY-MM-DD), gender from image.',
+                  text:
+                    'Extract data in Spanish documents: name (if it appears as "Apellidos, Nombre" reorder to "Nombre Apellidos" and Title Case), rut, birthDate (YYYY-MM-DD), and gender/sex as it appears (Ej: "Sexo: F", "Masculino/Femenino").',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
@@ -126,7 +127,10 @@ const handler: Handler = async (event) => {
             {
               role: 'user',
               parts: [
-                { text: 'Extract a list of patients from this image...' },
+                {
+                  text:
+                    'Extract a list of patients from this image. For each patient return name (reorder "Apellidos, Nombre" to "Nombre Apellidos" in Title Case), rut, birthDate (YYYY-MM-DD), and gender/sex.',
+                },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
             },
