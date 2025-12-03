@@ -23,6 +23,19 @@ export const formatTitleCase = (str: string) => {
   return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 };
 
+const normalizeNameOrder = (raw: string) => {
+  const cleaned = raw.trim().replace(/\s+/g, ' ');
+  const [beforeComma, afterComma] = cleaned.split(',').map(part => part.trim());
+
+  if (afterComma && beforeComma) {
+    return `${afterComma} ${beforeComma}`;
+  }
+
+  return cleaned;
+};
+
+export const formatPatientName = (str: string) => formatTitleCase(normalizeNameOrder(str));
+
 const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, addToast, initialData, selectedDate }) => {
   const patientTypes = useAppStore(state => state.patientTypes);
 
@@ -143,7 +156,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
 
   const handleNameBlur = () => {
     if (name) {
-      setName(formatTitleCase(name));
+      setName(formatPatientName(name));
     }
   };
 
@@ -157,7 +170,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
       const extractedData = await extractPatientDataFromImage(base64, file.type);
       
       if (extractedData) {
-        if (extractedData.name) setName(formatTitleCase(extractedData.name));
+        if (extractedData.name) setName(formatPatientName(extractedData.name));
         if (extractedData.rut) setRut(extractedData.rut);
         if (extractedData.birthDate) setBirthDate(extractedData.birthDate);
         if (extractedData.gender) setGender(extractedData.gender);
@@ -198,7 +211,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
 
           if (extractedData) {
             if (extractedData.name && extractedData.name !== name) {
-              setName(formatTitleCase(extractedData.name));
+              setName(formatPatientName(extractedData.name));
               updatedFields.add('Nombre');
             }
             if (extractedData.rut && extractedData.rut !== rut) {
@@ -209,9 +222,18 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
               setBirthDate(extractedData.birthDate);
               updatedFields.add('Nacimiento');
             }
+            if (extractedData.gender && extractedData.gender !== gender) {
+              setGender(extractedData.gender);
+              updatedFields.add('Género');
+            }
           }
 
-          if (updatedFields.has('Nombre') && updatedFields.has('RUT') && updatedFields.has('Nacimiento')) {
+          if (
+            updatedFields.has('Nombre') &&
+            updatedFields.has('RUT') &&
+            updatedFields.has('Nacimiento') &&
+            updatedFields.has('Género')
+          ) {
             break;
           }
         } catch (error) {
@@ -245,7 +267,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
       
       if (extractedPatients && extractedPatients.length > 0) {
         const patientsToSave = extractedPatients.map(p => ({
-          name: formatTitleCase(p.name),
+          name: formatPatientName(p.name),
           rut: p.rut,
           birthDate: p.birthDate,
           gender: p.gender,
@@ -273,7 +295,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
 
   const handleSave = () => {
     if (!name.trim()) return addToast('error', 'Nombre requerido');
-    const finalName = formatTitleCase(name);
+    const finalName = formatPatientName(name);
     const selectedType = patientTypes.find(t => t.id === typeId);
     const patientData = {
       ...(initialData || {}),
