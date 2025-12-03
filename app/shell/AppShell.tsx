@@ -1,6 +1,7 @@
-import React, { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isSameDay } from 'date-fns';
 import { ViewMode } from '../../types';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useLogger } from '../../context/LogContext';
 import useAutoLock from '../../hooks/useAutoLock';
 import useBackupManager from '../../hooks/useBackupManager';
@@ -18,6 +19,7 @@ import AppViews from '../../components/AppViews';
 import AppModals from '../../components/AppModals';
 import { useAppActions } from '../state/useAppActions';
 import { useAppState } from '../state/useAppState';
+import { DEFAULT_ROUTE, VIEW_ROUTES, pathFromView, viewFromPath } from '../../routes';
 
 const DebugConsole = lazy(() => import('../../components/DebugConsole'));
 const loadReportService = () => import('../../services/reportService');
@@ -51,7 +53,18 @@ const AppShell: React.FC = () => {
   } = useAppActions();
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>('daily');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const viewMode = useMemo<ViewMode>(() => viewFromPath(location.pathname), [location.pathname]);
+
+  useEffect(() => {
+    const normalizedPath = location.pathname.replace(/\/$/, '') || '/';
+    const knownRoutes = Object.values(VIEW_ROUTES).map(route => route.replace(/\/$/, '') || '/');
+
+    if (!knownRoutes.includes(normalizedPath)) {
+      navigate(DEFAULT_ROUTE, { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   const {
     isPatientModalOpen,
@@ -158,8 +171,11 @@ const AppShell: React.FC = () => {
   }, [addToast, unlockWithPin]);
 
   const handleNavigation = useCallback((view: ViewMode) => {
-    setViewMode(view);
-  }, []);
+    const target = pathFromView(view);
+    if (location.pathname !== target) {
+      navigate(target);
+    }
+  }, [location.pathname, navigate]);
 
   if (!user) return <Login />;
 
@@ -196,7 +212,6 @@ const AppShell: React.FC = () => {
         onPrefetchModal={prefetchModal}
       >
         <AppViews
-          viewMode={viewMode}
           currentDate={currentDate}
           records={records}
           patientTypes={patientTypes}

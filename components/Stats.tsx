@@ -61,8 +61,8 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
 
     return days.map(day => {
       const dayRecords = records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), day));
-      
-      const dayStats: any = {
+
+      const dayStats: Record<string, number | string> = {
         date: format(day, 'd', { locale: es }),
         total: dayRecords.length,
       };

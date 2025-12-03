@@ -22,8 +22,8 @@ interface AppModalsProps {
   preferredFolder: DriveFolderPreference;
   onToast: (type: 'success' | 'error' | 'info', message: string) => void;
   onClosePatientModal: () => void;
-  onSavePatient: (patientData: any) => void;
-  onSaveMultiplePatients: (patientsData: any[]) => void;
+  onSavePatient: (patientData: Omit<PatientRecord, 'id' | 'createdAt'> | PatientRecord) => void;
+  onSaveMultiplePatients: (patientsData: Array<Omit<PatientRecord, 'id' | 'createdAt'>>) => void;
   onCloseDeleteConfirmation: () => void;
   onConfirmDelete: () => void;
   onCloseBackupModal: () => void;

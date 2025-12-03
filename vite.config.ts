@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from 'vite';
+import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { Buffer } from 'buffer';
@@ -49,6 +50,11 @@ export default defineConfig(({ mode }) => {
     // Solo exponer variables VITE_ relacionadas con Google para evitar que otras claves
     // (p. ej., API keys sensibles) queden incrustadas en el bundle de cliente.
     envPrefix: ['VITE_GOOGLE_'],
+    resolve: {
+      alias: {
+        'react-router-dom': path.resolve(process.cwd(), 'vendor/react-router-dom'),
+      },
+    },
     server: {
       host: true,
     },

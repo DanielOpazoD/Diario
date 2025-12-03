@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { format, isSameDay } from 'date-fns';
+import React, { useState } from 'react';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Filter, Plus, Copy, MoveRight } from 'lucide-react';
 import Button from '../../components/Button';
@@ -8,6 +8,9 @@ import FilterBar from '../../components/FilterBar';
 import TelegramSyncButton from '../../components/TelegramSyncButton';
 import { PatientRecord, PatientTypeConfig } from '../../types';
 import useAppStore from '../../stores/useAppStore';
+import { useDailyMetrics } from '../../hooks/useDailyMetrics';
+import { usePatientFilter } from '../../hooks/usePatientFilter';
+import { useDailyRange } from '../../hooks/useDailyRange';
 
 interface DailyViewProps {
   currentDate: Date;
@@ -32,67 +35,15 @@ const DailyView: React.FC<DailyViewProps> = ({
   onMovePatients,
   onCopyPatients,
 }) => {
-  const [activeFilter, setActiveFilter] = useState<string>('all');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPatients, setSelectedPatients] = useState<Set<string>>(new Set());
-  const [targetDate, setTargetDate] = useState<string>(format(currentDate, 'yyyy-MM-dd'));
 
   const addToast = useAppStore(state => state.addToast);
-
-  const dailyRecords = useMemo(
-    () => records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), currentDate)),
-    [records, currentDate]
-  );
-
-  const orderedPatientTypes = useMemo(() => {
-    const defaultOrder = [
-      'hospitalizado',
-      'policlinico',
-      'turno',
-      'extra',
-    ];
-    const mapped = new Map(patientTypes.map(t => [t.id, t]));
-    const prioritized = defaultOrder
-      .map(id => mapped.get(id))
-      .filter(Boolean) as PatientTypeConfig[];
-    const remaining = patientTypes.filter(t => !defaultOrder.includes(t.id));
-    return [...prioritized, ...remaining];
-  }, [patientTypes]);
-
-  const recordMatchesType = (record: PatientRecord, config: PatientTypeConfig) => {
-    if (record.typeId) return record.typeId === config.id;
-    return record.type === config.label;
-  };
-
-  const summaryStats = useMemo(
-    () => orderedPatientTypes.map(t => ({
-      id: t.id,
-      label: t.label,
-      count: dailyRecords.filter(r => recordMatchesType(r, t)).length,
-      color: t.colorClass,
-    })),
-    [dailyRecords, orderedPatientTypes]
-  );
-
-  const visibleRecords = useMemo(
-    () => {
-      if (activeFilter === 'all') return dailyRecords;
-      return dailyRecords.filter(r => {
-        const targetConfig = orderedPatientTypes.find(t => t.id === activeFilter);
-        if (!targetConfig) return false;
-        return recordMatchesType(r, targetConfig);
-      });
-    },
-    [dailyRecords, activeFilter, orderedPatientTypes]
-  );
-
-  useEffect(() => {
-    setTargetDate(format(currentDate, 'yyyy-MM-dd'));
-  }, [currentDate]);
-
-  const pendingTasks = useMemo(
-    () => dailyRecords.reduce((acc, record) => acc + (record.pendingTasks?.filter(t => !t.isCompleted).length || 0), 0),
-    [dailyRecords]
+  const { targetDate, setTargetDate } = useDailyRange(currentDate);
+  const { dailyRecords, pendingTasks } = useDailyMetrics(records, currentDate);
+  const { activeFilter, setActiveFilter, summaryStats, visibleRecords } = usePatientFilter(
+    dailyRecords,
+    patientTypes,
   );
 
   const toggleSelectionMode = () => {
