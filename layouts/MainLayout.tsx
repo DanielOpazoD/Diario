@@ -280,7 +280,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             className="sticky top-0 z-30 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl shadow-sm border-b border-gray-200/60 dark:border-gray-800/60"
           >
             <header className="shrink-0 flex flex-col md:flex-row items-center justify-between px-4 md:px-6 transition-all glass pt-2 pb-2 md:pt-4 md:pb-3 gap-2 md:gap-0">
-            <div className="flex items-center w-full md:w-auto justify-between md:justify-start">
+            <div className="flex items-center w-full justify-between">
               <div className="flex items-center">
                 <button
                   onClick={() => setIsSidebarOpen(true)}
@@ -299,7 +299,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               </div>
 
               {viewMode === 'daily' ? (
-                <div className="flex-1 md:flex-none flex justify-center md:justify-start items-center gap-2">
+                <div className="flex-1 flex justify-center items-center gap-2">
                   <DateNavigator currentDate={currentDate} onSelectDate={onDateChange} records={records} />
                 </div>
               ) : null}
