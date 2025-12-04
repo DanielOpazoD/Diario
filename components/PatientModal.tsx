@@ -223,7 +223,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-gray-50/30 dark:bg-gray-900/10">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-gradient-to-br from-gray-50 via-white to-blue-50/40 dark:from-gray-900 dark:via-gray-900/80 dark:to-gray-800/60">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-full">
             <PatientIdentificationPanel
               name={name}
@@ -250,24 +250,26 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
               onExitTimeChange={setExitTime}
             />
 
-            <div className="md:col-span-8 flex flex-col space-y-5 h-full">
-              <ClinicalNote
-                diagnosis={diagnosis}
-                clinicalNote={clinicalNote}
-                pendingTasks={pendingTasks}
-                isListening={isListening}
-                isAnalyzing={isAnalyzing}
-                activeTab={activeTab}
-                attachmentsCount={attachedFiles.length}
-                onDiagnosisChange={setDiagnosis}
-                onClinicalNoteChange={setClinicalNote}
-                onToggleListening={toggleListening}
-                onAnalyze={handleAIAnalysis}
-                onToggleTask={toggleTask}
-                onDeleteTask={deleteTask}
-                onAddTask={addTask}
-                onChangeTab={setActiveTab}
-              />
+            <div className="md:col-span-8 flex flex-col gap-4 h-full">
+              <div className="bg-white/90 dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700 shadow-xl shadow-blue-100/40 dark:shadow-none backdrop-blur-sm">
+                <ClinicalNote
+                  diagnosis={diagnosis}
+                  clinicalNote={clinicalNote}
+                  pendingTasks={pendingTasks}
+                  isListening={isListening}
+                  isAnalyzing={isAnalyzing}
+                  activeTab={activeTab}
+                  attachmentsCount={attachedFiles.length}
+                  onDiagnosisChange={setDiagnosis}
+                  onClinicalNoteChange={setClinicalNote}
+                  onToggleListening={toggleListening}
+                  onAnalyze={handleAIAnalysis}
+                  onToggleTask={toggleTask}
+                  onDeleteTask={deleteTask}
+                  onAddTask={addTask}
+                  onChangeTab={setActiveTab}
+                />
+              </div>
 
               {activeTab === 'files' && (
                 <PatientAttachmentsSection
