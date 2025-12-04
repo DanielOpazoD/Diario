@@ -18,6 +18,7 @@ interface ClinicalNoteProps {
   activeTab: 'clinical' | 'files';
   onChangeTab: (tab: 'clinical' | 'files') => void;
   attachmentsCount: number;
+  attachmentsContent: React.ReactNode;
 }
 
 const ClinicalNote: React.FC<ClinicalNoteProps> = ({
@@ -36,6 +37,7 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
   activeTab,
   onChangeTab,
   attachmentsCount,
+  attachmentsContent,
 }) => {
   const diagnosisId = useId();
   const noteId = useId();
@@ -84,113 +86,127 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
         </button>
       </div>
 
-      <div className="mb-5">
-        <label htmlFor={diagnosisId} className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
-          Diagnóstico Principal
-        </label>
-        <input
-          id={diagnosisId}
-          value={diagnosis}
-          onChange={(e) => onDiagnosisChange(e.target.value)}
-          placeholder="Ej. Neumonía Adquirida en la Comunidad, HTA descompensada..."
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm font-medium"
-        />
-      </div>
-
-      {activeTab === 'clinical' ? (
-        <div className="flex-1 flex flex-col animate-fade-in space-y-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2">
-            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Evolución / Nota Clínica</label>
-
-            <div className="flex gap-2 w-full md:w-auto">
-              <button
-                onClick={onToggleListening}
-                className={`flex-1 md:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:py-1.5 rounded-full text-xs font-medium transition-all ${
-                  isListening
-                    ? 'bg-red-100 text-red-600 ring-2 ring-red-200 animate-pulse'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
-                }`}
-                title="Dictar voz"
-              >
-                <Mic className="w-3.5 h-3.5" />
-                {isListening ? 'Escuchando...' : 'Dictar'}
-              </button>
-
-              <button
-                onClick={onAnalyze}
-                disabled={isAnalyzing}
-                className="flex-1 md:flex-none justify-center group flex items-center gap-1.5 px-4 py-2 md:py-1.5 bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white rounded-full text-xs font-bold transition-all shadow-lg shadow-violet-500/20 disabled:opacity-70"
-              >
-                <Sparkles
-                  className={`w-3.5 h-3.5 ${
-                    isAnalyzing ? 'animate-spin' : 'group-hover:scale-110 transition-transform'
-                  }`}
+      <div className="flex-1 flex flex-col gap-4">
+        {activeTab === 'clinical' ? (
+          <div className="flex-1 flex flex-col animate-fade-in space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="md:col-span-2 bg-white/90 dark:bg-gray-900/60 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+                <label htmlFor={diagnosisId} className="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
+                  Diagnóstico Principal
+                </label>
+                <input
+                  id={diagnosisId}
+                  value={diagnosis}
+                  onChange={(e) => onDiagnosisChange(e.target.value)}
+                  placeholder="Ej. Neumonía adquirida en la comunidad, HTA descompensada..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm font-semibold text-gray-800 dark:text-gray-100"
                 />
-                {isAnalyzing ? 'Analizando...' : 'Generar Plan IA'}
-              </button>
-            </div>
-          </div>
-
-          <div className="relative flex-1 min-h-[200px] group">
-            <textarea
-              id={noteId}
-              value={clinicalNote}
-              onChange={(e) => onClinicalNoteChange(e.target.value)}
-              placeholder="Escribe la evolución del paciente. Usa el botón de IA para extraer tareas automáticamente."
-              className="w-full h-full p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-inner leading-relaxed font-medium text-gray-700 dark:text-gray-200"
-            />
-          </div>
-
-          <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-xl border border-amber-100 dark:border-amber-800/30 min-h-[150px] flex flex-col">
-            <h4 className="text-xs font-bold uppercase text-amber-600 dark:text-amber-500 mb-3 flex items-center gap-2 tracking-wider shrink-0">
-              <CheckSquare className="w-3.5 h-3.5" /> Pendientes & Tareas
-            </h4>
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
-              {pendingTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center group bg-white dark:bg-gray-800 p-2.5 rounded-lg border border-amber-100 dark:border-amber-900/50 shadow-sm hover:shadow-md transition-all"
-                >
+              </div>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/10 rounded-2xl border border-blue-100 dark:border-indigo-900/40 shadow-sm p-4 flex flex-col gap-3">
+                <p className="text-xs font-semibold text-blue-700 dark:text-indigo-100">Acciones rápidas</p>
+                <div className="flex gap-2">
                   <button
-                    onClick={() => onToggleTask(task.id)}
-                    className="mr-3 text-gray-400 hover:text-blue-500 transition-colors p-1"
-                    aria-pressed={task.isCompleted}
-                    aria-label={task.isCompleted ? 'Marcar tarea como pendiente' : 'Marcar tarea como completada'}
-                  >
-                    {task.isCompleted ? <CheckSquare className="w-5 h-5 text-green-500" /> : <Square className="w-5 h-5" />}
-                  </button>
-                  <span
-                    className={`text-sm flex-1 font-medium ${
-                      task.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'
+                    onClick={onToggleListening}
+                    className={`flex-1 justify-center flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm ${
+                      isListening
+                        ? 'bg-red-100 text-red-700 ring-2 ring-red-200 animate-pulse'
+                        : 'bg-white/80 text-gray-700 hover:bg-white dark:bg-gray-800 dark:text-gray-200'
                     }`}
+                    title="Dictar voz"
                   >
-                    {task.text}
-                  </span>
+                    <Mic className="w-3.5 h-3.5" />
+                    {isListening ? 'Escuchando...' : 'Dictar'}
+                  </button>
+
                   <button
-                    onClick={() => onDeleteTask(task.id)}
-                    className="md:opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1.5 transition-opacity"
-                    aria-label="Eliminar tarea"
+                    onClick={onAnalyze}
+                    disabled={isAnalyzing}
+                    className="flex-1 justify-center group flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md shadow-blue-500/25 disabled:opacity-80"
                   >
-                    <X className="w-4 h-4" />
+                    <Sparkles
+                      className={`w-3.5 h-3.5 ${
+                        isAnalyzing ? 'animate-spin' : 'group-hover:scale-110 transition-transform'
+                      }`}
+                    />
+                    {isAnalyzing ? 'Analizando...' : 'Plan IA'}
                   </button>
                 </div>
-              ))}
+                <p className="text-[11px] leading-4 text-gray-600 dark:text-gray-300">
+                  Usa dictado y IA para acelerar la captura. Tus notas se sincronizan automáticamente.
+                </p>
+              </div>
             </div>
-            <div className="relative mt-3 shrink-0">
-              <input
-                type="text"
-                id={addTaskId}
-                placeholder="+ Escribe tarea y presiona Enter..."
-                onKeyDown={onAddTask}
-                className="w-full px-3 py-3 md:py-2 text-sm bg-white dark:bg-gray-800 rounded-lg border border-transparent hover:border-amber-200 focus:border-amber-400 outline-none shadow-sm placeholder-gray-400"
-              />
-              <label htmlFor={addTaskId} className="sr-only">
-                Agregar nueva tarea clínica
-              </label>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="lg:col-span-2 bg-white/90 dark:bg-gray-900/60 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner p-4 flex flex-col">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Evolución / Nota Clínica</label>
+                <div className="relative flex-1 min-h-[220px]">
+                  <textarea
+                    id={noteId}
+                    value={clinicalNote}
+                    onChange={(e) => onClinicalNoteChange(e.target.value)}
+                    placeholder="Escribe la evolución del paciente. Usa el botón de IA para extraer tareas automáticamente."
+                    className="w-full h-full p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none leading-relaxed font-medium text-gray-800 dark:text-gray-200"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-b from-amber-50 to-orange-50 dark:from-amber-900/15 dark:to-orange-900/15 p-4 rounded-2xl border border-amber-100 dark:border-amber-800/40 min-h-[220px] flex flex-col shadow-sm">
+                <h4 className="text-xs font-bold uppercase text-amber-700 dark:text-amber-400 mb-3 flex items-center gap-2 tracking-wide shrink-0">
+                  <CheckSquare className="w-3.5 h-3.5" /> Pendientes & Tareas
+                </h4>
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
+                  {pendingTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center group bg-white/90 dark:bg-gray-900/60 p-2.5 rounded-lg border border-amber-100 dark:border-amber-800/60 shadow-sm hover:shadow-md transition-all"
+                    >
+                      <button
+                        onClick={() => onToggleTask(task.id)}
+                        className="mr-3 text-gray-400 hover:text-blue-500 transition-colors p-1"
+                        aria-pressed={task.isCompleted}
+                        aria-label={task.isCompleted ? 'Marcar tarea como pendiente' : 'Marcar tarea como completada'}
+                      >
+                        {task.isCompleted ? <CheckSquare className="w-5 h-5 text-green-500" /> : <Square className="w-5 h-5" />}
+                      </button>
+                      <span
+                        className={`text-sm flex-1 font-medium ${
+                          task.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'
+                        }`}
+                      >
+                        {task.text}
+                      </span>
+                      <button
+                        onClick={() => onDeleteTask(task.id)}
+                        className="md:opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1.5 transition-opacity"
+                        aria-label="Eliminar tarea"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="relative mt-3 shrink-0">
+                  <input
+                    type="text"
+                    id={addTaskId}
+                    placeholder="+ Escribe tarea y presiona Enter..."
+                    onKeyDown={onAddTask}
+                    className="w-full px-3 py-3 md:py-2 text-sm bg-white dark:bg-gray-900/70 rounded-lg border border-transparent hover:border-amber-300 focus:border-amber-400 outline-none shadow-sm placeholder-gray-400"
+                  />
+                  <label htmlFor={addTaskId} className="sr-only">
+                    Agregar nueva tarea clínica
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : (
+          <div className="flex-1 animate-fade-in">
+            {attachmentsContent}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
