@@ -18,18 +18,17 @@ interface Message {
   text: string;
 }
 
-const EXAM_SUMMARY_PROMPT = `Analiza los documentos adjuntos (exámenes médicos) y genera un resumen ESTRICTAMENTE con el siguiente formato minimalista. 
-Busca los valores más recientes. Si un valor no se encuentra en los documentos, simplemente OMÍTELO (no escribas "no encontrado" ni dejes el espacio).
-NO agregues introducciones, conclusiones ni texto extra. Solo la lista de valores.
+const EXAM_SUMMARY_PROMPT = `Analiza los documentos adjuntos (exámenes médicos) y genera un resumen ESTRICTAMENTE con el siguiente formato minimalista.
+Busca los valores más recientes. Si un valor no se encuentra en los documentos, OMITE la sección completa (no escribas el nombre del examen ni un marcador). NO agregues introducciones, conclusiones ni texto extra. Solo la lista de valores.
 
-Formato requerido:
+Formato requerido (sin asteriscos):
 Fecha: [Fecha del examen si aparece]
-*Hg* [valor]  *Plaquetas* [valor]  *RGB* [valor] *VHS* [valor]  *PCR* [valor + unidad]
-*GOT* [valor] *GPT* [valor] *FA* [valor] *GGT* [valor] *BT* [valor] *BI* [valor]
-*Hb glicosilada* [valor] *TSH* [valor] *T4L* [valor]
-*Creat* [valor] *BUN* [valor] *HCO3* [valor] *K* [valor]  *Na* [valor]
-*Col total* [valor]  *LDL* [valor]
-*RAC* [valor]      *PSA* [valor]
+Hg [valor]  Plaquetas [valor]  RGB [valor] VHS [valor]  PCR [valor + unidad]
+GOT [valor] GPT [valor] FA [valor] GGT [valor] BT [valor] BI [valor]
+Hb glicosilada [valor] TSH [valor] T4L [valor]
+Creat [valor] BUN [valor] HCO3 [valor] K [valor]  Na [valor]
+Col total [valor]  LDL [valor]
+RAC [valor]      PSA [valor]
 
 Nota: Para "RGB" busca Leucocitos o Glóbulos Blancos. Para "PCR" incluye la unidad (ej. mg/dL). El resto SOLO el número.`;
 

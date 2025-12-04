@@ -20,16 +20,16 @@ interface ChatMessage {
 }
 
 const SUMMARY_PROMPT = `Analiza los documentos adjuntos (exámenes médicos) y genera un resumen ESTRICTAMENTE con el siguiente formato minimalista.
-Busca los valores más recientes. Si un valor no se encuentra, OMÍTELO. NO agregues introducciones ni conclusiones.
+Busca los valores más recientes. Si un valor no se encuentra, omite la sección completa (no escribas el nombre del examen ni marcadores). NO agregues introducciones ni conclusiones.
 
-Formato requerido:
+Formato requerido (sin asteriscos):
 Fecha: [Fecha del examen si aparece]
-*Hg* [valor]  *Plaquetas* [valor]  *RGB* [valor] *VHS* [valor]  *PCR* [valor + unidad]
-*GOT* [valor] *GPT* [valor] *FA* [valor] *GGT* [valor] *BT* [valor] *BI* [valor]
-*Hb glicosilada* [valor] *TSH* [valor] *T4L* [valor]
-*Creat* [valor] *BUN* [valor] *HCO3* [valor] *K* [valor]  *Na* [valor]
-*Col total* [valor]  *LDL* [valor]
-*RAC* [valor]      *PSA* [valor]`;
+Hg [valor]  Plaquetas [valor]  RGB [valor] VHS [valor]  PCR [valor + unidad]
+GOT [valor] GPT [valor] FA [valor] GGT [valor] BT [valor] BI [valor]
+Hb glicosilada [valor] TSH [valor] T4L [valor]
+Creat [valor] BUN [valor] HCO3 [valor] K [valor]  Na [valor]
+Col total [valor]  LDL [valor]
+RAC [valor]      PSA [valor]`;
 
 const readFileAsBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
