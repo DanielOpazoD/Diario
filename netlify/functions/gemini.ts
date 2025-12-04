@@ -142,10 +142,30 @@ const handler: Handler = async (event) => {
       }
 
       case 'askAboutImages': {
-        const parts = [
-          { text: payload.prompt },
-          ...((payload.images || []) as any[]),
-        ];
+        const promptText = typeof payload.prompt === 'string' ? payload.prompt.trim() : '';
+        const imageParts = (payload.images || [])
+          .map((image: any) => {
+            const inlineData = image?.inlineData ?? image;
+            if (!inlineData?.mimeType || !inlineData?.data) return null;
+
+            return {
+              inlineData: {
+                mimeType: inlineData.mimeType,
+                data: typeof inlineData.data === 'string' ? inlineData.data.trim() : inlineData.data,
+              },
+            };
+          })
+          .filter(Boolean) as any[];
+
+        if (!promptText) {
+          throw new Error('Se requiere un prompt para analizar los archivos.');
+        }
+
+        if (imageParts.length === 0) {
+          throw new Error('No se recibieron archivos compatibles (imágenes o PDF).');
+        }
+
+        const parts = [{ text: promptText }, ...imageParts];
 
         const result = await model.generateContent({
           contents: [
