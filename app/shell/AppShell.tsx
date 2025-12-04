@@ -20,6 +20,7 @@ import AppModals from '../../components/AppModals';
 import { useAppActions } from '../state/useAppActions';
 import { useAppState } from '../state/useAppState';
 import { DEFAULT_ROUTE, VIEW_ROUTES, pathFromView, viewFromPath } from '../../routes';
+import AIChatDrawer from '../../components/AIChatDrawer';
 
 const DebugConsole = lazy(() => import('../../components/DebugConsole'));
 const loadReportService = () => import('../../services/reportService');
@@ -249,6 +250,8 @@ const AppShell: React.FC = () => {
         onFolderChange={setDriveFolderPreference}
         onCloseBookmarksModal={closeBookmarksModal}
       />
+
+      <AIChatDrawer />
     </div>
   );
 };
