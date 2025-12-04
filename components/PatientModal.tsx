@@ -257,8 +257,6 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
                 pendingTasks={pendingTasks}
                 isListening={isListening}
                 isAnalyzing={isAnalyzing}
-                activeTab={activeTab}
-                attachmentsCount={attachedFiles.length}
                 onDiagnosisChange={setDiagnosis}
                 onClinicalNoteChange={setClinicalNote}
                 onToggleListening={toggleListening}
@@ -267,19 +265,20 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
                 onDeleteTask={deleteTask}
                 onAddTask={addTask}
                 onChangeTab={setActiveTab}
+                activeTab={activeTab}
+                attachmentsCount={attachedFiles.length}
+                attachmentsContent={(
+                  <PatientAttachmentsSection
+                    attachedFiles={attachedFiles}
+                    patientRut={rut}
+                    patientName={name}
+                    driveFolderId={driveFolderId}
+                    addToast={addToast}
+                    onFilesChange={setAttachedFiles}
+                    onDriveFolderIdChange={setDriveFolderId}
+                  />
+                )}
               />
-
-              {activeTab === 'files' && (
-                <PatientAttachmentsSection
-                  attachedFiles={attachedFiles}
-                  patientRut={rut}
-                  patientName={name}
-                  driveFolderId={driveFolderId}
-                  addToast={addToast}
-                  onFilesChange={setAttachedFiles}
-                  onDriveFolderIdChange={setDriveFolderId}
-                />
-              )}
             </div>
           </div>
         </div>
