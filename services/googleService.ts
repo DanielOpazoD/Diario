@@ -371,18 +371,27 @@ export const createPatientDriveFolder = async (
   accessToken: string,
   existingFolderId?: string | null
 ): Promise<{ id: string; webViewLink: string }> => {
-  const rootId = await findOrCreateFolder("MediDiario", accessToken);
-  const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
-
   const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
 
-  let patientFolderId = existingFolderId || null;
+  if (existingFolderId) {
+    const infoRes = await fetchWithRetry(
+      `https://www.googleapis.com/drive/v3/files/${existingFolderId}?fields=id,name,webViewLink&supportsAllDrives=true`,
+      {
+        headers: { Authorization: 'Bearer ' + accessToken },
+      }
+    );
 
-  if (patientFolderId) {
-    await ensureFolderNameMatches(patientFolderId, safeFolder, accessToken);
-  } else {
-    patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
+    if (!infoRes.ok) {
+      return { id: existingFolderId, webViewLink: `https://drive.google.com/drive/folders/${existingFolderId}` };
+    }
+
+    const info = await infoRes.json();
+    return { id: existingFolderId, webViewLink: info.webViewLink || `https://drive.google.com/drive/folders/${existingFolderId}` };
   }
+
+  const rootId = await findOrCreateFolder("MediDiario", accessToken);
+  const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
+  const patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
 
   const infoRes = await fetchWithRetry(
     `https://www.googleapis.com/drive/v3/files/${patientFolderId}?fields=id,name,webViewLink&supportsAllDrives=true`,
@@ -446,25 +455,20 @@ export const uploadFileForPatient = async (
   accessToken: string,
   patientFolderId?: string | null
 ): Promise<AttachedFile> => {
-  // 1. Ensure Directory Structure: MediDiario/Pacientes/{RUT}-{Nombre}/
-  const rootId = await findOrCreateFolder("MediDiario", accessToken);
-  const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
+  let resolvedFolderId = patientFolderId || null;
 
-  const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
-
-  if (patientFolderId) {
-    await ensureFolderNameMatches(patientFolderId, safeFolder, accessToken);
-  } else {
-    patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
+  if (!resolvedFolderId) {
+    const { id } = await createPatientDriveFolder(patientRut, patientName, accessToken);
+    resolvedFolderId = id;
   }
 
   // 2. Prepare Metadata
   const datePrefix = new Date().toISOString().split('T')[0];
   const fileName = `${datePrefix}_${file.name}`;
-  
+
   const metadata = {
     name: fileName,
-    parents: [patientFolderId]
+    parents: [resolvedFolderId]
   };
 
   const form = new FormData();
@@ -502,30 +506,18 @@ export const resolvePatientFolderId = async (
   accessToken: string,
   options?: { createIfMissing?: boolean; driveFolderId?: string | null }
 ): Promise<string | null> => {
-  const { createIfMissing = true } = options || {};
-
-  const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
+  const { createIfMissing = false } = options || {};
 
   if (options?.driveFolderId) {
-    await ensureFolderNameMatches(options.driveFolderId, safeFolder, accessToken);
     return options.driveFolderId;
   }
 
-  const rootId = createIfMissing
-    ? await findOrCreateFolder('MediDiario', accessToken)
-    : await findFolderId('MediDiario', accessToken);
-  if (!rootId) return null;
-
-  const pacientesId = createIfMissing
-    ? await findOrCreateFolder('Pacientes', accessToken, rootId)
-    : await findFolderId('Pacientes', accessToken, rootId);
-  if (!pacientesId) return null;
-
-  if (createIfMissing) {
-    return await findOrCreateFolder(safeFolder, accessToken, pacientesId, true);
+  if (!createIfMissing) {
+    return null;
   }
 
-  return await findFolderId(safeFolder, accessToken, pacientesId);
+  const { id } = await createPatientDriveFolder(patientRut, patientName, accessToken);
+  return id;
 };
 
 export const fetchPatientFolderFiles = async (
@@ -534,10 +526,7 @@ export const fetchPatientFolderFiles = async (
   patientName: string,
   patientFolderId?: string | null
 ): Promise<AttachedFile[]> => {
-  const resolvedFolderId = await resolvePatientFolderId(patientRut, patientName, accessToken, {
-    createIfMissing: false,
-    driveFolderId: patientFolderId,
-  });
+  const resolvedFolderId = patientFolderId || null;
 
   if (!resolvedFolderId) {
     return [];
