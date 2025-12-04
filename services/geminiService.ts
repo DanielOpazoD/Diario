@@ -88,7 +88,8 @@ export const askAboutImages = async (prompt: string, images: FileContent[]): Pro
   try {
     return await callGemini<string>({ action: "askAboutImages", prompt, images });
   } catch (error: any) {
+    const message = error?.message || "No se pudo generar respuesta sobre las imágenes.";
     emitStructuredLog("error", "Gemini", "Ask about images failed", { error: String(error) });
-    return "No se pudo generar respuesta sobre las imágenes.";
+    throw new Error(`${message} Verifica la clave de Gemini y que los archivos sean compatibles (imágenes o PDF).`);
   }
 };
