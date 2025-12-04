@@ -54,6 +54,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
   const [clinicalNote, setClinicalNote] = useState('');
   const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [driveFolderId, setDriveFolderId] = useState<string | null>(null);
   
   // UI State
   const [activeTab, setActiveTab] = useState<'clinical' | 'files'>('clinical');
@@ -104,25 +105,27 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
           || defaultTypeId;
         setTypeId(resolvedTypeId);
         setEntryTime(initialData.entryTime || ''); 
-        setExitTime(initialData.exitTime || ''); 
-        setDiagnosis(initialData.diagnosis); 
-        setClinicalNote(initialData.clinicalNote); 
+        setExitTime(initialData.exitTime || '');
+        setDiagnosis(initialData.diagnosis);
+        setClinicalNote(initialData.clinicalNote);
         setPendingTasks(initialData.pendingTasks);
         setAttachedFiles(initialData.attachedFiles || []);
+        setDriveFolderId(initialData.driveFolderId || null);
       } else {
         // Always start from zero for new patient
-        setName(''); 
-        setRut(''); 
-        setBirthDate(''); 
+        setName('');
+        setRut('');
+        setBirthDate('');
         setGender(''); 
         setType(PatientType.POLICLINICO);
         setTypeId(defaultTypeId);
         setEntryTime(''); 
         setExitTime(''); 
-        setDiagnosis(''); 
-        setClinicalNote(''); 
-        setPendingTasks([]); 
+        setDiagnosis('');
+        setClinicalNote('');
+        setPendingTasks([]);
         setAttachedFiles([]);
+        setDriveFolderId(null);
       }
       setActiveTab('clinical');
     }
@@ -310,10 +313,11 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
       entryTime: entryTime || undefined,
       exitTime: exitTime || undefined,
       diagnosis,
-      clinicalNote, 
-      pendingTasks, 
+      clinicalNote,
+      pendingTasks,
       attachedFiles,
-      date: initialData ? initialData.date : selectedDate 
+      driveFolderId,
+      date: initialData ? initialData.date : selectedDate
     };
     onSave(patientData as any);
     onClose();
@@ -460,7 +464,9 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
                     files={attachedFiles}
                     patientRut={rut}
                     patientName={name}
+                    patientDriveFolderId={driveFolderId}
                     onFilesChange={setAttachedFiles}
+                    onDriveFolderIdChange={setDriveFolderId}
                     addToast={addToast}
                   />
                 </div>
