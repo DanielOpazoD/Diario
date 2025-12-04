@@ -194,14 +194,6 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
         </div>
       ) : (
         <div className="animate-fade-in space-y-3">
-          <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 px-4 py-3 rounded-xl shadow-sm">
-            <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-[0.08em] text-blue-600 dark:text-blue-300 font-bold">Centro de archivos</span>
-              <span className="text-sm text-gray-700 dark:text-gray-200">Reúne, etiqueta y comparte los adjuntos del paciente sin distracciones.</span>
-            </div>
-            <Paperclip className="w-5 h-5 text-blue-500" />
-          </div>
-
           {attachmentsSection ? (
             attachmentsSection
           ) : (
