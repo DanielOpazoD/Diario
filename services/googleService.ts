@@ -350,21 +350,6 @@ const findOrCreateFolder = async (
   return createData.id;
 };
 
-const ensureFolderNameMatches = async (folderId: string, targetName: string, accessToken: string) => {
-  try {
-    await fetchWithRetry(`https://www.googleapis.com/drive/v3/files/${folderId}?supportsAllDrives=true`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: 'Bearer ' + accessToken,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name: targetName }),
-    });
-  } catch (error) {
-    emitStructuredLog('warn', 'GoogleDrive', 'No se pudo actualizar el nombre de la carpeta', { error });
-  }
-};
-
 export const createPatientDriveFolder = async (
   patientRut: string,
   patientName: string,
@@ -378,9 +363,7 @@ export const createPatientDriveFolder = async (
 
   let patientFolderId = existingFolderId || null;
 
-  if (patientFolderId) {
-    await ensureFolderNameMatches(patientFolderId, safeFolder, accessToken);
-  } else {
+  if (!patientFolderId) {
     patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
   }
 
@@ -446,15 +429,11 @@ export const uploadFileForPatient = async (
   accessToken: string,
   patientFolderId?: string | null
 ): Promise<AttachedFile> => {
-  // 1. Ensure Directory Structure: MediDiario/Pacientes/{RUT}-{Nombre}/
-  const rootId = await findOrCreateFolder("MediDiario", accessToken);
-  const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
-
-  const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
-
-  if (patientFolderId) {
-    await ensureFolderNameMatches(patientFolderId, safeFolder, accessToken);
-  } else {
+  if (!patientFolderId) {
+    // Crear la estructura únicamente cuando no existe carpeta asignada
+    const rootId = await findOrCreateFolder("MediDiario", accessToken);
+    const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
+    const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
     patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
   }
 
@@ -507,7 +486,6 @@ export const resolvePatientFolderId = async (
   const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
 
   if (options?.driveFolderId) {
-    await ensureFolderNameMatches(options.driveFolderId, safeFolder, accessToken);
     return options.driveFolderId;
   }
 
