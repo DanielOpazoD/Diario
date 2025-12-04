@@ -25,6 +25,7 @@ export const saveRecordsToLocal = (records: PatientRecord[]) => {
 const normalizePatients = (records: any[]): PatientRecord[] => {
   return records.map((r: any) => ({
     ...r,
+    driveFolderId: r.driveFolderId ?? null,
     attachedFiles: Array.isArray(r.attachedFiles) ? r.attachedFiles : [],
     pendingTasks: Array.isArray(r.pendingTasks) ? r.pendingTasks : [],
   }));

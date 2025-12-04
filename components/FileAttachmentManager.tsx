@@ -27,7 +27,9 @@ interface FileAttachmentManagerProps {
   files: AttachedFile[];
   patientRut: string;
   patientName: string;
+  patientDriveFolderId?: string | null;
   onFilesChange: (files: AttachedFile[]) => void;
+  onDriveFolderIdChange?: (folderId: string) => void;
   addToast: (type: 'success' | 'error' | 'info', msg: string) => void;
 }
 
@@ -35,7 +37,9 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   files,
   patientRut,
   patientName,
+  patientDriveFolderId,
   onFilesChange,
+  onDriveFolderIdChange,
   addToast,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -48,6 +52,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [showStarredOnly, setShowStarredOnly] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [hasDriveFolder, setHasDriveFolder] = useState(false);
+  const [driveFolderId, setDriveFolderId] = useState<string | null>(patientDriveFolderId || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropzoneDescriptionId = useId();
 
@@ -63,6 +68,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   } = usePatientFiles({
     patientRut,
     patientName,
+    patientDriveFolderId: driveFolderId,
     enabled: !!patientRut && !!patientName,
   });
 
@@ -94,6 +100,13 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
       setHasDriveFolder(true);
     }
   }, [hasCachedData, cachedFiles, files.length]);
+
+  useEffect(() => {
+    setDriveFolderId(patientDriveFolderId || null);
+    if (patientDriveFolderId) {
+      setHasDriveFolder(true);
+    }
+  }, [patientDriveFolderId]);
 
   // Timestamp de última sincronización
   const lastSyncedAt = hasCachedData ? Date.now() : null;
@@ -130,6 +143,22 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     setIsUploading(true);
     setUploadProgress(0);
 
+    let ensuredFolderId = driveFolderId;
+    try {
+      if (ensuredFolderId) {
+        await createPatientDriveFolder(patientRut, patientName, token, ensuredFolderId);
+      } else {
+        const { id } = await createPatientDriveFolder(patientRut, patientName, token);
+        ensuredFolderId = id;
+        setDriveFolderId(id);
+        onDriveFolderIdChange?.(id);
+        setHasDriveFolder(true);
+      }
+    } catch (error: any) {
+      addToast('error', error?.message || 'No se pudo preparar la carpeta del paciente.');
+      return;
+    }
+
     const totalFiles = fileList.length;
     const newAttachments: AttachedFile[] = [];
     let successCount = 0;
@@ -143,7 +172,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
       }
 
       try {
-        const attachedFile = await uploadFileForPatient(file, patientRut, patientName, token);
+        const attachedFile = await uploadFileForPatient(file, patientRut, patientName, token, ensuredFolderId);
         newAttachments.push(attachedFile);
         successCount++;
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
@@ -265,7 +294,9 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
     setIsCreatingFolder(true);
     try {
-      const { webViewLink } = await createPatientDriveFolder(patientRut, patientName, token);
+      const { id, webViewLink } = await createPatientDriveFolder(patientRut, patientName, token, driveFolderId);
+      setDriveFolderId(id);
+      onDriveFolderIdChange?.(id);
       addToast('success', 'Carpeta del paciente lista en Drive.');
       setHasDriveFolder(true);
       refetch(); // Usar React Query para refetch

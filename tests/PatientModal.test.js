@@ -21,12 +21,17 @@ test('formatTitleCase capitalizes each word', () => {
     require: (id) => {
       if (id.endsWith('/Button') || id === './Button') return () => null;
       if (id.endsWith('/FileAttachmentManager') || id === './FileAttachmentManager') return () => null;
+      if (id.includes('patient/PatientForm')) return () => null;
+      if (id.includes('patient/ClinicalNote')) return () => null;
       if (id.includes('services/geminiService')) {
         return {
           analyzeClinicalNote: async () => ({ structuredDiagnosis: '', extractedTasks: [] }),
           extractPatientDataFromImage: async () => null,
           extractMultiplePatientsFromImage: async () => [],
         };
+      }
+      if (id.includes('services/googleService')) {
+        return { downloadFileAsBase64: async () => '' };
       }
       if (id.includes('services/storage')) return { fileToBase64: async () => '' };
       if (id.includes('useAppStore')) return (selector) => selector(mockStore);
