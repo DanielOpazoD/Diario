@@ -145,9 +145,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
     let ensuredFolderId = driveFolderId;
     try {
-      if (ensuredFolderId) {
-        await createPatientDriveFolder(patientRut, patientName, token, ensuredFolderId);
-      } else {
+      if (!ensuredFolderId) {
         const { id } = await createPatientDriveFolder(patientRut, patientName, token);
         ensuredFolderId = id;
         setDriveFolderId(id);
@@ -156,6 +154,13 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
       }
     } catch (error: any) {
       addToast('error', error?.message || 'No se pudo preparar la carpeta del paciente.');
+      return;
+    }
+
+    if (!ensuredFolderId) {
+      addToast('error', 'No se pudo determinar la carpeta de Drive del paciente.');
+      setIsUploading(false);
+      setUploadProgress(0);
       return;
     }
 
