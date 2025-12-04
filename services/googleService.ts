@@ -350,42 +350,37 @@ const findOrCreateFolder = async (
   return createData.id;
 };
 
-const ensureFolderNameMatches = async (folderId: string, targetName: string, accessToken: string) => {
-  try {
-    await fetchWithRetry(`https://www.googleapis.com/drive/v3/files/${folderId}?supportsAllDrives=true`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: 'Bearer ' + accessToken,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name: targetName }),
-    });
-  } catch (error) {
-    emitStructuredLog('warn', 'GoogleDrive', 'No se pudo actualizar el nombre de la carpeta', { error });
-  }
-};
-
 export const createPatientDriveFolder = async (
   patientRut: string,
   patientName: string,
   accessToken: string,
   existingFolderId?: string | null
 ): Promise<{ id: string; webViewLink: string }> => {
+  if (existingFolderId) {
+    const infoRes = await fetchWithRetry(
+      `https://www.googleapis.com/drive/v3/files/${existingFolderId}?fields=id,webViewLink&supportsAllDrives=true`,
+      {
+        headers: { Authorization: 'Bearer ' + accessToken },
+      }
+    );
+
+    if (!infoRes.ok) {
+      return { id: existingFolderId, webViewLink: `https://drive.google.com/drive/folders/${existingFolderId}` };
+    }
+
+    const info = await infoRes.json();
+    return { id: existingFolderId, webViewLink: info.webViewLink || `https://drive.google.com/drive/folders/${existingFolderId}` };
+  }
+
   const rootId = await findOrCreateFolder("MediDiario", accessToken);
   const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
 
   const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
 
-  let patientFolderId = existingFolderId || null;
-
-  if (patientFolderId) {
-    await ensureFolderNameMatches(patientFolderId, safeFolder, accessToken);
-  } else {
-    patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
-  }
+  const patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
 
   const infoRes = await fetchWithRetry(
-    `https://www.googleapis.com/drive/v3/files/${patientFolderId}?fields=id,name,webViewLink&supportsAllDrives=true`,
+    `https://www.googleapis.com/drive/v3/files/${patientFolderId}?fields=id,webViewLink&supportsAllDrives=true`,
     {
       headers: { Authorization: 'Bearer ' + accessToken },
     }
@@ -446,16 +441,8 @@ export const uploadFileForPatient = async (
   accessToken: string,
   patientFolderId?: string | null
 ): Promise<AttachedFile> => {
-  // 1. Ensure Directory Structure: MediDiario/Pacientes/{RUT}-{Nombre}/
-  const rootId = await findOrCreateFolder("MediDiario", accessToken);
-  const pacientesId = await findOrCreateFolder("Pacientes", accessToken, rootId);
-
-  const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
-
-  if (patientFolderId) {
-    await ensureFolderNameMatches(patientFolderId, safeFolder, accessToken);
-  } else {
-    patientFolderId = await findOrCreateFolder(safeFolder, accessToken, pacientesId);
+  if (!patientFolderId) {
+    throw new Error('No se encontró la carpeta de Drive del paciente.');
   }
 
   // 2. Prepare Metadata
@@ -502,30 +489,18 @@ export const resolvePatientFolderId = async (
   accessToken: string,
   options?: { createIfMissing?: boolean; driveFolderId?: string | null }
 ): Promise<string | null> => {
-  const { createIfMissing = true } = options || {};
-
-  const safeFolder = `${patientRut || 'SinRut'}-${patientName || 'SinNombre'}`.replace(/\//g, '-');
+  const { createIfMissing = false } = options || {};
 
   if (options?.driveFolderId) {
-    await ensureFolderNameMatches(options.driveFolderId, safeFolder, accessToken);
     return options.driveFolderId;
   }
 
-  const rootId = createIfMissing
-    ? await findOrCreateFolder('MediDiario', accessToken)
-    : await findFolderId('MediDiario', accessToken);
-  if (!rootId) return null;
-
-  const pacientesId = createIfMissing
-    ? await findOrCreateFolder('Pacientes', accessToken, rootId)
-    : await findFolderId('Pacientes', accessToken, rootId);
-  if (!pacientesId) return null;
-
   if (createIfMissing) {
-    return await findOrCreateFolder(safeFolder, accessToken, pacientesId, true);
+    const { id } = await createPatientDriveFolder(patientRut, patientName, accessToken);
+    return id;
   }
 
-  return await findFolderId(safeFolder, accessToken, pacientesId);
+  return null;
 };
 
 export const fetchPatientFolderFiles = async (
@@ -534,17 +509,15 @@ export const fetchPatientFolderFiles = async (
   patientName: string,
   patientFolderId?: string | null
 ): Promise<AttachedFile[]> => {
-  const resolvedFolderId = await resolvePatientFolderId(patientRut, patientName, accessToken, {
-    createIfMissing: false,
-    driveFolderId: patientFolderId,
-  });
+  void patientRut;
+  void patientName;
 
-  if (!resolvedFolderId) {
+  if (!patientFolderId) {
     return [];
   }
 
   const searchUrl = new URL('https://www.googleapis.com/drive/v3/files');
-  searchUrl.searchParams.append('q', `'${resolvedFolderId}' in parents and trashed=false`);
+  searchUrl.searchParams.append('q', `'${patientFolderId}' in parents and trashed=false`);
   searchUrl.searchParams.append('fields', 'files(id,name,mimeType,size,createdTime,modifiedTime,webViewLink,thumbnailLink)');
   searchUrl.searchParams.append('orderBy', 'modifiedTime desc');
   searchUrl.searchParams.append('supportsAllDrives', 'true');
