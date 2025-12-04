@@ -19,18 +19,22 @@ interface Message {
 }
 
 const EXAM_SUMMARY_PROMPT = `Analiza los documentos adjuntos (exámenes médicos) y genera un resumen ESTRICTAMENTE con el siguiente formato minimalista.
-Busca los valores más recientes. Si un valor no se encuentra en los documentos, OMITE la sección completa (no escribas el nombre del examen ni un marcador). NO agregues introducciones, conclusiones ni texto extra. Solo la lista de valores.
+Busca los valores más recientes. NO agregues introducciones, conclusiones ni texto extra. Solo la lista de valores.
+
+Instrucciones clave:
+- La primera línea debe ser: [Nombre y Apellido si aparece] [RUT si aparece] [Fecha del examen más reciente si aparece]. Si falta un dato, deja el campo vacío, sin inventar.
+- No informes exámenes que no se encuentren en los documentos. Omite la sección completa si falta un valor (ej. no mostrar TSH o T4L si no están reportados).
+- Para Plaquetas y RGB/Leucocitos, si el valor está expresado en miles (x10^3/uL o similar), conviértelo a número absoluto multiplicando por 1.000 (ej: 4,83 x10^3/uL → 4.830; 300 x10^3/uL → 300.000). No redondees a la baja.
+- Para "RGB" busca Leucocitos o Glóbulos Blancos. Para "PCR" incluye la unidad (ej. mg/dL). El resto SOLO el número.
 
 Formato requerido (sin asteriscos):
-Fecha: [Fecha del examen si aparece]
+[Nombre Apellido] [RUT] [Fecha]
 Hg [valor]  Plaquetas [valor]  RGB [valor] VHS [valor]  PCR [valor + unidad]
 GOT [valor] GPT [valor] FA [valor] GGT [valor] BT [valor] BI [valor]
 Hb glicosilada [valor] TSH [valor] T4L [valor]
 Creat [valor] BUN [valor] HCO3 [valor] K [valor]  Na [valor]
 Col total [valor]  LDL [valor]
-RAC [valor]      PSA [valor]
-
-Nota: Para "RGB" busca Leucocitos o Glóbulos Blancos. Para "PCR" incluye la unidad (ej. mg/dL). El resto SOLO el número.`;
+RAC [valor]      PSA [valor]`;
 
 const AIAttachmentAssistant: React.FC<AIAttachmentAssistantProps> = ({ isOpen, onClose, files, patientName }) => {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
