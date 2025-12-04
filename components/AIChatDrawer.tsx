@@ -1,16 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bot,
   ChevronDown,
   ChevronUp,
   Loader2,
   MessageSquare,
   Paperclip,
+  RotateCw,
   Send,
   Sparkles,
+  Trash2,
   X,
 } from "lucide-react";
-import { askAboutImages, FileContent } from "../services/geminiService";
+import { askAboutImages, FileContent, validateEnvironment } from "../services/geminiService";
 
 interface ChatMessage {
   id: string;
@@ -60,6 +61,8 @@ const AIChatDrawer: React.FC = () => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [geminiStatus, setGeminiStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -133,6 +136,36 @@ const AIChatDrawer: React.FC = () => {
 
   const quickPrompt = () => handleSend(SUMMARY_PROMPT);
 
+  const handleExplain = () =>
+    handleSend(
+      "Explica los hallazgos relevantes de los adjuntos y ofrece un plan de seguimiento resumido en máximo 4 viñetas."
+    );
+
+  const handleClearConversation = () => {
+    setMessages([
+      {
+        id: "welcome",
+        role: "ai",
+        content: "Hola, soy tu asistente de IA. Adjunta estudios médicos y pregúntame lo que necesites.",
+      },
+    ]);
+    setAttachments([]);
+    setInputValue("");
+    setError(null);
+  };
+
+  const checkGeminiStatus = async () => {
+    setIsCheckingStatus(true);
+    try {
+      const status = await validateEnvironment();
+      setGeminiStatus(`${status.status} (preview: ${status.keyPreview || "-"})`);
+    } catch (statusError: any) {
+      setGeminiStatus(statusError?.message || "No se pudo verificar el estado de Gemini.");
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
+
   const drawerHeight = useMemo(() => (isExpanded ? "h-[70vh]" : "h-[55vh]"), [isExpanded]);
 
   return (
@@ -140,10 +173,9 @@ const AIChatDrawer: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition"
-        >
-          <Bot className="h-4 w-4" />
-          Asistente IA 🤖
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-lg hover:shadow-xl transition"
+          >
+          <Sparkles className="h-5 w-5" />
         </button>
       )}
 
@@ -162,6 +194,12 @@ const AIChatDrawer: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleClearConversation}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
               <button
                 onClick={() => setIsExpanded((prev) => !prev)}
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
@@ -208,7 +246,7 @@ const AIChatDrawer: React.FC = () => {
           </div>
 
           <div className="px-4 pb-3 space-y-3 bg-white/80 dark:bg-gray-900/80 border-t border-white/50 dark:border-gray-800">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
@@ -216,13 +254,22 @@ const AIChatDrawer: React.FC = () => {
                 <Paperclip className="h-4 w-4" />
                 Adjuntar archivos
               </button>
-              <button
-                onClick={quickPrompt}
-                className="inline-flex items-center gap-2 rounded-full bg-indigo-600 text-white text-xs font-semibold px-3 py-2 shadow hover:shadow-md"
-              >
-                <MessageSquare className="h-4 w-4" />
-                Resumir Exámenes
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={quickPrompt}
+                  className="inline-flex items-center gap-2 rounded-full bg-indigo-600 text-white text-xs font-semibold px-3 py-2 shadow hover:shadow-md"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  Resumir Exámenes
+                </button>
+                <button
+                  onClick={handleExplain}
+                  className="inline-flex items-center gap-2 rounded-full bg-gray-900 text-white text-xs font-semibold px-3 py-2 shadow hover:shadow-md dark:bg-gray-700"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Explicar hallazgos
+                </button>
+              </div>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -271,6 +318,21 @@ const AIChatDrawer: React.FC = () => {
               >
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
               </button>
+            </div>
+            <div className="flex flex-wrap gap-2 text-[11px] text-gray-500 dark:text-gray-400 items-center">
+              <button
+                onClick={checkGeminiStatus}
+                disabled={isCheckingStatus}
+                className="inline-flex items-center gap-1 rounded-full bg-white/70 dark:bg-gray-800/70 border border-white/60 dark:border-gray-700 px-2 py-1 text-[11px] text-gray-600 dark:text-gray-300 shadow-sm disabled:opacity-60"
+              >
+                {isCheckingStatus ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <RotateCw className="h-3 w-3" />
+                )}
+                Verificar conexión
+              </button>
+              {geminiStatus && <span className="truncate">Gemini: {geminiStatus}</span>}
             </div>
             {error && <p className="text-xs text-red-500 flex items-center gap-1"><X className="h-3 w-3" />{error}</p>}
           </div>
