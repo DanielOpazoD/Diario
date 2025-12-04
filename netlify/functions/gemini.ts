@@ -142,11 +142,16 @@ const handler: Handler = async (event) => {
       }
 
       case 'askAboutImages': {
+        const parts = [
+          { text: payload.prompt },
+          ...((payload.images || []) as any[]),
+        ];
+
         const result = await model.generateContent({
           contents: [
             {
               role: 'user',
-              parts: [payload.prompt, ...(payload.images || [])],
+              parts,
             },
           ],
         });
