@@ -250,7 +250,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
               onExitTimeChange={setExitTime}
             />
 
-            <div className="md:col-span-8 flex flex-col space-y-5 h-full">
+            <div className="md:col-span-8 flex flex-col h-full">
               <ClinicalNote
                 diagnosis={diagnosis}
                 clinicalNote={clinicalNote}
@@ -267,19 +267,18 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
                 onDeleteTask={deleteTask}
                 onAddTask={addTask}
                 onChangeTab={setActiveTab}
+                attachmentsSection={(
+                  <PatientAttachmentsSection
+                    attachedFiles={attachedFiles}
+                    patientRut={rut}
+                    patientName={name}
+                    driveFolderId={driveFolderId}
+                    addToast={addToast}
+                    onFilesChange={setAttachedFiles}
+                    onDriveFolderIdChange={setDriveFolderId}
+                  />
+                )}
               />
-
-              {activeTab === 'files' && (
-                <PatientAttachmentsSection
-                  attachedFiles={attachedFiles}
-                  patientRut={rut}
-                  patientName={name}
-                  driveFolderId={driveFolderId}
-                  addToast={addToast}
-                  onFilesChange={setAttachedFiles}
-                  onDriveFolderIdChange={setDriveFolderId}
-                />
-              )}
             </div>
           </div>
         </div>

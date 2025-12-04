@@ -18,6 +18,7 @@ interface ClinicalNoteProps {
   activeTab: 'clinical' | 'files';
   onChangeTab: (tab: 'clinical' | 'files') => void;
   attachmentsCount: number;
+  attachmentsSection?: React.ReactNode;
 }
 
 const ClinicalNote: React.FC<ClinicalNoteProps> = ({
@@ -36,15 +37,16 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
   activeTab,
   onChangeTab,
   attachmentsCount,
+  attachmentsSection,
 }) => {
   const diagnosisId = useId();
   const noteId = useId();
   const addTaskId = useId();
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={`flex flex-col ${activeTab === 'clinical' ? 'h-full' : 'h-auto'} gap-3`}>
       <div
-        className="flex border-b border-gray-200 dark:border-gray-700 mb-4 space-x-6 sticky top-0 bg-gray-50/30 dark:bg-gray-900/10 backdrop-blur-sm z-10 pt-2"
+        className="flex border-b border-gray-200 dark:border-gray-700 mb-1 space-x-6 sticky top-0 bg-white/80 dark:bg-gray-900/70 backdrop-blur-md z-10 pt-2 px-1"
         role="tablist"
         aria-label="Secciones de la ficha"
       >
@@ -84,21 +86,21 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
         </button>
       </div>
 
-      <div className="mb-5">
-        <label htmlFor={diagnosisId} className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
-          Diagnóstico Principal
-        </label>
-        <input
-          id={diagnosisId}
-          value={diagnosis}
-          onChange={(e) => onDiagnosisChange(e.target.value)}
-          placeholder="Ej. Neumonía Adquirida en la Comunidad, HTA descompensada..."
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm font-medium"
-        />
-      </div>
-
       {activeTab === 'clinical' ? (
-        <div className="flex-1 flex flex-col animate-fade-in space-y-4">
+        <div className="flex-1 flex flex-col animate-fade-in space-y-4 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900/60 dark:to-gray-800/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="mb-2">
+            <label htmlFor={diagnosisId} className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 tracking-wide uppercase">
+              Diagnóstico Principal
+            </label>
+            <input
+              id={diagnosisId}
+              value={diagnosis}
+              onChange={(e) => onDiagnosisChange(e.target.value)}
+              placeholder="Ej. Neumonía Adquirida en la Comunidad, HTA descompensada..."
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm font-semibold text-gray-800 dark:text-gray-100"
+            />
+          </div>
+
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2">
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Evolución / Nota Clínica</label>
 
@@ -190,7 +192,17 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
             </div>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="animate-fade-in space-y-3">
+          {attachmentsSection ? (
+            attachmentsSection
+          ) : (
+            <div className="p-6 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-center text-sm text-gray-500 dark:text-gray-300 bg-white dark:bg-gray-800">
+              No hay adjuntos disponibles para este paciente.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
