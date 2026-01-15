@@ -247,8 +247,11 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
     try {
       if (isFirebase) {
-        // En nuestro firebaseStorageService, el ID es el path (nombre del archivo)
-        await deleteFromFirebase(fileToDelete.id);
+        await deleteFromFirebase({
+          patientId: patientId,
+          fileName: fileToDelete.name,
+          fileId: fileToDelete.id
+        });
       } else {
         const token = sessionStorage.getItem('google_access_token');
         if (!token) return addToast('error', 'Sesion expirada para Drive');

@@ -187,7 +187,8 @@ export function useDeletePatientFileFirebase({
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (filePath: string) => deleteFileFromFirebase(filePath),
+    mutationFn: ({ patientId, fileName, fileId }: { patientId: string, fileName: string, fileId: string }) =>
+      deleteFileFromFirebase(patientId, fileName, fileId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patientFiles'] });
       addToast('success', 'Archivo eliminado de Firebase');
