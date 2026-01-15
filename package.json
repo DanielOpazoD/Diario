@@ -1,0 +1,43 @@
+{
+  "name": "medidiario-ai",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@tanstack/react-query": "^5.90.11",
+    "clsx": "^2.1.0",
+    "date-fns": "^3.3.1",
+    "dotenv": "^16.4.5",
+    "firebase": "^12.8.0",
+    "googleapis": "^144.0.0",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.344.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "file:vendor/react-router-dom",
+    "recharts": "^2.12.2",
+    "tailwind-merge": "^2.2.1",
+    "telegraf": "^4.16.3",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^2.8.2",
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.18",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.4.2",
+    "vite": "^5.1.5",
+    "vite-plugin-pwa": "^0.19.2"
+  }
+}
