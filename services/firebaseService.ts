@@ -14,6 +14,7 @@ import { emitStructuredLog } from './logger';
 const PATIENTS_COLLECTION = 'patients';
 
 export const syncPatientsToFirebase = async (patients: PatientRecord[]) => {
+    if (!auth || !db) return;
     const user = auth.currentUser;
     if (!user) return;
 
@@ -34,6 +35,7 @@ export const syncPatientsToFirebase = async (patients: PatientRecord[]) => {
 };
 
 export const subscribeToPatients = (callback: (patients: PatientRecord[]) => void) => {
+    if (!auth || !db) return () => { };
     const user = auth.currentUser;
     if (!user) return () => { };
 
@@ -49,6 +51,7 @@ export const subscribeToPatients = (callback: (patients: PatientRecord[]) => voi
 };
 
 export const savePatientToFirebase = async (patient: PatientRecord) => {
+    if (!auth || !db) return;
     const user = auth.currentUser;
     if (!user) return;
 
@@ -61,6 +64,7 @@ export const savePatientToFirebase = async (patient: PatientRecord) => {
 };
 
 export const deletePatientFromFirebase = async (patientId: string) => {
+    if (!auth || !db) return;
     const user = auth.currentUser;
     if (!user) return;
 

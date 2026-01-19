@@ -12,6 +12,7 @@ export const uploadFileToFirebase = async (
     file: File,
     patientId: string
 ): Promise<AttachedFile> => {
+    if (!auth || !storage) throw new Error("Firebase not configured");
     const user = auth.currentUser;
     if (!user) throw new Error("User not authenticated");
 
@@ -38,6 +39,7 @@ export const uploadFileToFirebase = async (
 };
 
 export const deleteFileFromFirebase = async (patientId: string, fileName: string, fileId: string) => {
+    if (!auth || !storage) return;
     const user = auth.currentUser;
     if (!user) return;
 

@@ -25,23 +25,23 @@ const modalProps = {
   editingBookmarkId: null,
   isUploading: false,
   preferredFolder: 'root',
-  onToast: () => {},
-  onClosePatientModal: () => {},
-  onSavePatient: () => {},
-  onSaveMultiplePatients: () => {},
-  onCloseDeleteConfirmation: () => {},
-  onConfirmDelete: () => {},
-  onCloseBackupModal: () => {},
-  onConfirmBackup: () => {},
-  onCloseDrivePicker: () => {},
-  onSelectDriveFile: () => {},
-  onFolderChange: () => {},
-  onCloseBookmarksModal: () => {},
+  onToast: () => { },
+  onClosePatientModal: () => { },
+  onSavePatient: () => { },
+  onSaveMultiplePatients: () => { },
+  onCloseDeleteConfirmation: () => { },
+  onConfirmDelete: () => { },
+  onCloseBackupModal: () => { },
+  onConfirmBackup: () => { },
+  onCloseDrivePicker: () => { },
+  onSelectDriveFile: () => { },
+  onFolderChange: () => { },
+  onCloseBookmarksModal: () => { },
 };
 
 test('AppModals wires lazy modals with formatted dates and props', () => {
   let lazyIndex = 0;
-  const lazyNames = ['PatientModal', 'ConfirmationModal', 'BackupModal', 'DrivePickerModal', 'BookmarksModal'];
+  const lazyNames = ['PatientModal', 'ConfirmationModal', 'BookmarksModal'];
   const { React, resetRender } = createReactStub({
     lazy: () => (props) => ({ __type: lazyNames[lazyIndex++] || 'Lazy', props }),
     Suspense: ({ children }) => ({ type: 'Suspense', children }),

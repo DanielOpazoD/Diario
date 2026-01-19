@@ -121,10 +121,11 @@ export default defineConfig(({ mode }) => {
         'date-fns',
         'clsx',
         'tailwind-merge',
-      ],
-      // Exclude heavy deps that are lazy-loaded
-      exclude: [
         'recharts',
+        'lodash/get'
+      ],
+      // Exclude heavy deps that are truly standalone or problematic in pre-bundling
+      exclude: [
         'jspdf',
         '@google/generative-ai',
       ],

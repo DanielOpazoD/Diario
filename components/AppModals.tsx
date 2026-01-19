@@ -1,37 +1,30 @@
 import React, { Suspense, lazy } from 'react';
 import { format } from 'date-fns';
-import { DriveFolderPreference, PatientRecord } from '../types';
+import { PatientRecord, ViewMode } from '../types';
 import { ModalSkeleton } from './LoadingSkeletons';
 
 const PatientModal = lazy(() => import('./PatientModal'));
 const ConfirmationModal = lazy(() => import('./ConfirmationModal'));
-const BackupModal = lazy(() => import('./BackupModal'));
-const DrivePickerModal = lazy(() => import('./DrivePickerModal'));
 const BookmarksModal = lazy(() => import('./BookmarksModal'));
+const AppMenuModal = lazy(() => import('./AppMenuModal'));
 
 interface AppModalsProps {
   currentDate: Date;
   isPatientModalOpen: boolean;
   editingPatient: PatientRecord | null;
   patientToDelete: string | null;
-  isBackupModalOpen: boolean;
-  isDrivePickerOpen: boolean;
   isBookmarksModalOpen: boolean;
   editingBookmarkId: string | null;
-  isUploading: boolean;
-  preferredFolder: DriveFolderPreference;
+  isAppMenuOpen: boolean;
   onToast: (type: 'success' | 'error' | 'info', message: string) => void;
   onClosePatientModal: () => void;
   onSavePatient: (patientData: Omit<PatientRecord, 'id' | 'createdAt'> | PatientRecord) => void;
   onSaveMultiplePatients: (patientsData: Array<Omit<PatientRecord, 'id' | 'createdAt'>>) => void;
   onCloseDeleteConfirmation: () => void;
   onConfirmDelete: () => void;
-  onCloseBackupModal: () => void;
-  onConfirmBackup: (fileName: string, folder: DriveFolderPreference) => void;
-  onCloseDrivePicker: () => void;
-  onSelectDriveFile: (fileId: string) => void;
-  onFolderChange: (folder: DriveFolderPreference) => void;
   onCloseBookmarksModal: () => void;
+  onCloseAppMenu: () => void;
+  onNavigate: (view: ViewMode) => void;
 }
 
 const AppModals: React.FC<AppModalsProps> = ({
@@ -39,24 +32,18 @@ const AppModals: React.FC<AppModalsProps> = ({
   isPatientModalOpen,
   editingPatient,
   patientToDelete,
-  isBackupModalOpen,
-  isDrivePickerOpen,
   isBookmarksModalOpen,
   editingBookmarkId,
-  isUploading,
-  preferredFolder,
   onToast,
   onClosePatientModal,
   onSavePatient,
   onSaveMultiplePatients,
   onCloseDeleteConfirmation,
   onConfirmDelete,
-  onCloseBackupModal,
-  onConfirmBackup,
-  onCloseDrivePicker,
-  onSelectDriveFile,
-  onFolderChange,
   onCloseBookmarksModal,
+  onCloseAppMenu,
+  onNavigate,
+  isAppMenuOpen,
 }) => (
   <>
     {isPatientModalOpen && (
@@ -86,39 +73,22 @@ const AppModals: React.FC<AppModalsProps> = ({
       </Suspense>
     )}
 
-    {isBackupModalOpen && (
-      <Suspense fallback={<ModalSkeleton />}>
-        <BackupModal
-          isOpen={isBackupModalOpen}
-          onClose={onCloseBackupModal}
-          onConfirm={onConfirmBackup}
-          defaultFileName={`backup_medidiario_${format(new Date(), 'yyyy-MM-dd')}`}
-          isLoading={isUploading}
-          preferredFolder={preferredFolder}
-          onFolderChange={onFolderChange}
-        />
-      </Suspense>
-    )}
-
-    {isDrivePickerOpen && (
-      <Suspense fallback={<ModalSkeleton />}>
-        <DrivePickerModal
-          isOpen={isDrivePickerOpen}
-          onClose={onCloseDrivePicker}
-          onSelect={onSelectDriveFile}
-          isLoadingProp={isUploading}
-          preferredFolder={preferredFolder}
-          onFolderChange={onFolderChange}
-        />
-      </Suspense>
-    )}
-
     {isBookmarksModalOpen && (
       <Suspense fallback={<ModalSkeleton />}>
         <BookmarksModal
           isOpen={isBookmarksModalOpen}
           onClose={onCloseBookmarksModal}
           editingBookmarkId={editingBookmarkId}
+        />
+      </Suspense>
+    )}
+
+    {isAppMenuOpen && (
+      <Suspense fallback={<ModalSkeleton />}>
+        <AppMenuModal
+          isOpen={isAppMenuOpen}
+          onClose={onCloseAppMenu}
+          onNavigate={onNavigate}
         />
       </Suspense>
     )}

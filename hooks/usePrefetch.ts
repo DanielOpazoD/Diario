@@ -10,8 +10,6 @@ const prefetchModules = {
   tasks: () => import('../components/TaskDashboard'),
   settings: () => import('../components/Settings'),
   patientModal: () => import('../components/PatientModal'),
-  backupModal: () => import('../components/BackupModal'),
-  drivePickerModal: () => import('../components/DrivePickerModal'),
   bookmarksModal: () => import('../components/BookmarksModal'),
 };
 
@@ -90,7 +88,7 @@ export function usePrefetch(currentView: ViewMode) {
   }, []);
 
   // Prefetch modal on button hover
-  const prefetchModal = useCallback((modalType: 'patientModal' | 'backupModal' | 'drivePickerModal' | 'bookmarksModal') => {
+  const prefetchModal = useCallback((modalType: 'patientModal' | 'bookmarksModal') => {
     const loader = prefetchModules[modalType];
     if (loader) {
       prefetch(modalType, loader);

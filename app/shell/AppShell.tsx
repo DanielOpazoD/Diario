@@ -4,8 +4,6 @@ import { ViewMode } from '../../types';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLogger } from '../../context/LogContext';
 import useAutoLock from '../../hooks/useAutoLock';
-import useBackupManager from '../../hooks/useBackupManager';
-import useDriveFolderPreference from '../../hooks/useDriveFolderPreference';
 import useModalManager from '../../hooks/useModalManager';
 import usePatientCrud from '../../hooks/usePatientCrud';
 import useViewLifecycle from '../../hooks/useViewLifecycle';
@@ -31,10 +29,7 @@ const AppShell: React.FC = () => {
   const {
     user,
     records,
-    generalTasks,
     patientTypes,
-    bookmarks,
-    bookmarkCategories,
     showBookmarkBar,
     securityPin,
     autoLockMinutes,
@@ -44,13 +39,9 @@ const AppShell: React.FC = () => {
     logout,
     addToast,
     setRecords,
-    setGeneralTasks,
     addPatient,
     updatePatient,
     deletePatient,
-    setBookmarks,
-    setBookmarkCategories,
-    setPatientTypes,
   } = useAppActions();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -71,26 +62,21 @@ const AppShell: React.FC = () => {
     isPatientModalOpen,
     editingPatient,
     patientToDelete,
-    isBackupModalOpen,
-    isDrivePickerOpen,
     isBookmarksModalOpen,
     editingBookmarkId,
+    isAppMenuOpen,
     openNewPatientModal,
     openEditPatientModal,
     closePatientModal,
     requestDeletePatient,
     closeDeleteConfirmation,
-    openBackupModal,
-    closeBackupModal,
-    openDrivePicker,
-    closeDrivePicker,
     openBookmarksModal,
     closeBookmarksModal,
+    openAppMenu,
+    closeAppMenu,
     setEditingPatient,
     setPatientToDelete,
   } = useModalManager();
-
-  const { driveFolderPreference, setDriveFolderPreference } = useDriveFolderPreference();
 
   const {
     handleSavePatient,
@@ -111,22 +97,7 @@ const AppShell: React.FC = () => {
     addToast,
   });
 
-  const { isUploading, handleLocalImport, handleBackupConfirm, handleDriveFileSelect } = useBackupManager({
-    records,
-    generalTasks,
-    patientTypes,
-    bookmarks,
-    bookmarkCategories,
-    setRecords,
-    setGeneralTasks,
-    setPatientTypes,
-    setBookmarks,
-    setBookmarkCategories,
-    addToast,
-    setIsBackupModalOpen: (open) => (open ? openBackupModal() : closeBackupModal()),
-    setIsDrivePickerOpen: (open) => (open ? openDrivePicker() : closeDrivePicker()),
-    setDriveFolderPreference,
-  });
+
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const { isLocked, handleUnlock: unlockWithPin } = useAutoLock({
@@ -140,7 +111,7 @@ const AppShell: React.FC = () => {
     onUnlock: () => addToast('success', 'Sesión desbloqueada')
   });
 
-  const { prefetchOnHover, prefetchModal } = usePrefetch(viewMode);
+  const { prefetchOnHover } = usePrefetch(viewMode);
   useViewLifecycle(viewMode, mainScrollRef);
   useAppStartup(addLog);
 
@@ -196,21 +167,14 @@ const AppShell: React.FC = () => {
         user={user}
         currentDate={currentDate}
         records={records}
-        generalTasks={generalTasks}
-        patientTypes={patientTypes}
-        bookmarks={bookmarks}
-        bookmarkCategories={bookmarkCategories}
         onDateChange={setCurrentDate}
         onOpenNewPatient={openNewPatientModal}
-        onOpenBackupModal={openBackupModal}
-        onOpenDrivePicker={openDrivePicker}
-        onLogout={handleLogout}
-        onLocalImport={handleLocalImport}
         onOpenBookmarksModal={() => openBookmarksModal(null)}
+        onOpenAppMenu={openAppMenu}
+        onLogout={handleLogout}
         contentRef={mainScrollRef}
         showBookmarkBar={showBookmarkBar}
         onPrefetchView={prefetchOnHover}
-        onPrefetchModal={prefetchModal}
       >
         <AppViews
           currentDate={currentDate}
@@ -231,24 +195,18 @@ const AppShell: React.FC = () => {
         isPatientModalOpen={isPatientModalOpen}
         editingPatient={editingPatient}
         patientToDelete={patientToDelete}
-        isBackupModalOpen={isBackupModalOpen}
-        isDrivePickerOpen={isDrivePickerOpen}
         isBookmarksModalOpen={isBookmarksModalOpen}
         editingBookmarkId={editingBookmarkId}
-        isUploading={isUploading}
-        preferredFolder={driveFolderPreference}
         onToast={addToast}
         onClosePatientModal={closePatientModal}
         onSavePatient={handleSavePatient}
         onSaveMultiplePatients={handleSaveMultiplePatients}
         onCloseDeleteConfirmation={closeDeleteConfirmation}
         onConfirmDelete={confirmDeletePatient}
-        onCloseBackupModal={closeBackupModal}
-        onConfirmBackup={handleBackupConfirm}
-        onCloseDrivePicker={closeDrivePicker}
-        onSelectDriveFile={handleDriveFileSelect}
-        onFolderChange={setDriveFolderPreference}
         onCloseBookmarksModal={closeBookmarksModal}
+        isAppMenuOpen={isAppMenuOpen}
+        onCloseAppMenu={closeAppMenu}
+        onNavigate={handleNavigation}
       />
 
       <AIChatDrawer />

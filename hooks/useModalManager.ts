@@ -5,15 +5,11 @@ const useModalManager = () => {
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<PatientRecord | null>(null);
   const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
-  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
-  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
   const [isBookmarksModalOpen, setIsBookmarksModalOpen] = useState(false);
   const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(null);
+  const [isAppMenuOpen, setIsAppMenuOpen] = useState(false);
 
-  const openNewPatientModal = useCallback(() => {
-    setEditingPatient(null);
-    setIsPatientModalOpen(true);
-  }, []);
+  const openNewPatientModal = useCallback(() => setIsPatientModalOpen(true), []);
 
   const openEditPatientModal = useCallback((patient: PatientRecord) => {
     setEditingPatient(patient);
@@ -21,23 +17,15 @@ const useModalManager = () => {
   }, []);
 
   const closePatientModal = useCallback(() => {
-    setIsPatientModalOpen(false);
     setEditingPatient(null);
+    setIsPatientModalOpen(false);
   }, []);
 
-  const requestDeletePatient = useCallback((patientId: string) => {
-    setPatientToDelete(patientId);
-  }, []);
+  const requestDeletePatient = useCallback((id: string) => setPatientToDelete(id), []);
 
   const closeDeleteConfirmation = useCallback(() => {
     setPatientToDelete(null);
   }, []);
-
-  const openBackupModal = useCallback(() => setIsBackupModalOpen(true), []);
-  const closeBackupModal = useCallback(() => setIsBackupModalOpen(false), []);
-
-  const openDrivePicker = useCallback(() => setIsDrivePickerOpen(true), []);
-  const closeDrivePicker = useCallback(() => setIsDrivePickerOpen(false), []);
 
   const openBookmarksModal = useCallback((bookmarkId: string | null = null) => {
     setEditingBookmarkId(bookmarkId);
@@ -45,29 +33,29 @@ const useModalManager = () => {
   }, []);
 
   const closeBookmarksModal = useCallback(() => {
-    setEditingBookmarkId(null);
     setIsBookmarksModalOpen(false);
+    setEditingBookmarkId(null);
   }, []);
+
+  const openAppMenu = useCallback(() => setIsAppMenuOpen(true), []);
+  const closeAppMenu = useCallback(() => setIsAppMenuOpen(false), []);
 
   return {
     isPatientModalOpen,
     editingPatient,
     patientToDelete,
-    isBackupModalOpen,
-    isDrivePickerOpen,
     isBookmarksModalOpen,
     editingBookmarkId,
+    isAppMenuOpen,
     openNewPatientModal,
     openEditPatientModal,
     closePatientModal,
     requestDeletePatient,
     closeDeleteConfirmation,
-    openBackupModal,
-    closeBackupModal,
-    openDrivePicker,
-    closeDrivePicker,
     openBookmarksModal,
     closeBookmarksModal,
+    openAppMenu,
+    closeAppMenu,
     setEditingPatient,
     setPatientToDelete,
   } as const;

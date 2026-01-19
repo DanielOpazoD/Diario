@@ -160,7 +160,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     setIsUploading(true);
     setUploadProgress(0);
 
-    const useFirebase = true; // Forzamos Firebase Storage para "sincronizaci\u00f3n directa"
+    const useFirebase = true;
 
     if (!useFirebase) {
       let ensuredFolderId = driveFolderId;

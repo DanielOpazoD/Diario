@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Filter, Plus, Copy, MoveRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Filter, Plus, Copy, MoveRight, FileText } from 'lucide-react';
 import Button from '../../components/Button';
 import CompactPatientCard from '../../components/CompactPatientCard';
 import FilterBar from '../../components/FilterBar';
@@ -11,6 +11,7 @@ import useAppStore from '../../stores/useAppStore';
 import { useDailyMetrics } from '../../hooks/useDailyMetrics';
 import { usePatientFilter } from '../../hooks/usePatientFilter';
 import { useDailyRange } from '../../hooks/useDailyRange';
+import { usePdfPatientImport } from '../../hooks/usePdfPatientImport';
 
 interface DailyViewProps {
   currentDate: Date;
@@ -45,6 +46,13 @@ const DailyView: React.FC<DailyViewProps> = ({
     dailyRecords,
     patientTypes,
   );
+
+  const {
+    fileInputRef,
+    isImporting,
+    handlePdfUpload,
+    triggerPicker
+  } = usePdfPatientImport(currentDate);
 
   const toggleSelectionMode = () => {
     setSelectionMode(prev => {
@@ -117,6 +125,22 @@ const DailyView: React.FC<DailyViewProps> = ({
             >
               Reporte de turno
             </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handlePdfUpload}
+              accept="application/pdf"
+              className="hidden"
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={triggerPicker}
+              isLoading={isImporting}
+              icon={<FileText className="w-4 h-4" />}
+            >
+              Importar PDF
+            </Button>
             <Button onClick={onAddPatient} size="sm" className="rounded-pill">
               Nuevo paciente
             </Button>
@@ -176,7 +200,7 @@ const DailyView: React.FC<DailyViewProps> = ({
       {visibleRecords.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-center flex-1">
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800/50 rounded-full flex items-center justify-center mb-4">
-            {activeFilter === 'all' ? <CalendarIcon className="w-8 h-8 opacity-50" /> : <Filter className="w-8 h-8 opacity-50"/>}
+            {activeFilter === 'all' ? <CalendarIcon className="w-8 h-8 opacity-50" /> : <Filter className="w-8 h-8 opacity-50" />}
           </div>
           <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-1">
             {activeFilter === 'all' ? 'Sin pacientes hoy' : `Sin pacientes en ${activeFilter}`}
