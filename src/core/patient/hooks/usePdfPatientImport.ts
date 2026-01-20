@@ -41,44 +41,31 @@ export const usePdfPatientImport = (currentDate: Date) => {
 
                 // Zod Validation for Extracted Data
                 const ExtractedDataSchema = z.object({
-                    nombre_completo: z.string().optional(),
+                    name: z.string().optional(),
                     rut: z.string().optional(),
-                    fecha_nacimiento: z.string().optional(),
-                    diagnostico: z.string().optional(),
-                    plan: z.string().optional(),
-                    fecha_ingreso: z.string().optional(),
+                    birthDate: z.string().optional(),
+                    gender: z.string().optional(),
                 });
 
                 const validation = ExtractedDataSchema.safeParse(extractedData);
 
-                if (!validation.success || (!extractedData?.nombre_completo && !extractedData?.rut)) {
+                if (!validation.success || (!extractedData?.name && !extractedData?.rut)) {
                     throw new Error(`No se pudieron extraer datos válidos de ${file.name}`);
                 }
-
-                // Helper para convertir DD-MM-YYYY a YYYY-MM-DD
-                const toIsoDate = (d?: string) => {
-                    if (!d || !d.includes('-')) return d || '';
-                    const parts = d.split('-');
-                    if (parts.length !== 3) return d;
-                    const [day, month, year] = parts;
-                    // Asegurar que el año tenga 4 dígitos
-                    const fullYear = year.length === 2 ? `20${year}` : year;
-                    return `${fullYear}-${month}-${day}`;
-                };
 
                 // 3. Crear nuevo registro de paciente
                 const tempId = crypto.randomUUID();
                 const now = Date.now();
                 const newPatient: PatientRecord = {
                     id: tempId,
-                    name: extractedData.nombre_completo ? formatPatientName(extractedData.nombre_completo) : 'Paciente Nuevo',
+                    name: extractedData.name ? formatPatientName(extractedData.name) : 'Paciente Nuevo',
                     rut: extractedData.rut || '',
-                    birthDate: toIsoDate(extractedData.fecha_nacimiento),
-                    gender: '', // No longer in the primary prompt but could be inferred or left empty
+                    birthDate: extractedData.birthDate || '',
+                    gender: extractedData.gender || '',
                     type: PatientType.POLICLINICO,
-                    diagnosis: extractedData.diagnostico || 'Importado desde PDF',
-                    clinicalNote: extractedData.plan || '',
-                    date: toIsoDate(extractedData.fecha_ingreso) || format(currentDate, 'yyyy-MM-dd'),
+                    diagnosis: 'Importado desde PDF',
+                    clinicalNote: '',
+                    date: format(currentDate, 'yyyy-MM-dd'),
                     attachedFiles: [],
                     pendingTasks: [],
                     createdAt: now,

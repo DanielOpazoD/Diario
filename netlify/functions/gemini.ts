@@ -31,14 +31,12 @@ const analysisSchema = {
 const patientExtractionSchema = {
   type: SchemaType.OBJECT,
   properties: {
-    nombre_completo: { type: SchemaType.STRING },
+    name: { type: SchemaType.STRING },
     rut: { type: SchemaType.STRING },
-    fecha_nacimiento: { type: SchemaType.STRING },
-    diagnostico: { type: SchemaType.STRING },
-    plan: { type: SchemaType.STRING },
-    fecha_ingreso: { type: SchemaType.STRING },
+    birthDate: { type: SchemaType.STRING },
+    gender: { type: SchemaType.STRING },
   },
-  required: ['nombre_completo', 'rut', 'fecha_nacimiento', 'diagnostico', 'plan', 'fecha_ingreso'],
+  required: ['name', 'rut', 'birthDate', 'gender'],
 };
 
 const patientListExtractionSchema = {
@@ -111,7 +109,7 @@ const handler: Handler = async (event) => {
               parts: [
                 {
                   text:
-                    'Actúa como un asistente de extracción de datos médicos. Recibirás el texto crudo de un registro clínico en formato PDF. Tu objetivo es extraer entidades específicas y formatearlas estrictamente como un objeto JSON.\n\nExtrae los siguientes campos basándote en las etiquetas del texto:\n- nombre_completo: Busca bajo la etiqueta "NOMBRES:". Si hay texto en la línea siguiente que parece un apellido, concaténalo.\n- rut: Extrae el valor numérico bajo la etiqueta "RUT:".\n- fecha_nacimiento: Extrae la fecha bajo "NACIMIENTO:".\n- diagnostico: Extrae el texto que aparece inmediatamente debajo de "HIPOTESIS DIAGNÓSTICA:".\n- plan: Extrae todo el texto que aparece bajo "INDICACIONES MÉDICAS / PLAN DE TTO:" hasta encontrar la siguiente etiqueta (como "DIAGNÓSTICO PRI" o similar). Únelo en un solo string.\n- fecha_ingreso: Extrae la fecha bajo "FECHA ING:".\n\nResponde ÚNICAMENTE con el JSON. Formato de fecha estándar: DD-MM-YYYY.',
+                    'Extract data in Spanish documents: name (if it appears as "Apellidos, Nombre" reorder to "Nombre Apellidos" and Title Case), rut, birthDate (YYYY-MM-DD), and gender/sex as it appears (Ej: "Sexo: F", "Masculino/Femenino").',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
@@ -131,7 +129,7 @@ const handler: Handler = async (event) => {
               parts: [
                 {
                   text:
-                    'Extrae una lista de pacientes de este documento. Para cada paciente busca:\n- nombre_completo: Bajo la etiqueta "NOMBRES:".\n- rut: Bajo la etiqueta "RUT:".\n- fecha_nacimiento: Bajo "NACIMIENTO:".\n- diagnostico: Bajo "HIPOTESIS DIAGNÓSTICA:".\n- plan: Bajo "INDICACIONES MÉDICAS / PLAN DE TTO:".\n- fecha_ingreso: Bajo "FECHA ING:".\n\nResponde estrictamente en formato JSON utilizando el esquema proporcionado. Formato de fecha estándar: DD-MM-YYYY.',
+                    'Extract a list of patients from this image. For each patient return name (reorder "Apellidos, Nombre" to "Nombre Apellidos" in Title Case), rut, birthDate (YYYY-MM-DD), and gender/sex.',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
