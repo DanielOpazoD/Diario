@@ -20,14 +20,14 @@ const ToastItem: React.FC<{ toast: ToastMessage; onRemove: () => void }> = ({ to
   useEffect(() => {
     const timer = setTimeout(() => {
       onRemove();
-    }, 4000);
+    }, 2000); // Faster duration (2s)
     return () => clearTimeout(timer);
   }, [onRemove]);
 
   const icons = {
-    success: <CheckCircle className="w-5 h-5 text-green-500" />,
-    error: <XCircle className="w-5 h-5 text-red-500" />,
-    info: <Info className="w-5 h-5 text-blue-500" />,
+    success: <CheckCircle className="w-4 h-4 text-green-500" />,
+    error: <XCircle className="w-4 h-4 text-red-500" />,
+    info: <Info className="w-4 h-4 text-blue-500" />,
   };
 
   const colors = {
@@ -37,11 +37,11 @@ const ToastItem: React.FC<{ toast: ToastMessage; onRemove: () => void }> = ({ to
   };
 
   return (
-    <div className={`pointer-events-auto flex items-center w-80 p-4 rounded-lg shadow-lg border-l-4 transform transition-all duration-300 animate-slide-up ${colors[toast.type]}`}>
-      <div className="flex-shrink-0 mr-3">{icons[toast.type]}</div>
-      <div className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">{toast.message}</div>
-      <button onClick={onRemove} className="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-        <X className="w-4 h-4" />
+    <div className={`pointer-events-auto flex items-center w-64 p-2.5 rounded-lg shadow-lg border-l-4 transform transition-all duration-300 animate-slide-up ${colors[toast.type]}`}>
+      <div className="flex-shrink-0 mr-2">{icons[toast.type]}</div>
+      <div className="flex-1 text-[11px] font-bold text-gray-800 dark:text-gray-200 uppercase tracking-tight leading-tight">{toast.message}</div>
+      <button onClick={onRemove} className="ml-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+        <X className="w-3.5 h-3.5" />
       </button>
     </div>
   );
