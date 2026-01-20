@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { Edit3, File, FileText, Image as ImageIcon, Star, X } from 'lucide-react';
+import { Edit3, File, FileText, Image as ImageIcon, Star, X, Download } from 'lucide-react';
 import { AttachedFile } from '@shared/types';
 
 interface FilePreviewModalProps {
@@ -45,6 +45,10 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
   const previewUrl = useMemo(() => {
     if (!file) return '';
+    // If it's already a full URL (Firebase or similar), use it directly
+    if (file.driveUrl.startsWith('http')) return file.driveUrl;
+
+    // Legacy Google Drive handling
     if (isImage) return `https://drive.google.com/uc?export=view&id=${file.id}`;
     if (isPDF || isOfficeDoc) return `https://drive.google.com/file/d/${file.id}/preview`;
     return file.driveUrl;
@@ -102,6 +106,16 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
             </div>
           </div>
           <div className="flex gap-2">
+            <a
+              href={file.driveUrl}
+              download={file.name}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-blue-600"
+              title="Descargar archivo"
+            >
+              <Download className="w-5 h-5" />
+            </a>
             <button
               onClick={() => setIsEditing((prev) => !prev)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"

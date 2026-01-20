@@ -157,9 +157,6 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
 
                     {/* Indicators & Actions */}
                     <div className="flex items-center gap-2 shrink-0">
-                        {attachmentsCount > 0 && (
-                            <Paperclip className="w-3.5 h-3.5 text-gray-400" />
-                        )}
 
                         {pendingCount > 0 && (
                             <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[10px] font-bold text-amber-600 dark:text-amber-500">
@@ -178,7 +175,7 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); handleTabClick('files'); }}
-                                className={`p-1.5 rounded-md transition-colors ${activeTab === 'files' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
+                                className={`p-1.5 rounded-md transition-colors ${activeTab === 'files' ? 'bg-indigo-100 text-indigo-700' : attachmentsCount > 0 ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
                                 title="Archivos"
                             >
                                 <Paperclip className="w-4 h-4" />

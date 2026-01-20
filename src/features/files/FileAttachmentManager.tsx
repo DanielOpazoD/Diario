@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ExternalLink } from 'lucide-react';
 import { AttachedFile } from '@shared/types';
 import {
   useUploadPatientFileFirebase,
@@ -245,12 +245,24 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
                   <p className="font-medium text-gray-800 dark:text-gray-200 truncate">{displayFileName(file.name)}</p>
                   <p className="text-[10px] text-gray-500">{formatFileSize(file.size)}</p>
                 </div>
-                <button
-                  onClick={() => handleDelete(file.id)}
-                  className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <a
+                    href={file.driveUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                    title="Ver/Descargar"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                  <button
+                    onClick={() => handleDelete(file.id)}
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    title="Eliminar"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
