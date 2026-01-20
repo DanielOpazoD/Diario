@@ -196,7 +196,7 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
 
             {/* Inline Editor Area */}
             {activeTab && (
-                <div className="border-t border-gray-100 dark:border-gray-800 overflow-hidden w-full max-w-full">
+                <div className={`overflow-hidden w-full max-w-full ${activeTab === 'demographics' && !patient.name ? '' : 'border-t border-gray-100 dark:border-gray-800'}`}>
                     <InlinePatientEditor
                         patient={patient}
                         initialTab={activeTab}
