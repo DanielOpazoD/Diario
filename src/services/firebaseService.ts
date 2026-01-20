@@ -3,8 +3,9 @@ import { collection, query, onSnapshot, writeBatch, doc, setDoc, deleteDoc } fro
 import { PatientRecord } from '@shared/types';
 import { emitStructuredLog } from './logger';
 
+import { STORAGE_KEYS } from '@shared/constants/storageKeys';
 
-const PATIENTS_COLLECTION = 'patients';
+const PATIENTS_COLLECTION = STORAGE_KEYS.RECORDS.split('_')[1] || 'patients';
 
 // Track pending deletions with timestamps to prevent race conditions with Firebase listener
 // We keep them for 10 seconds to ensure onSnapshot doesn't re-add a deleted record
