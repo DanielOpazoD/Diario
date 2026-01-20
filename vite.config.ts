@@ -11,6 +11,12 @@ export default defineConfig(({ mode }) => {
   const googleClientId = env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
 
   return {
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './tests/setup.ts',
+      include: ['**/*.test.{ts,tsx}'],
+    },
     plugins: [
       react(),
       VitePWA({
@@ -52,6 +58,10 @@ export default defineConfig(({ mode }) => {
     envPrefix: ['VITE_GOOGLE_', 'VITE_FIREBASE_'],
     resolve: {
       alias: {
+        '@core': path.resolve(__dirname, './src/core'),
+        '@features': path.resolve(__dirname, './src/features'),
+        '@shared': path.resolve(__dirname, './src/shared'),
+        '@services': path.resolve(__dirname, './src/services'),
         'react-router-dom': path.resolve(process.cwd(), 'vendor/react-router-dom'),
       },
     },
@@ -97,7 +107,7 @@ export default defineConfig(({ mode }) => {
             if (facadeModuleId.includes('components/Settings')) return 'chunks/settings-[hash].js';
             if (facadeModuleId.includes('components/TaskDashboard')) return 'chunks/tasks-[hash].js';
             // Service chunks
-            if (facadeModuleId.includes('services/googleService')) return 'chunks/google-service-[hash].js';
+
             if (facadeModuleId.includes('services/geminiService')) return 'chunks/gemini-service-[hash].js';
             if (facadeModuleId.includes('services/reportService')) return 'chunks/report-service-[hash].js';
             // Default naming

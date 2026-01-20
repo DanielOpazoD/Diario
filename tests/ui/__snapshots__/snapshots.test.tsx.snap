@@ -1,0 +1,163 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`UI Snapshots > renders AppearanceSettings correctly 1`] = `
+<DocumentFragment>
+  <div
+    class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50"
+  >
+    <h3
+      class="text-lg font-bold text-gray-900 dark:text-white mb-4"
+    >
+      Apariencia
+    </h3>
+    <div
+      class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700"
+    >
+      <div
+        class="flex items-center gap-3"
+      >
+        <svg
+          class="lucide lucide-sun w-5 h-5 text-amber-500"
+          fill="none"
+          height="24"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="4"
+          />
+          <path
+            d="M12 2v2"
+          />
+          <path
+            d="M12 20v2"
+          />
+          <path
+            d="m4.93 4.93 1.41 1.41"
+          />
+          <path
+            d="m17.66 17.66 1.41 1.41"
+          />
+          <path
+            d="M2 12h2"
+          />
+          <path
+            d="M20 12h2"
+          />
+          <path
+            d="m6.34 17.66-1.41 1.41"
+          />
+          <path
+            d="m19.07 4.93-1.41 1.41"
+          />
+        </svg>
+        <div>
+          <p
+            class="font-medium text-gray-900 dark:text-white"
+          >
+            Modo Oscuro
+          </p>
+          <p
+            class="text-xs text-gray-500"
+          >
+            Alternar entre tema claro y oscuro
+          </p>
+        </div>
+      </div>
+      <button
+        aria-label="Toggle theme"
+        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-300"
+      >
+        <span
+          class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"
+        />
+      </button>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`UI Snapshots > renders BookmarkIcon correctly (custom emoji) 1`] = `
+<DocumentFragment>
+  <span
+    aria-hidden="true"
+    class="flex items-center justify-center w-6 h-6"
+  >
+    <span
+      class="text-base leading-none"
+    >
+      🩺
+    </span>
+  </span>
+</DocumentFragment>
+`;
+
+exports[`UI Snapshots > renders BookmarkIcon correctly (favicon - fallback mode) 1`] = `
+<DocumentFragment>
+  <img
+    alt=""
+    class="w-6 h-6 rounded"
+    loading="lazy"
+    src="https://www.google.com/s2/favicons?domain=google.com&sz=32"
+  />
+</DocumentFragment>
+`;
+
+exports[`UI Snapshots > renders Button correctly (ai) 1`] = `
+<DocumentFragment>
+  <button
+    class="inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed px-3.5 py-1.5 text-sm bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-md border border-transparent "
+  >
+    AI Magic
+  </button>
+</DocumentFragment>
+`;
+
+exports[`UI Snapshots > renders Button correctly (loading) 1`] = `
+<DocumentFragment>
+  <button
+    aria-busy="true"
+    class="inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed px-3.5 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-500/20 "
+    disabled=""
+  >
+    <svg
+      class="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
+      fill="none"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle
+        class="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        stroke-width="4"
+      />
+      <path
+        class="opacity-75"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        fill="currentColor"
+      />
+    </svg>
+    Loading...
+  </button>
+</DocumentFragment>
+`;
+
+exports[`UI Snapshots > renders Button correctly (primary) 1`] = `
+<DocumentFragment>
+  <button
+    class="inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed px-3.5 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-500/20 "
+  >
+    Click Me
+  </button>
+</DocumentFragment>
+`;
