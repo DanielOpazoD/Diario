@@ -53,6 +53,6 @@ export const initPersistence = () => {
             }
 
             console.log(' [AutoSave] Estado sincronizado con LocalStorage y Firebase');
-        }, 1000);
+        }, 500);
     });
 };

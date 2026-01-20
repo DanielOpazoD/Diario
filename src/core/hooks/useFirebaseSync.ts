@@ -27,7 +27,7 @@ const useFirebaseSync = () => {
                 patientUnsubRef.current = subscribeToPatients((remotePatients) => {
                     const currentRecords = useAppStore.getState().records;
                     const now = Date.now();
-                    const SYNC_GRACE_PERIOD = 10000; // 10 seconds
+                    const SYNC_GRACE_PERIOD = 30000; // Increased to 30s for slow networks
 
                     // 1. Build a map of remote patients for O(1) lookups
                     const remoteMap = new Map(remotePatients.map(p => [p.id, p]));
@@ -35,6 +35,7 @@ const useFirebaseSync = () => {
                     // 2. Bidirectional Merge
                     const updatedRecords: PatientRecord[] = [];
                     let hasChanges = false;
+                    const logPrefix = `[Sync ${new Date().toLocaleTimeString()}]`;
 
                     // Check Current Local Records: Keep, Update, or Remove?
                     currentRecords.forEach(local => {
@@ -45,6 +46,7 @@ const useFirebaseSync = () => {
                             const remoteUpdate = remote.updatedAt || 0;
 
                             if (remoteUpdate > localUpdate) {
+                                console.log(`${logPrefix} Updating local ${local.name} (Remote is newer)`);
                                 updatedRecords.push(remote);
                                 hasChanges = true;
                             } else {
@@ -52,7 +54,6 @@ const useFirebaseSync = () => {
                             }
                         } else {
                             // Record is in Local but NOT in Remote
-                            // Was it recently created/modified locally?
                             const localAge = now - (local.updatedAt || local.createdAt || now);
 
                             if (localAge < SYNC_GRACE_PERIOD) {
@@ -60,8 +61,8 @@ const useFirebaseSync = () => {
                                 updatedRecords.push(local);
                             } else {
                                 // It should have synced by now. If it's missing from cloud, it was deleted elsewhere.
+                                console.log(`${logPrefix} Removing local ${local.name} (Missing from cloud > 30s)`);
                                 hasChanges = true;
-                                // skip adding to updatedRecords (effectively removing it)
                             }
                         }
                     });
@@ -70,13 +71,13 @@ const useFirebaseSync = () => {
                     const localIds = new Set(currentRecords.map(p => p.id));
                     remotePatients.forEach(remote => {
                         if (!localIds.has(remote.id)) {
+                            console.log(`${logPrefix} Adding remote ${remote.name} (New from cloud)`);
                             updatedRecords.push(remote);
                             hasChanges = true;
                         }
                     });
 
                     if (hasChanges) {
-                        addLog('info', 'FirebaseSync', `Syncing changes: ${currentRecords.length} -> ${updatedRecords.length} patients`);
                         setRecords(updatedRecords);
                     }
                 });
