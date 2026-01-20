@@ -4,7 +4,7 @@ import { PatientRecord, PendingTask, AttachedFile } from '@shared/types';
 import { Button } from '@core/ui';
 import useAppStore from '@core/stores/useAppStore';
 import ClinicalNote from '@core/patient/components/ClinicalNote';
-import PatientIdentificationPanel from '@core/patient/components/PatientIdentificationPanel';
+import PatientForm from '@core/patient/components/PatientForm';
 import PatientAttachmentsSection from '@core/patient/components/PatientAttachmentsSection';
 import { formatPatientName } from '@core/patient/utils/patientUtils';
 import { sanitizeClinicalNote, sanitizeDiagnosis, sanitizeRut } from '@shared/utils/sanitization';
@@ -131,7 +131,7 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
             <div className="w-full max-w-full overflow-hidden min-w-0">
                 {initialTab === 'demographics' && (
                     <div className="w-full min-w-0 overflow-hidden">
-                        <PatientIdentificationPanel
+                        <PatientForm
                             name={name}
                             rut={rut}
                             birthDate={birthDate}
@@ -148,12 +148,12 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
                             onRutChange={setRut}
                             onBirthDateChange={setBirthDate}
                             onGenderChange={setGender}
-                            onSelectType={(id, label) => { setTypeId(id); setType(label); }}
+                            onSelectType={(id: string, label: string) => { setTypeId(id); setType(label); }}
                             onEntryTimeChange={setEntryTime}
                             onExitTimeChange={setExitTime}
-                            compact={true}
                             onSave={handleSave}
                             onClose={onClose}
+                            defaultExpanded={true}
                         />
                     </div>
                 )}

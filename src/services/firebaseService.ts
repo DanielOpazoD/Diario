@@ -23,6 +23,10 @@ export const isPendingDeletion = (id: string) => {
     return pendingDeletions.has(id);
 };
 
+const sanitizeForFirestore = (data: any) => {
+    return JSON.parse(JSON.stringify(data, (_, v) => v === undefined ? null : v));
+};
+
 export const syncPatientsToFirebase = async (patients: PatientRecord[]) => {
     if (!auth || !db) return;
     const user = auth.currentUser;
@@ -34,7 +38,8 @@ export const syncPatientsToFirebase = async (patients: PatientRecord[]) => {
 
         patients.forEach((patient) => {
             const docRef = doc(userPatientsRef, patient.id);
-            batch.set(docRef, patient);
+            // Remove undefined values because Firestore hates them
+            batch.set(docRef, sanitizeForFirestore(patient));
         });
 
         await batch.commit();
@@ -86,7 +91,7 @@ export const savePatientToFirebase = async (patient: PatientRecord) => {
 
     try {
         const docRef = doc(db, "users", user.uid, PATIENTS_COLLECTION, patient.id);
-        await setDoc(docRef, patient);
+        await setDoc(docRef, sanitizeForFirestore(patient));
     } catch (error) {
         emitStructuredLog("error", "Firebase", "Error saving patient", { error });
     }

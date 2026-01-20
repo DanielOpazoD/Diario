@@ -57,6 +57,7 @@ export interface PatientRecord {
   clinicalNote: string;
   pendingTasks: PendingTask[];
   attachedFiles: AttachedFile[];
+  updatedAt?: number;
   createdAt: number;
 }
 

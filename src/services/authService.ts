@@ -6,7 +6,7 @@ import { UserSchema } from '@shared/schemas';
 
 const ALLOWED_EMAILS = [
     "d.opazo.damiani@gmail.com",
-    "danielo.opazo@hospitalhangaroa.cl"
+    "daniel.opazo@hospitalhangaroa.cl"
 ];
 
 export class AuthError extends Error {

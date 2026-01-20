@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import useAppStore from '@core/stores/useAppStore';
-import { loginWithGoogle, loginAsGuest } from '@services/authService';
+import { loginWithGoogle } from '@services/authService';
 
 const Login: React.FC = () => {
   // Store Actions
@@ -25,18 +25,6 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleGuestLogin = async () => {
-    setIsLoading(true);
-    try {
-      const user = await loginAsGuest();
-      login(user);
-    } catch (e: any) {
-      console.error("Guest Login Error", e);
-      setError("Error al iniciar como invitado");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen w-full mesh-bg flex items-center justify-center p-4 transition-all duration-500 relative overflow-hidden">
@@ -80,13 +68,6 @@ const Login: React.FC = () => {
               </div>
             )}
 
-            <button
-              onClick={handleGuestLogin}
-              disabled={isLoading}
-              className="w-full py-3 px-4 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-            >
-              Continuar sin cuenta (Solo Local)
-            </button>
 
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700/50">
               <div className="flex items-start space-x-2">

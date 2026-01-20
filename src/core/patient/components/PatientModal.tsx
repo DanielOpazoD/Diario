@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { PatientRecord, PatientType, PendingTask, AttachedFile, PatientFormData } from '@shared/types';
 import useAppStore from '@core/stores/useAppStore';
 import ClinicalNote from '@core/patient/components/ClinicalNote';
-import PatientIdentificationPanel from '@core/patient/components/PatientIdentificationPanel';
+import PatientForm from '@core/patient/components/PatientForm';
 import PatientAttachmentsSection from '@core/patient/components/PatientAttachmentsSection';
 import PatientModalHeader from '@core/patient/components/PatientModalHeader';
 import PatientModalFooter from '@core/patient/components/PatientModalFooter';
@@ -11,6 +11,7 @@ import { formatPatientName, formatTitleCase } from '@core/patient/utils/patientU
 import { sanitizeClinicalNote, sanitizeDiagnosis, sanitizeRut } from '@shared/utils/sanitization';
 import { usePatientVoiceAndAI } from '@core/patient';
 import { usePatientDataExtraction } from '@core/patient';
+import { calculateAge } from '@shared/utils/dateUtils';
 
 interface PatientModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
 
   // UI State
   const [activeTab, setActiveTab] = useState<'clinical' | 'files'>('clinical');
+  const [isEditingDemographics, setIsEditingDemographics] = useState(false);
 
   const {
     isAnalyzing,
@@ -102,8 +104,8 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
         setPendingTasks(initialData.pendingTasks);
         setAttachedFiles(initialData.attachedFiles || []);
         setDriveFolderId(initialData.driveFolderId || null);
+        setIsEditingDemographics(false);
       } else {
-        // Always start from zero for new patient
         setPatientId(crypto.randomUUID());
         setName('');
         setRut('');
@@ -118,6 +120,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
         setPendingTasks([]);
         setAttachedFiles([]);
         setDriveFolderId(null);
+        setIsEditingDemographics(true);
       }
       setActiveTab(initialTab);
     }
@@ -169,7 +172,6 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
     }
   };
 
-  // Explicitly check for 'Turno' type to toggle entry/exit times
   const turnoTypeId = patientTypes.find(t => t.id === 'turno')?.id || 'turno';
   const isTurno = typeId === turnoTypeId;
 
@@ -179,13 +181,17 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
     <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
       <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={onClose}></div>
 
-      {/* Modal Container - Full screen on mobile, centered on desktop */}
-      <div className="relative w-full md:max-w-4xl bg-white dark:bg-gray-800 md:rounded-2xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[95vh] overflow-hidden animate-slide-up border border-gray-200 dark:border-gray-700">
+      <div className="relative w-full md:max-w-4xl bg-white dark:bg-gray-800 md:rounded-2xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[95vh] overflow-hidden animate-slide-up border border-gray-100 dark:border-gray-700">
 
         <PatientModalHeader
-          title={initialData ? 'Editar Paciente' : 'Nuevo Ingreso'}
-          subtitle={initialData ? initialData.date : selectedDate}
           isNewPatient={!initialData}
+          name={name}
+          rut={rut}
+          age={calculateAge(birthDate)}
+          gender={gender}
+          date={initialData ? initialData.date : selectedDate}
+          isEditing={isEditingDemographics}
+          onEditToggle={() => setIsEditingDemographics(!isEditingDemographics)}
           isScanning={isScanning}
           isScanningMulti={isScanningMulti}
           fileInputRef={fileInputRef}
@@ -195,35 +201,39 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
           onClose={onClose}
         />
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-gray-50/30 dark:bg-gray-900/10">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-full">
-            <PatientIdentificationPanel
-              name={name}
-              rut={rut}
-              birthDate={birthDate}
-              gender={gender}
-              typeId={typeId}
-              patientTypes={patientTypes}
-              isTurno={isTurno}
-              entryTime={entryTime}
-              exitTime={exitTime}
-              isExtractingFromFiles={isExtractingFromFiles}
-              onExtractFromAttachments={handleExtractFromAttachments}
-              onNameChange={setName}
-              onNameBlur={handleNameBlur}
-              onRutChange={setRut}
-              onBirthDateChange={setBirthDate}
-              onGenderChange={setGender}
-              onSelectType={(typeIdValue, typeLabel) => {
-                setType(typeLabel);
-                setTypeId(typeIdValue);
-              }}
-              onEntryTimeChange={setEntryTime}
-              onExitTimeChange={setExitTime}
-            />
+        <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50/20 dark:bg-gray-900/10">
+          <div className="flex flex-col gap-0">
+            {isEditingDemographics && (
+              <div className="px-4 md:px-6 py-2.5 border-b border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 animate-fade-in">
+                <PatientForm
+                  name={name}
+                  rut={rut}
+                  birthDate={birthDate}
+                  gender={gender}
+                  typeId={typeId}
+                  patientTypes={patientTypes}
+                  isTurno={isTurno}
+                  entryTime={entryTime}
+                  exitTime={exitTime}
+                  onNameChange={setName}
+                  onNameBlur={handleNameBlur}
+                  onRutChange={setRut}
+                  onBirthDateChange={setBirthDate}
+                  onGenderChange={setGender}
+                  onSelectType={(typeIdValue, typeLabel) => {
+                    setType(typeLabel);
+                    setTypeId(typeIdValue);
+                  }}
+                  onEntryTimeChange={setEntryTime}
+                  onExitTimeChange={setExitTime}
+                  isExtractingFromFiles={isExtractingFromFiles}
+                  onExtractFromAttachments={handleExtractFromAttachments}
+                  defaultExpanded={true}
+                />
+              </div>
+            )}
 
-            <div className="md:col-span-8 flex flex-col h-full">
+            <div className="p-3 md:p-4">
               <ClinicalNote
                 diagnosis={diagnosis}
                 clinicalNote={clinicalNote}

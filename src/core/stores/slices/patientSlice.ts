@@ -13,9 +13,9 @@ export interface PatientSlice {
 export const createPatientSlice: StateCreator<PatientSlice> = (set) => ({
   records: [],
   setRecords: (records) => set({ records }),
-  addPatient: (patient) => set((state) => ({ records: [...state.records, patient] })),
+  addPatient: (patient) => set((state) => ({ records: [...state.records, { ...patient, updatedAt: Date.now() }] })),
   updatePatient: (patient) => set((state) => ({
-    records: state.records.map((p) => (p.id === patient.id ? patient : p)),
+    records: state.records.map((p) => (p.id === patient.id ? { ...patient, updatedAt: Date.now() } : p)),
   })),
   deletePatient: (id) => {
     // Mark as pending deletion to prevent Firebase listener from re-adding it

@@ -90,7 +90,7 @@ const usePatientCrud = ({
 
       const updatedRecords = records.map(record =>
         patientIds.includes(record.id)
-          ? { ...record, date: targetDate }
+          ? { ...record, date: targetDate, updatedAt: Date.now() }
           : record
       );
 
@@ -120,6 +120,7 @@ const usePatientCrud = ({
         id: crypto.randomUUID(),
         date: targetDate,
         createdAt: timestamp + index,
+        updatedAt: timestamp + index,
         pendingTasks: patient.pendingTasks?.map(task => ({ ...task, id: crypto.randomUUID() })) || [],
         attachedFiles: patient.attachedFiles?.map(file => ({ ...file, id: crypto.randomUUID() })) || [],
       }));

@@ -129,6 +129,7 @@ const DailyView: React.FC<DailyViewProps> = ({
               ref={fileInputRef}
               onChange={handlePdfUpload}
               accept="application/pdf"
+              multiple
               className="hidden"
             />
             <Button

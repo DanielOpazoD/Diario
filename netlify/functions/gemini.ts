@@ -16,8 +16,8 @@ type GeminiRequest =
   | { action: 'askAboutImages'; prompt: string; images: any[] };
 
 const MODEL_NAME = 'gemini-2.0-flash';
-const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_API_KEY || '';
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.VITE_API_KEY || '';
+const genAI = apiKey && apiKey !== 'your_gemini_key_here' ? new GoogleGenerativeAI(apiKey) : null;
 
 const analysisSchema = {
   type: SchemaType.OBJECT,

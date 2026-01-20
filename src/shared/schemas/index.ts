@@ -45,7 +45,7 @@ export const AttachedFileSchema = z.object({
 // Patient Record (The Core Entity)
 export const PatientRecordSchema = z.object({
     id: z.string().uuid("ID de paciente inválido"),
-    name: z.string().min(1, "El nombre del paciente es obligatorio"),
+    name: z.string(), // Allowing empty name for blank patient creation
     rut: z.string(), // We can add RUT validation regex here later
     driveFolderId: z.string().nullable().optional(),
     birthDate: z.string().optional(), // YYYY-MM-DD
@@ -57,8 +57,9 @@ export const PatientRecordSchema = z.object({
     exitTime: z.string().optional(), // HH:mm
     diagnosis: z.string(),
     clinicalNote: z.string(),
-    pendingTasks: z.array(PendingTaskSchema),
-    attachedFiles: z.array(AttachedFileSchema),
+    pendingTasks: z.array(PendingTaskSchema).nullish().transform(val => val ?? []),
+    attachedFiles: z.array(AttachedFileSchema).nullish().transform(val => val ?? []),
+    updatedAt: z.number().optional(),
     createdAt: z.number(),
 });
 

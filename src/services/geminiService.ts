@@ -18,6 +18,9 @@ const callGemini = async <T>(payload: Record<string, unknown>): Promise<T> => {
   const data = await response.json();
 
   if (!response.ok || data.error) {
+    if (response.status === 404) {
+      throw new Error("No se encontró la función de IA. Si estás en modo local, asegúrate de estar corriendo 'netlify dev' en lugar de 'npm run dev', o verifica que el servidor de funciones esté en el puerto 8888.");
+    }
     const message = data?.error || "Error al comunicarse con Gemini.";
     throw new Error(message);
   }

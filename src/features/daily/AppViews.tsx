@@ -64,7 +64,7 @@ const AppViews: React.FC<AppViewsProps> = ({
         path={VIEW_ROUTES.history}
         element={(
           <Suspense fallback={<HistorySkeleton />}>
-            <PatientsHistoryView />
+            <PatientsHistoryView onEditPatient={onEditPatient} />
           </Suspense>
         )}
       />

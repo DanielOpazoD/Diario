@@ -26,9 +26,37 @@ const useFirebaseSync = () => {
                 patientUnsubRef.current = subscribeToPatients((remotePatients) => {
                     addLog('info', 'FirebaseSync', `Received ${remotePatients.length} patients from Firebase`);
 
-                    // Basic Sync Strategy: Trust Firebase as source of truth for now
-                    if (remotePatients.length > 0) {
-                        setRecords(remotePatients);
+                    const currentRecords = useAppStore.getState().records;
+
+                    // Intelligent Merge: For each remote patient, only update if it's newer than local
+                    const mergedRecords = [...currentRecords];
+                    let hasChanges = false;
+
+                    remotePatients.forEach(remote => {
+                        const localIndex = mergedRecords.findIndex(p => p.id === remote.id);
+                        if (localIndex === -1) {
+                            // New patient from remote
+                            mergedRecords.push(remote);
+                            hasChanges = true;
+                        } else {
+                            const local = mergedRecords[localIndex];
+                            const remoteUpdate = remote.updatedAt || 0;
+                            const localUpdate = local.updatedAt || 0;
+
+                            if (remoteUpdate > localUpdate) {
+                                // Remote is newer
+                                mergedRecords[localIndex] = remote;
+                                hasChanges = true;
+                            }
+                        }
+                    });
+
+                    // Remove local records not in remote (if you want full sync)
+                    // Keep this with caution, usually we want to keep what's in Firebase.
+                    // But if we deleted locally, we already manage pendingDeletions.
+
+                    if (hasChanges) {
+                        setRecords(mergedRecords);
                     }
                 });
             } else {
