@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
 import { PatientRecord } from '@shared/types';
-import { deletePatientFromFirebase, addPendingDeletion, removePendingDeletion } from '@services/firebaseService';
+import { deletePatientFromFirebase, addPendingDeletion } from '@services/firebaseService';
 
 export interface PatientSlice {
   records: PatientRecord[];
@@ -18,19 +18,21 @@ export const createPatientSlice: StateCreator<PatientSlice> = (set) => ({
     records: state.records.map((p) => (p.id === patient.id ? { ...patient, updatedAt: Date.now() } : p)),
   })),
   deletePatient: (id) => {
-    // Mark as pending deletion to prevent Firebase listener from re-adding it
+    // 1. Mark as pending deletion to prevent Firebase listener from re-adding it
     addPendingDeletion(id);
 
-    // Remove from local state immediately
+    // 2. Remove from local state immediately
     set((state) => ({
       records: state.records.filter((p) => p.id !== id),
     }));
 
-    // Delete from Firebase, then clear pending status
+    // 3. Delete from Firebase
+    // We don't strictly need the finally/removePendingDeletion here anymore 
+    // because isPendingDeletion handles expiry after 10s, but we can clear it 
+    // explicitly once confirmed for extra cleanliness.
     deletePatientFromFirebase(id).finally(() => {
-      // After Firebase confirms deletion (or fails), remove from pending set
-      // Use a delay to ensure the onSnapshot has received the deletion
-      setTimeout(() => removePendingDeletion(id), 2000);
+      // Optional: early cleanup if confirmed, but 10s grace period is safer
+      // removePendingDeletion(id);
     });
   },
 });

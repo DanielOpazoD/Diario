@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { subscribeToPatients } from '@services/firebaseService';
 import { subscribeToAuthChanges } from '@services/authService';
+import { PatientRecord } from '@shared/types';
 import useAppStore from '@core/stores/useAppStore';
 
 const useFirebaseSync = () => {
@@ -24,39 +25,59 @@ const useFirebaseSync = () => {
                 addLog('info', 'FirebaseSync', 'User authenticated, subscribing to patients...');
 
                 patientUnsubRef.current = subscribeToPatients((remotePatients) => {
-                    addLog('info', 'FirebaseSync', `Received ${remotePatients.length} patients from Firebase`);
-
                     const currentRecords = useAppStore.getState().records;
+                    const now = Date.now();
+                    const SYNC_GRACE_PERIOD = 10000; // 10 seconds
 
-                    // Intelligent Merge: For each remote patient, only update if it's newer than local
-                    const mergedRecords = [...currentRecords];
+                    // 1. Build a map of remote patients for O(1) lookups
+                    const remoteMap = new Map(remotePatients.map(p => [p.id, p]));
+
+                    // 2. Bidirectional Merge
+                    const updatedRecords: PatientRecord[] = [];
                     let hasChanges = false;
 
-                    remotePatients.forEach(remote => {
-                        const localIndex = mergedRecords.findIndex(p => p.id === remote.id);
-                        if (localIndex === -1) {
-                            // New patient from remote
-                            mergedRecords.push(remote);
-                            hasChanges = true;
-                        } else {
-                            const local = mergedRecords[localIndex];
-                            const remoteUpdate = remote.updatedAt || 0;
+                    // Check Current Local Records: Keep, Update, or Remove?
+                    currentRecords.forEach(local => {
+                        const remote = remoteMap.get(local.id);
+
+                        if (remote) {
                             const localUpdate = local.updatedAt || 0;
+                            const remoteUpdate = remote.updatedAt || 0;
 
                             if (remoteUpdate > localUpdate) {
-                                // Remote is newer
-                                mergedRecords[localIndex] = remote;
+                                updatedRecords.push(remote);
                                 hasChanges = true;
+                            } else {
+                                updatedRecords.push(local);
+                            }
+                        } else {
+                            // Record is in Local but NOT in Remote
+                            // Was it recently created/modified locally?
+                            const localAge = now - (local.updatedAt || local.createdAt || now);
+
+                            if (localAge < SYNC_GRACE_PERIOD) {
+                                // Keep it, it might still be syncing to cloud
+                                updatedRecords.push(local);
+                            } else {
+                                // It should have synced by now. If it's missing from cloud, it was deleted elsewhere.
+                                hasChanges = true;
+                                // skip adding to updatedRecords (effectively removing it)
                             }
                         }
                     });
 
-                    // Remove local records not in remote (if you want full sync)
-                    // Keep this with caution, usually we want to keep what's in Firebase.
-                    // But if we deleted locally, we already manage pendingDeletions.
+                    // Add Remote Records that are not in Local
+                    const localIds = new Set(currentRecords.map(p => p.id));
+                    remotePatients.forEach(remote => {
+                        if (!localIds.has(remote.id)) {
+                            updatedRecords.push(remote);
+                            hasChanges = true;
+                        }
+                    });
 
                     if (hasChanges) {
-                        setRecords(mergedRecords);
+                        addLog('info', 'FirebaseSync', `Syncing changes: ${currentRecords.length} -> ${updatedRecords.length} patients`);
+                        setRecords(updatedRecords);
                     }
                 });
             } else {

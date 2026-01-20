@@ -3,16 +3,15 @@ import { collection, query, onSnapshot, writeBatch, doc, setDoc, deleteDoc } fro
 import { PatientRecord } from '@shared/types';
 import { emitStructuredLog } from './logger';
 
-import { STORAGE_KEYS } from '@shared/constants/storageKeys';
 
-const PATIENTS_COLLECTION = STORAGE_KEYS.RECORDS.split('_')[1] || 'patients'; // 'patients' if using medidiario_patients, but records is medidiario_data_v1.
-// Let's just define it explicitly in storageKeys for clarity.
+const PATIENTS_COLLECTION = 'patients';
 
-// Track pending deletions to prevent race conditions with Firebase listener
-const pendingDeletions = new Set<string>();
+// Track pending deletions with timestamps to prevent race conditions with Firebase listener
+// We keep them for 10 seconds to ensure onSnapshot doesn't re-add a deleted record
+const pendingDeletions = new Map<string, number>();
 
 export const addPendingDeletion = (id: string) => {
-    pendingDeletions.add(id);
+    pendingDeletions.set(id, Date.now());
 };
 
 export const removePendingDeletion = (id: string) => {
@@ -20,7 +19,15 @@ export const removePendingDeletion = (id: string) => {
 };
 
 export const isPendingDeletion = (id: string) => {
-    return pendingDeletions.has(id);
+    const timestamp = pendingDeletions.get(id);
+    if (!timestamp) return false;
+
+    // Expire pending deletion after 10 seconds
+    if (Date.now() - timestamp > 10000) {
+        pendingDeletions.delete(id);
+        return false;
+    }
+    return true;
 };
 
 const sanitizeForFirestore = (data: any) => {
@@ -70,7 +77,7 @@ export const subscribeToPatients = (callback: (patients: PatientRecord[]) => voi
             if (result.success) {
                 const patient = result.data;
                 // Filter out patients that are pending deletion
-                if (!pendingDeletions.has(patient.id)) {
+                if (!isPendingDeletion(patient.id)) {
                     patients.push(patient);
                 }
             } else {
