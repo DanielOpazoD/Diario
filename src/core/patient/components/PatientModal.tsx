@@ -99,9 +99,9 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
         setTypeId(resolvedTypeId);
         setEntryTime(initialData.entryTime || '');
         setExitTime(initialData.exitTime || '');
-        setDiagnosis(initialData.diagnosis);
-        setClinicalNote(initialData.clinicalNote);
-        setPendingTasks(initialData.pendingTasks);
+        setDiagnosis(initialData.diagnosis || '');
+        setClinicalNote(initialData.clinicalNote || '');
+        setPendingTasks(initialData.pendingTasks || []);
         setAttachedFiles(initialData.attachedFiles || []);
         setDriveFolderId(initialData.driveFolderId || null);
         setIsEditingDemographics(false);

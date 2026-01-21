@@ -2,7 +2,10 @@ import { useCallback } from 'react';
 import { format } from 'date-fns';
 import { PatientRecord } from '@shared/types';
 
-const toTitleCase = (str: string) => str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+const toTitleCase = (str: string) => {
+  if (!str) return '';
+  return str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+};
 
 const formatDateLabel = (dateStr: string) => {
   try {

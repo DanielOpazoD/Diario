@@ -1,8 +1,10 @@
 export const formatTitleCase = (str: string) => {
+  if (!str) return '';
   return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 };
 
 const normalizeNameOrder = (raw: string) => {
+  if (!raw) return '';
   const cleaned = raw.trim().replace(/\s+/g, ' ');
   const [beforeComma, afterComma] = cleaned.split(',').map(part => part.trim());
 
@@ -13,4 +15,7 @@ const normalizeNameOrder = (raw: string) => {
   return cleaned;
 };
 
-export const formatPatientName = (str: string) => formatTitleCase(normalizeNameOrder(str));
+export const formatPatientName = (str: string) => {
+  if (!str) return '';
+  return formatTitleCase(normalizeNameOrder(str));
+};

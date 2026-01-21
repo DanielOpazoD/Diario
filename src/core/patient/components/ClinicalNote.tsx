@@ -166,14 +166,14 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
           <div className={`${minimal ? 'mt-2' : 'bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-amber-100 dark:border-amber-800/30'} flex flex-col transition-all`}>
             <h4 className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-500 mb-2 flex items-center gap-1.5 tracking-wider shrink-0 ml-0.5">
               <CheckSquare className="w-3 h-3" /> Tareas Pendientes
-              {minimal && pendingTasks.length > 0 && (
+              {minimal && (pendingTasks?.length || 0) > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[9px]">
                   {pendingTasks.length}
                 </span>
               )}
             </h4>
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1.5">
-              {pendingTasks.map((task) => (
+              {(pendingTasks || []).map((task) => (
                 <div
                   key={task.id}
                   className="flex items-center group bg-white dark:bg-gray-800 p-2 rounded-lg border border-amber-100 dark:border-amber-900/50 shadow-sm hover:shadow-md transition-all"
