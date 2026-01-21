@@ -13,13 +13,16 @@ const callGemini = async <T>(payload: Record<string, unknown>): Promise<T> => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  });
+  }, { retries: 1 });
 
   const data = await response.json();
 
   if (!response.ok || data.error) {
     if (response.status === 404) {
       throw new Error("No se encontró la función de IA. Si estás en modo local, asegúrate de estar corriendo 'netlify dev' en lugar de 'npm run dev', o verifica que el servidor de funciones esté en el puerto 8888.");
+    }
+    if (response.status === 504) {
+      throw new Error("El sistema tardó demasiado en procesar este documento. El PDF podría ser muy complejo o la conexión es lenta. Por favor, intenta de nuevo o con un archivo más simple.");
     }
     const message = data?.error || "Error al comunicarse con Gemini.";
     throw new Error(message);
@@ -59,7 +62,7 @@ export const extractPatientDataFromImage = async (
     });
   } catch (error: any) {
     emitStructuredLog("error", "Gemini", "Vision extraction failed", { error: String(error) });
-    throw new Error("Error al leer la imagen.");
+    throw error;
   }
 };
 

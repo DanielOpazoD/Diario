@@ -111,13 +111,13 @@ const handler: Handler = async (event) => {
               parts: [
                 {
                   text:
-                    'Extract patient data from Spanish hospital documents (Hospital Hanga Roa). Rules:\n' +
-                    '1. name: If "Apellidos, Nombre", reorder to "Nombre Apellidos" in Title Case.\n' +
-                    '2. rut: Extract RUT/DNI exactly.\n' +
-                    '3. birthDate: Extract in YYYY-MM-DD. IMPORTANT: Cross-verify with the "EDAD" (Age) field if available. If "NACIMIENTO" looks like 1949 and "EDAD" is 77, the year is definitely 1949. Avoid misreading digits based on visual similarity (e.g., 4 vs 1, 9 vs 7).\n' +
-                    '4. gender: "MASCULINO/FEMENINO" or "M/F".\n' +
-                    '5. diagnosis: Extract ALL text found immediately after "HIPOTESIS DIAGNÓSTICA:" or under that heading. Include every line/bullet point.\n' +
-                    '6. clinicalNote: Extract ALL text found immediately after "INDICACIONES MÉDICAS / PLAN DE TTO:" or under that heading. Include all text until the end of the section.',
+                    'Extract Hanga Roa hospital data (Spanish):\n' +
+                    '- name: "Nombre Apellidos" (Reorder if "Apellidos, Nombre"). Title Case.\n' +
+                    '- rut: Full RUT.\n' +
+                    '- birthDate: YYYY-MM-DD. (Use "EDAD" to verify year, e.g. Birth 1949 if Age 77).\n' +
+                    '- gender: Sex/Gender.\n' +
+                    '- diagnosis: All text under "HIPOTESIS DIAGNÓSTICA:".\n' +
+                    '- clinicalNote: All text under "INDICACIONES MÉDICAS / PLAN DE TTO:".',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
