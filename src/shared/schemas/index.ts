@@ -44,7 +44,7 @@ export const AttachedFileSchema = z.object({
 
 // Patient Record (The Core Entity)
 export const PatientRecordSchema = z.object({
-    id: z.string().uuid("ID de paciente inválido"),
+    id: z.string(), // Allowing legacy IDs that might not be UUIDs
     name: z.string(), // Allowing empty name for blank patient creation
     rut: z.string(), // We can add RUT validation regex here later
     driveFolderId: z.string().nullable().optional(),
@@ -55,12 +55,12 @@ export const PatientRecordSchema = z.object({
     typeId: z.string().optional(),
     entryTime: z.string().optional(), // HH:mm
     exitTime: z.string().optional(), // HH:mm
-    diagnosis: z.string(),
-    clinicalNote: z.string(),
+    diagnosis: z.string().catch(''), // Relaxed for legacy data
+    clinicalNote: z.string().catch(''), // Relaxed for legacy data
     pendingTasks: z.array(PendingTaskSchema).nullish().transform(val => val ?? []),
     attachedFiles: z.array(AttachedFileSchema).nullish().transform(val => val ?? []),
     updatedAt: z.number().optional(),
-    createdAt: z.number(),
+    createdAt: z.number().optional().default(() => Date.now()),
 });
 
 // User & Settings

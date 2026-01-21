@@ -103,9 +103,10 @@ export const subscribeToPatients = (callback: (patients: PatientRecord[]) => voi
                     patients.push(patient);
                 }
             } else {
+                console.warn(`[Firebase] Validation failed for patient ${doc.id}:`, result.error.issues);
                 emitStructuredLog("warn", "Firebase", "Invalid patient data found", {
                     id: doc.id,
-                    errors: result.error.format()
+                    errors: result.error.flatten().fieldErrors
                 });
             }
         });
