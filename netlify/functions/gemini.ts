@@ -116,7 +116,7 @@ const handler: Handler = async (event) => {
                     '- rut: Full RUT.\n' +
                     '- birthDate: YYYY-MM-DD.\n' +
                     '- gender: Sex/Gender.\n' +
-                    '- diagnosis: Text under "DIAGNÓSTICO", "HIPOTESIS", or "DG". STOP before "Comentario" or "Plan".\n' +
+                    '- diagnosis: Use only "HIPOTESIS DIAGNÓSTICA". IGNORE "DIAGNÓSTICO PRI" (CIE-10). STOP before "Comentario" or "Plan".\n' +
                     '- clinicalNote: All text from "INDICACIONES", "PLAN", "EVOLUCIÓN", "TRATAMIENTO", or "Comentario".',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
@@ -142,7 +142,7 @@ const handler: Handler = async (event) => {
                     '- rut: Full RUT.\n' +
                     '- birthDate: YYYY-MM-DD.\n' +
                     '- gender: Sex/Gender.\n' +
-                    '- diagnosis: Text from "DIAGNÓSTICO", "HIPOTESIS", or "DG". STOP before "Comentario" or "Plan".\n' +
+                    '- diagnosis: Use only "HIPOTESIS DIAGNÓSTICA". IGNORE "DIAGNÓSTICO PRI" (CIE-10). STOP before "Comentario" or "Plan".\n' +
                     '- clinicalNote: Text from "INDICACIONES", "PLAN", "EVOLUCIÓN", "TRATAMIENTO", or "Comentario".',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
