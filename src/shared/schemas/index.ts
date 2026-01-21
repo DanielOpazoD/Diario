@@ -45,29 +45,32 @@ export const AttachedFileSchema = z.object({
 // Patient Record (The Core Entity)
 export const PatientRecordSchema = z.object({
     id: z.string(),
-    name: z.string().default(''),
-    rut: z.string().default(''),
+    name: z.string().nullable().catch('').transform(v => v ?? ''),
+    rut: z.string().nullable().catch('').transform(v => v ?? ''),
     driveFolderId: z.string().nullable().optional(),
-    birthDate: z.string().optional(), // YYYY-MM-DD
-    gender: z.string().optional(),
+    birthDate: z.string().nullable().optional().catch('').transform(v => v ?? ''),
+    gender: z.string().nullable().optional().catch('').transform(v => v ?? ''),
     date: z.string().catch(() => new Date().toISOString().split('T')[0]),
     type: z.string().catch('Hospitalizado'),
-    typeId: z.string().optional(),
-    entryTime: z.string().optional(), // HH:mm
-    exitTime: z.string().optional(), // HH:mm
+    typeId: z.string().optional().catch('policlinico').transform(v => v ?? 'policlinico'),
+    entryTime: z.string().nullable().optional().catch('').transform(v => v ?? ''),
+    exitTime: z.string().nullable().optional().catch('').transform(v => v ?? ''),
     diagnosis: z.string().nullable().catch('').transform(v => v ?? ''),
     clinicalNote: z.string().nullable().catch('').transform(v => v ?? ''),
     pendingTasks: z.array(z.any()).nullish().transform(val => {
-        if (!val) return [];
+        if (!val || !Array.isArray(val)) return [];
         return val.map(t => ({
-            id: t.id || crypto.randomUUID(),
-            text: t.text || '',
-            isCompleted: !!t.isCompleted
+            id: t?.id || crypto.randomUUID(),
+            text: t?.text || '',
+            isCompleted: !!t?.isCompleted
         }));
     }),
-    attachedFiles: z.array(z.any()).nullish().transform(val => val ?? []),
-    updatedAt: z.number().optional(),
-    createdAt: z.number().optional().default(() => Date.now()),
+    attachedFiles: z.array(z.any()).nullish().transform(val => {
+        if (!val || !Array.isArray(val)) return [];
+        return val;
+    }),
+    updatedAt: z.number().optional().catch(() => Date.now()),
+    createdAt: z.number().optional().default(() => Date.now()).catch(() => Date.now()),
 });
 
 // User & Settings

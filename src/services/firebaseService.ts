@@ -1,9 +1,11 @@
 import { auth, db } from './firebaseConfig';
-import { collection, query, onSnapshot, writeBatch, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, writeBatch, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { PatientRecord } from '@shared/types';
 import { emitStructuredLog } from './logger';
+import { PatientRecordSchema } from '@shared/schemas';
 
-const PATIENTS_COLLECTION = 'patients';
+const PATIENTS_COLLECTION = 'data'; // Restore to original primary collection
+const LEGACY_PATIENTS_COLLECTION = 'patients'; // Keep bridge to newest data
 
 // Track pending deletions with timestamps to prevent race conditions with Firebase listener
 const pendingDeletions = new Map<string, number>();
@@ -19,7 +21,7 @@ export const isPendingDeletion = (id: string) => {
     const timestamp = pendingDeletions.get(id);
     if (!timestamp) return false;
 
-    // Expire pending deletion after 30 seconds (increased for robustness)
+    // Expire pending deletion after 30 seconds
     if (Date.now() - timestamp > 30000) {
         pendingDeletions.delete(id);
         return false;
@@ -33,24 +35,20 @@ const sanitizeForFirestore = (data: any) => {
 
 /**
  * Syncs patients to Firebase using a diff-based approach and chunked batches.
- * Only sends patients that have actually changed since last sync.
+ * Writes to the primary 'data' collection.
  */
 export const syncPatientsToFirebase = async (patients: PatientRecord[]) => {
     if (!auth || !db) return;
     const user = auth.currentUser;
     if (!user) return;
 
-    // 1. Optimization: Check if state actually changed (simple JSON hash)
+    // Optimization: Check if state actually changed
     const currentStateHash = JSON.stringify(patients.map(p => ({ id: p.id, updated: p.updatedAt })));
     if (currentStateHash === lastSyncedStateHash) return;
 
     try {
         const userPatientsRef = collection(db, "users", user.uid, PATIENTS_COLLECTION);
 
-        // 2. Identify precisely which patients need updating (optional optimization, 
-        // but for Firestore 500 limit, chunking is more important)
-
-        // Chunking Logic: max 400 per batch (Firestore limit is 500)
         const CHUNK_SIZE = 400;
         const totalPatients = patients.length;
 
@@ -74,44 +72,79 @@ export const syncPatientsToFirebase = async (patients: PatientRecord[]) => {
         emitStructuredLog("info", "Firebase", "Full sync completed", { total: totalPatients });
     } catch (error) {
         emitStructuredLog("error", "Firebase", "Critical error during sync", { error });
-        throw error; // Re-throw to let persistenceService handle/log it
+        throw error;
     }
 };
 
-import { PatientRecordSchema } from '@shared/schemas';
-
-// ... existing code ...
-
+/**
+ * Subscribes to patients from both primary and legacy collections.
+ * Implementation uses a "Bridge" approach to merge data during reconstruction.
+ */
 export const subscribeToPatients = (callback: (patients: PatientRecord[]) => void) => {
     if (!auth || !db) return () => { };
     const user = auth.currentUser;
     if (!user) return () => { };
 
-    const q = query(collection(db, "users", user.uid, PATIENTS_COLLECTION));
+    const primaryRef = collection(db, "users", user.uid, PATIENTS_COLLECTION);
+    const legacyRef = collection(db, "users", user.uid, LEGACY_PATIENTS_COLLECTION);
 
-    return onSnapshot(q, (snapshot) => {
+    // Track latest state from both sources locally
+    const sourceData = {
+        primary: [] as PatientRecord[],
+        legacy: [] as PatientRecord[]
+    };
+
+    const mergeAndEmit = () => {
+        const mergedMap = new Map<string, PatientRecord>();
+
+        // Process legacy first (patients created in the last few hours)
+        sourceData.legacy.forEach(p => mergedMap.set(p.id, p));
+
+        // Process primary (overwrite legacy if primary is newer or exists)
+        sourceData.primary.forEach(p => {
+            const existing = mergedMap.get(p.id);
+            if (!existing || (p.updatedAt || 0) >= (existing.updatedAt || 0)) {
+                mergedMap.set(p.id, p);
+            }
+        });
+
+        callback(Array.from(mergedMap.values()));
+    };
+
+    const processSnapshot = (snapshot: any, source: 'primary' | 'legacy') => {
         const patients: PatientRecord[] = [];
-        snapshot.forEach((doc) => {
+        snapshot.forEach((doc: any) => {
             const data = doc.data();
-            // Runtime Validation with Zod
             const result = PatientRecordSchema.safeParse(data);
 
             if (result.success) {
                 const patient = result.data;
-                // Filter out patients that are pending deletion
                 if (!isPendingDeletion(patient.id)) {
                     patients.push(patient);
                 }
             } else {
-                console.warn(`[Firebase] Validation failed for patient ${doc.id}:`, result.error.issues);
-                emitStructuredLog("warn", "Firebase", "Invalid patient data found", {
+                console.warn(`[Firebase][${source}] Validation failed for patient ${doc.id}:`, {
+                    errors: result.error.issues,
+                    rawData: data
+                });
+                emitStructuredLog("warn", "Firebase", `Invalid data in ${source}`, {
                     id: doc.id,
                     errors: result.error.flatten().fieldErrors
                 });
             }
         });
-        callback(patients);
-    });
+
+        sourceData[source] = patients;
+        mergeAndEmit();
+    };
+
+    const unsubPrimary = onSnapshot(primaryRef, (snap) => processSnapshot(snap, 'primary'));
+    const unsubLegacy = onSnapshot(legacyRef, (snap) => processSnapshot(snap, 'legacy'));
+
+    return () => {
+        unsubPrimary();
+        unsubLegacy();
+    };
 };
 
 export const savePatientToFirebase = async (patient: PatientRecord) => {
@@ -135,6 +168,10 @@ export const deletePatientFromFirebase = async (patientId: string) => {
     try {
         const docRef = doc(db, "users", user.uid, PATIENTS_COLLECTION, patientId);
         await deleteDoc(docRef);
+
+        // Also try to delete from legacy if it exists (cleanup)
+        const legacyRef = doc(db, "users", user.uid, LEGACY_PATIENTS_COLLECTION, patientId);
+        await deleteDoc(legacyRef).catch(() => { });
     } catch (error) {
         emitStructuredLog("error", "Firebase", "Error deleting patient", { error });
     }

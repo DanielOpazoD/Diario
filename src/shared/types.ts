@@ -58,7 +58,7 @@ export interface PatientRecord {
   pendingTasks: PendingTask[];
   attachedFiles: AttachedFile[];
   updatedAt?: number;
-  createdAt: number;
+  createdAt?: number;
 }
 
 /**
