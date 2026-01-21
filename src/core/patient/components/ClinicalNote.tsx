@@ -163,9 +163,9 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
             className={`w-full h-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-inner leading-normal font-medium text-gray-700 dark:text-gray-200 ${minimal ? 'min-h-[100px]' : 'min-h-[140px]'}`}
           />
 
-          <div className={`${minimal ? 'mt-2' : 'bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-amber-100 dark:border-amber-800/30'} min-h-[120px] flex flex-col transition-all`}>
+          <div className={`${minimal ? 'mt-2' : 'bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-amber-100 dark:border-amber-800/30'} flex flex-col transition-all`}>
             <h4 className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-500 mb-2 flex items-center gap-1.5 tracking-wider shrink-0 ml-0.5">
-              <CheckSquare className="w-3 h-3" /> Pendientes & Tareas
+              <CheckSquare className="w-3 h-3" /> Tareas Pendientes
               {minimal && pendingTasks.length > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[9px]">
                   {pendingTasks.length}

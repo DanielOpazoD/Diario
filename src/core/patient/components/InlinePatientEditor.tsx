@@ -243,8 +243,8 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
 
             {initialTab !== 'demographics' && (
                 <div className="flex justify-end gap-2 pt-2 mt-2 border-t border-gray-50 dark:border-gray-800">
-                    <Button variant="ghost" size="sm" onClick={onClose} className="text-xs h-8">Cancelar</Button>
-                    <Button size="sm" onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-bold text-xs h-8">
+                    <Button variant="ghost" size="sm" onClick={onClose} className="text-xs h-7">Cancelar</Button>
+                    <Button size="sm" onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-bold text-xs h-7">
                         <Save className="w-3.5 h-3.5 mr-1" /> Guardar
                     </Button>
                 </div>
