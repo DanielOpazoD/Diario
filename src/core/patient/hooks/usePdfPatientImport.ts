@@ -95,6 +95,8 @@ export const usePdfPatientImport = (currentDate: Date) => {
 
             } catch (error: any) {
                 console.error(`Error importing PDF ${file.name}:`, error);
+                const isTimeout = error.message?.includes('504') || error.message?.includes('demasiado');
+                addToast('error', `Fallo en ${file.name}: ${isTimeout ? 'Tiempo excedido (Timeout)' : error.message}`);
                 errorCount++;
             }
         }

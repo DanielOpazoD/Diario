@@ -111,13 +111,13 @@ const handler: Handler = async (event) => {
               parts: [
                 {
                   text:
-                    'Extract Hanga Roa hospital data (Spanish):\n' +
-                    '- name: "Nombre Apellidos" (Reorder if "Apellidos, Nombre"). Title Case.\n' +
+                    'Extract Hanga Roa hospital data (Spanish). Be concise.\n' +
+                    '- name: "Name Surname". Title Case.\n' +
                     '- rut: Full RUT.\n' +
-                    '- birthDate: YYYY-MM-DD. (Use "EDAD" to verify year, e.g. Birth 1949 if Age 77).\n' +
+                    '- birthDate: YYYY-MM-DD. Use "EDAD" to verify year if birth year looks wrong.\n' +
                     '- gender: Sex/Gender.\n' +
-                    '- diagnosis: All text found under "HIPOTESIS DIAGNÓSTICA:", "DIAGNÓSTICO(S):", "DIAGNOSTICO DE INGRESO:", or "DG:".\n' +
-                    '- clinicalNote: All text found under "INDICACIONES MÉDICAS / PLAN DE TTO:", "INDICACIONES MÉDICAS:", "PLAN:", "EVOLUCIÓN:", or "TRATAMIENTO:".',
+                    '- diagnosis: Under "DIAGNÓSTICO:", "HIPOTESIS", "DG:", or "DIAGNOSTICO DE INGRESO:".\n' +
+                    '- clinicalNote: Under "INDICACIONES:", "PLAN:", "EVOLUCIÓN:", or "TRATAMIENTO:".',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
@@ -137,13 +137,13 @@ const handler: Handler = async (event) => {
               parts: [
                 {
                   text:
-                    'Extract a list of patients from this clinical document. For each patient:\n' +
-                    '- name: Reorder "Apellidos, Nombre" to "Nombre Apellidos" in Title Case.\n' +
+                    'Extract patient list (Spanish). Concise fields.\n' +
+                    '- name: "Name Surname". Title Case.\n' +
                     '- rut: Full RUT.\n' +
-                    '- birthDate: YYYY-MM-DD (Verify year vs Age "EDAD" if visible).\n' +
+                    '- birthDate: YYYY-MM-DD.\n' +
                     '- gender: Sex/Gender.\n' +
-                    '- diagnosis: Full text from "HIPOTESIS DIAGNÓSTICA", "DIAGNÓSTICO", or "DG:".\n' +
-                    '- clinicalNote: Full text from "INDICACIONES MÉDICAS / PLAN DE TTO", "PLAN", or "EVOLUCIÓN".',
+                    '- diagnosis: From "DIAGNÓSTICO", "HIPOTESIS", or "DG:".\n' +
+                    '- clinicalNote: From "INDICACIONES", "PLAN", or "EVOLUCIÓN".',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],

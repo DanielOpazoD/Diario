@@ -15,14 +15,25 @@ const callGemini = async <T>(payload: Record<string, unknown>): Promise<T> => {
     body: JSON.stringify(payload),
   }, { retries: 1 });
 
-  const data = await response.json();
+  const text = await response.text();
+  let data: any = {};
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (e) {
+    // If parsing fails, it's likely HTML or empty
+    if (!response.ok) {
+      if (response.status === 504) {
+        throw new Error("El sistema tardó demasiado en procesar este documento (Netlify Timeout). El PDF podría ser muy complejo o la conexión es lenta. Por favor, intenta de nuevo o con un archivo más simple.");
+      }
+      throw new Error(`Error del servidor (${response.status}): No se pudo procesar la respuesta.`);
+    }
+    throw new Error("La respuesta de la IA no tiene un formato válido.");
+  }
 
   if (!response.ok || data.error) {
     if (response.status === 404) {
-      throw new Error("No se encontró la función de IA. Si estás en modo local, asegúrate de estar corriendo 'netlify dev' en lugar de 'npm run dev', o verifica que el servidor de funciones esté en el puerto 8888.");
-    }
-    if (response.status === 504) {
-      throw new Error("El sistema tardó demasiado en procesar este documento. El PDF podría ser muy complejo o la conexión es lenta. Por favor, intenta de nuevo o con un archivo más simple.");
+      throw new Error("No se encontró la función de IA. Si estás en modo local, asegúrate de estar corriendo 'netlify dev'.");
     }
     const message = data?.error || "Error al comunicarse con Gemini.";
     throw new Error(message);
