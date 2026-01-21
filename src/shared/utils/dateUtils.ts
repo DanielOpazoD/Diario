@@ -7,11 +7,22 @@ export const calculateAge = (birthDate?: string): string => {
     if (!birthDate || !birthDate.trim()) return 'N/A';
 
     try {
-        const birth = parseISO(birthDate);
+        let dateToParse = birthDate.trim();
+        // Handle DD-MM-YYYY format if Gemini returns it despite prompt
+        if (dateToParse.includes('-') && dateToParse.split('-')[0].length === 2) {
+            const [d, m, y] = dateToParse.split('-');
+            dateToParse = `${y}-${m}-${d}`;
+        }
+
+        const birth = parseISO(dateToParse);
         if (isNaN(birth.getTime())) return 'N/A';
 
         const age = differenceInYears(new Date(), birth);
-        return age >= 0 ? `${age} a` : 'N/A';
+
+        // Sanity check: If age is negative or > 120, something is likely wrong with the extraction
+        if (age < 0 || age > 120) return 'N/A';
+
+        return `${age} a`;
     } catch (error) {
         return 'N/A';
     }

@@ -115,7 +115,14 @@ const usePatientDataExtraction = ({
             }
           }
 
-          if (updatedFields.has('Nombre') && updatedFields.has('RUT') && updatedFields.has('Nacimiento') && updatedFields.has('Género')) {
+          if (
+            updatedFields.has('Nombre') &&
+            updatedFields.has('RUT') &&
+            updatedFields.has('Nacimiento') &&
+            updatedFields.has('Género') &&
+            updatedFields.has('Diagnóstico') &&
+            updatedFields.has('Nota')
+          ) {
             break;
           }
         } catch (error) {

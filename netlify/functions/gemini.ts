@@ -111,7 +111,13 @@ const handler: Handler = async (event) => {
               parts: [
                 {
                   text:
-                    'Extract data in Spanish documents: name (if it appears as "Apellidos, Nombre" reorder to "Nombre Apellidos" and Title Case), rut, birthDate (YYYY-MM-DD), and gender/sex (Ej: "Sexo: F", "Masculino/Femenino"). ALSO EXTRACT: "diagnosis" from "HIPOTESIS DIAGNÓSTICA" section, and "clinicalNote" from "INDICACIONES MÉDICAS / PLAN DE TTO" section.',
+                    'Extract patient data from Spanish hospital documents (Hospital Hanga Roa). Rules:\n' +
+                    '1. name: If "Apellidos, Nombre", reorder to "Nombre Apellidos" in Title Case.\n' +
+                    '2. rut: Extract RUT/DNI exactly.\n' +
+                    '3. birthDate: Extract in YYYY-MM-DD. IMPORTANT: Cross-verify with the "EDAD" (Age) field if available. If "NACIMIENTO" looks like 1949 and "EDAD" is 77, the year is definitely 1949. Avoid misreading digits based on visual similarity (e.g., 4 vs 1, 9 vs 7).\n' +
+                    '4. gender: "MASCULINO/FEMENINO" or "M/F".\n' +
+                    '5. diagnosis: Extract ALL TEXT under "HIPOTESIS DIAGNÓSTICA" or "DIAGNÓSTICO(S)". Include multiple lines as a single block.\n' +
+                    '6. clinicalNote: Extract ALL TEXT under "INDICACIONES MÉDICAS / PLAN DE TTO" or "EVOLUCIÓN". Include all instructions and plans.',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
@@ -131,7 +137,13 @@ const handler: Handler = async (event) => {
               parts: [
                 {
                   text:
-                    'Extract a list of patients. For each patient return name (reorder "Apellidos, Nombre" to "Nombre Apellidos" in Title Case), rut, birthDate (YYYY-MM-DD), gender/sex, "diagnosis" (from "HIPOTESIS DIAGNÓSTICA"), and "clinicalNote" (from "INDICACIONES MÉDICAS / PLAN DE TTO").',
+                    'Extract a list of patients from this clinical document. For each patient:\n' +
+                    '- name: Reorder "Apellidos, Nombre" to "Nombre Apellidos" in Title Case.\n' +
+                    '- rut: Full RUT.\n' +
+                    '- birthDate: YYYY-MM-DD (Verify year vs Age "EDAD" if visible).\n' +
+                    '- gender: Sex/Gender.\n' +
+                    '- diagnosis: Full text from "HIPOTESIS DIAGNÓSTICA".\n' +
+                    '- clinicalNote: Full text from "INDICACIONES MÉDICAS / PLAN DE TTO".',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
