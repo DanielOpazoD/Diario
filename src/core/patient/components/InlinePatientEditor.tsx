@@ -75,6 +75,8 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
         setRut,
         setBirthDate,
         setGender,
+        setDiagnosis,
+        setClinicalNote,
     });
 
     const handleSave = () => {
@@ -104,7 +106,7 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
     };
 
     const handleExtractFromAttachmentsWrapper = () => {
-        handleExtractFromAttachments(attachedFiles, { name, rut, birthDate, gender });
+        handleExtractFromAttachments(attachedFiles, { name, rut, birthDate, gender, diagnosis, clinicalNote });
     };
 
     // Task Helpers
