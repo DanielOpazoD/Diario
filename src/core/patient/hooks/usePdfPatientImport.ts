@@ -65,7 +65,7 @@ export const usePdfPatientImport = (currentDate: Date) => {
                     birthDate: extractedData.birthDate || '',
                     gender: extractedData.gender || '',
                     type: PatientType.POLICLINICO,
-                    diagnosis: extractedData.diagnosis || 'Importado desde PDF',
+                    diagnosis: extractedData.diagnosis && extractedData.diagnosis.trim() ? extractedData.diagnosis : 'Importado desde PDF',
                     clinicalNote: extractedData.clinicalNote || '',
                     date: format(currentDate, 'yyyy-MM-dd'),
                     attachedFiles: [],
@@ -73,6 +73,10 @@ export const usePdfPatientImport = (currentDate: Date) => {
                     createdAt: now,
                     updatedAt: now,
                 };
+
+                if (!extractedData.diagnosis || !extractedData.clinicalNote) {
+                    addToast('info', `Datos clínicos parciales en ${file.name}. Verifica el Diagnóstico y Plan.`);
+                }
 
                 addPatient(newPatient);
 

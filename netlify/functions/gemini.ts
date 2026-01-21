@@ -116,8 +116,8 @@ const handler: Handler = async (event) => {
                     '- rut: Full RUT.\n' +
                     '- birthDate: YYYY-MM-DD. (Use "EDAD" to verify year, e.g. Birth 1949 if Age 77).\n' +
                     '- gender: Sex/Gender.\n' +
-                    '- diagnosis: All text under "HIPOTESIS DIAGNÓSTICA:".\n' +
-                    '- clinicalNote: All text under "INDICACIONES MÉDICAS / PLAN DE TTO:".',
+                    '- diagnosis: All text found under "HIPOTESIS DIAGNÓSTICA:", "DIAGNÓSTICO(S):", "DIAGNOSTICO DE INGRESO:", or "DG:".\n' +
+                    '- clinicalNote: All text found under "INDICACIONES MÉDICAS / PLAN DE TTO:", "INDICACIONES MÉDICAS:", "PLAN:", "EVOLUCIÓN:", or "TRATAMIENTO:".',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
@@ -142,8 +142,8 @@ const handler: Handler = async (event) => {
                     '- rut: Full RUT.\n' +
                     '- birthDate: YYYY-MM-DD (Verify year vs Age "EDAD" if visible).\n' +
                     '- gender: Sex/Gender.\n' +
-                    '- diagnosis: Full text from "HIPOTESIS DIAGNÓSTICA".\n' +
-                    '- clinicalNote: Full text from "INDICACIONES MÉDICAS / PLAN DE TTO".',
+                    '- diagnosis: Full text from "HIPOTESIS DIAGNÓSTICA", "DIAGNÓSTICO", or "DG:".\n' +
+                    '- clinicalNote: Full text from "INDICACIONES MÉDICAS / PLAN DE TTO", "PLAN", or "EVOLUCIÓN".',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
