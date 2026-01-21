@@ -114,10 +114,10 @@ const handler: Handler = async (event) => {
                     'Extract Hanga Roa hospital data (Spanish). Be concise.\n' +
                     '- name: "Name Surname". Title Case.\n' +
                     '- rut: Full RUT.\n' +
-                    '- birthDate: YYYY-MM-DD. Use "EDAD" to verify year if birth year looks wrong.\n' +
+                    '- birthDate: YYYY-MM-DD.\n' +
                     '- gender: Sex/Gender.\n' +
-                    '- diagnosis: Under "DIAGNÓSTICO:", "HIPOTESIS", "DG:", or "DIAGNOSTICO DE INGRESO:".\n' +
-                    '- clinicalNote: Under "INDICACIONES:", "PLAN:", "EVOLUCIÓN:", or "TRATAMIENTO:".',
+                    '- diagnosis: Text under "DIAGNÓSTICO", "HIPOTESIS", or "DG". STOP before "Comentario" or "Plan".\n' +
+                    '- clinicalNote: All text from "INDICACIONES", "PLAN", "EVOLUCIÓN", "TRATAMIENTO", or "Comentario".',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
@@ -142,8 +142,8 @@ const handler: Handler = async (event) => {
                     '- rut: Full RUT.\n' +
                     '- birthDate: YYYY-MM-DD.\n' +
                     '- gender: Sex/Gender.\n' +
-                    '- diagnosis: From "DIAGNÓSTICO", "HIPOTESIS", or "DG:".\n' +
-                    '- clinicalNote: From "INDICACIONES", "PLAN", or "EVOLUCIÓN".',
+                    '- diagnosis: Text from "DIAGNÓSTICO", "HIPOTESIS", or "DG". STOP before "Comentario" or "Plan".\n' +
+                    '- clinicalNote: Text from "INDICACIONES", "PLAN", "EVOLUCIÓN", "TRATAMIENTO", or "Comentario".',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
