@@ -105,7 +105,7 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
               value={diagnosis}
               onChange={(e) => onDiagnosisChange(e.target.value)}
               placeholder="Diagnóstico principal..."
-              className="w-full px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm font-semibold text-gray-800 dark:text-gray-100"
+              className="w-full px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900/50 text-sm focus:border-gray-400 dark:focus:border-gray-500 outline-none shadow-sm font-semibold text-gray-800 dark:text-gray-100"
             />
           </div>
 
@@ -160,7 +160,7 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
             value={clinicalNote}
             onChange={(e) => onClinicalNoteChange(e.target.value)}
             placeholder="Escribe la evolución del paciente..."
-            className={`w-full h-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-inner leading-normal font-medium text-gray-700 dark:text-gray-200 ${minimal ? 'min-h-[100px]' : 'min-h-[140px]'}`}
+            className={`w-full h-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900/50 text-sm focus:border-gray-400 dark:focus:border-gray-500 outline-none resize-none shadow-inner leading-normal font-medium text-gray-700 dark:text-gray-200 ${minimal ? 'min-h-[100px]' : 'min-h-[140px]'}`}
           />
 
           <div className={`${minimal ? 'mt-2' : 'bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-amber-100 dark:border-amber-800/30'} flex flex-col transition-all`}>
