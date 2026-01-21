@@ -45,6 +45,8 @@ export const usePdfPatientImport = (currentDate: Date) => {
                     rut: z.string().optional(),
                     birthDate: z.string().optional(),
                     gender: z.string().optional(),
+                    diagnosis: z.string().optional(),
+                    clinicalNote: z.string().optional(),
                 });
 
                 const validation = ExtractedDataSchema.safeParse(extractedData);
@@ -63,8 +65,8 @@ export const usePdfPatientImport = (currentDate: Date) => {
                     birthDate: extractedData.birthDate || '',
                     gender: extractedData.gender || '',
                     type: PatientType.POLICLINICO,
-                    diagnosis: 'Importado desde PDF',
-                    clinicalNote: '',
+                    diagnosis: extractedData.diagnosis || 'Importado desde PDF',
+                    clinicalNote: extractedData.clinicalNote || '',
                     date: format(currentDate, 'yyyy-MM-dd'),
                     attachedFiles: [],
                     pendingTasks: [],
