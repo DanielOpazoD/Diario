@@ -37,6 +37,8 @@ export interface AttachedFile {
   thumbnailLink?: string;
   tags?: string[];
   description?: string;
+  customTitle?: string;
+  noteDate?: string; // YYYY-MM-DD
   category?: 'lab' | 'imaging' | 'report' | 'prescription' | 'other';
   isStarred?: boolean;
 }

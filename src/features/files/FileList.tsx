@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, ExternalLink, Star } from 'lucide-react';
+import { Trash2, ExternalLink, Star, Calendar, FileText } from 'lucide-react';
 import { AttachedFile } from '@shared/types';
 import { formatFileSize, formatFileDate, displayFileName, getFileIcon } from './fileUtils';
 
@@ -43,9 +43,14 @@ const FileList: React.FC<FileListProps> = ({
 
                     <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate" title={file.name}>
-                                {displayFileName(file.name)}
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate" title={file.customTitle || file.name}>
+                                {file.customTitle || displayFileName(file.name)}
                             </h4>
+                            {file.noteDate && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-100 dark:border-blue-800">
+                                    <Calendar className="w-2.5 h-2.5" /> {file.noteDate}
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
                             <span>{formatFileSize(file.size)}</span>
@@ -53,7 +58,12 @@ const FileList: React.FC<FileListProps> = ({
                             <span>{formatFileDate(file.uploadedAt)}</span>
                         </div>
                         {file.description && (
-                            <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">{file.description}</p>
+                            <div className="flex items-start gap-1.5 mt-1">
+                                <FileText className="w-3 h-3 text-gray-400 mt-0.5 shrink-0" />
+                                <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 italic font-medium">
+                                    {file.description}
+                                </p>
+                            </div>
                         )}
                     </div>
 

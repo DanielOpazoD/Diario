@@ -7,6 +7,7 @@ import {
 } from '@features/files/hooks/usePatientFiles';
 import { AIAttachmentAssistant } from '@features/ai';
 import FilePreviewModal from './FilePreviewModal';
+import PasteImageConfirmModal from './PasteImageConfirmModal';
 
 // Import modular components
 import {
@@ -51,6 +52,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [selectedFile, setSelectedFile] = useState<AttachedFile | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [showStarredOnly, setShowStarredOnly] = useState(false);
+  const [pastedImage, setPastedImage] = useState<Blob | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { mutateAsync: uploadToFirebase } = useUploadPatientFileFirebase({
@@ -58,6 +60,57 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     patientName,
     patientId,
   });
+
+  // Global Paste Listener
+  useEffect(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      // Solo actuar si estamos en la interfaz de archivos y no escribiendo en un input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          if (blob) {
+            setPastedImage(blob);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, []);
+
+  const handleConfirmPaste = async (metadata: { title: string; note: string; date: string }) => {
+    if (!pastedImage) return;
+
+    const file = new File([pastedImage], metadata.title || `Captura_${Date.now()}.png`, { type: pastedImage.type });
+    setPastedImage(null);
+
+    setIsUploading(true);
+    try {
+      const attachedFile = await uploadToFirebase(file);
+      // Enriquecer el archivo con los metadatos personalizados
+      const enrichedFile: AttachedFile = {
+        ...attachedFile,
+        customTitle: metadata.title,
+        description: metadata.note,
+        noteDate: metadata.date,
+      };
+      onFilesChange([...files, enrichedFile]);
+      addToast('success', 'Imagen pegada subida correctamente.');
+    } catch (error: any) {
+      addToast('error', `Error al subir imagen pegada: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const { mutateAsync: deleteFromFirebase } = useDeletePatientFileFirebase({
     addToast,
@@ -349,6 +402,13 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
         onUpdate={handleFileUpdate}
+      />
+
+      <PasteImageConfirmModal
+        isOpen={!!pastedImage}
+        imageBlob={pastedImage || new Blob()}
+        onClose={() => setPastedImage(null)}
+        onConfirm={handleConfirmPaste}
       />
     </div>
   );
