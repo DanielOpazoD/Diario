@@ -44,21 +44,28 @@ export const AttachedFileSchema = z.object({
 
 // Patient Record (The Core Entity)
 export const PatientRecordSchema = z.object({
-    id: z.string(), // Allowing legacy IDs that might not be UUIDs
-    name: z.string(), // Allowing empty name for blank patient creation
-    rut: z.string(), // We can add RUT validation regex here later
+    id: z.string(),
+    name: z.string().default(''),
+    rut: z.string().default(''),
     driveFolderId: z.string().nullable().optional(),
     birthDate: z.string().optional(), // YYYY-MM-DD
     gender: z.string().optional(),
-    date: z.string(), // ISO String YYYY-MM-DD
-    type: z.string(),
+    date: z.string().catch(() => new Date().toISOString().split('T')[0]),
+    type: z.string().catch('Hospitalizado'),
     typeId: z.string().optional(),
     entryTime: z.string().optional(), // HH:mm
     exitTime: z.string().optional(), // HH:mm
-    diagnosis: z.string().catch(''), // Relaxed for legacy data
-    clinicalNote: z.string().catch(''), // Relaxed for legacy data
-    pendingTasks: z.array(PendingTaskSchema).nullish().transform(val => val ?? []),
-    attachedFiles: z.array(AttachedFileSchema).nullish().transform(val => val ?? []),
+    diagnosis: z.string().nullable().catch('').transform(v => v ?? ''),
+    clinicalNote: z.string().nullable().catch('').transform(v => v ?? ''),
+    pendingTasks: z.array(z.any()).nullish().transform(val => {
+        if (!val) return [];
+        return val.map(t => ({
+            id: t.id || crypto.randomUUID(),
+            text: t.text || '',
+            isCompleted: !!t.isCompleted
+        }));
+    }),
+    attachedFiles: z.array(z.any()).nullish().transform(val => val ?? []),
     updatedAt: z.number().optional(),
     createdAt: z.number().optional().default(() => Date.now()),
 });
