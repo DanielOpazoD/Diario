@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { Upload, Loader } from 'lucide-react';
+import { Upload, Loader, Clipboard } from 'lucide-react';
 
 interface FileDropzoneProps {
     isDragging: boolean;
@@ -11,6 +11,7 @@ interface FileDropzoneProps {
     onDragOver: (e: React.DragEvent) => void;
     onDrop: (e: React.DragEvent) => void;
     onClickUpload: () => void;
+    onPasteClick?: () => void;
 }
 
 const FileDropzone: React.FC<FileDropzoneProps> = ({
@@ -23,6 +24,7 @@ const FileDropzone: React.FC<FileDropzoneProps> = ({
     onDragOver,
     onDrop,
     onClickUpload,
+    onPasteClick,
 }) => {
     const dropzoneDescriptionId = useId();
 
@@ -75,6 +77,16 @@ const FileDropzone: React.FC<FileDropzoneProps> = ({
                     <p className={`${compact ? 'text-xs' : 'text-sm font-bold'} text-gray-${compact ? '600' : '700'} dark:text-gray-300`}>
                         {isDragging ? (compact ? 'Soltar aquí' : 'Suelta los archivos aquí') : (compact ? 'Subir archivos' : 'Subir archivos adjuntos')}
                     </p>
+                    {onPasteClick && !isDragging && (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onPasteClick(); }}
+                            className={`flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-50 dark:hover:bg-blue-900/40 transition-all pointer-events-auto ${compact ? 'text-[9px] mt-0.5' : 'text-[11px] mt-2'}`}
+                        >
+                            <Clipboard className="w-3 h-3" />
+                            PEGAR IMAGEN
+                        </button>
+                    )}
                     {!compact && (
                         <p className="text-xs text-gray-400 mt-1">Arrastra o haz clic (PDF, IMG, DOC)</p>
                     )}

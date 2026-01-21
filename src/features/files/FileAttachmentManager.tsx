@@ -112,6 +112,24 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     }
   };
 
+  const handlePasteClick = async () => {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        for (const type of item.types) {
+          if (type.startsWith('image/')) {
+            const blob = await item.getType(type);
+            setPastedImage(blob);
+            return;
+          }
+        }
+      }
+      addToast('info', 'No se encontró ninguna imagen en el portapapeles.');
+    } catch (err) {
+      addToast('error', 'No se pudo acceder al portapapeles. Asegúrate de dar permisos o usar Ctrl+V.');
+    }
+  };
+
   const { mutateAsync: deleteFromFirebase } = useDeletePatientFileFirebase({
     addToast,
   });
@@ -276,6 +294,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onClickUpload={() => fileInputRef.current?.click()}
+          onPasteClick={handlePasteClick}
         />
 
         {files.length === 0 && !isUploading && (
@@ -351,6 +370,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             onClickUpload={() => fileInputRef.current?.click()}
+            onPasteClick={handlePasteClick}
           />
 
           <StarredFilesSection
