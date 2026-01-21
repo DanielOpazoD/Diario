@@ -13,6 +13,8 @@ interface UsePatientDataExtractionParams {
   setRut: React.Dispatch<React.SetStateAction<string>>;
   setBirthDate: React.Dispatch<React.SetStateAction<string>>;
   setGender: React.Dispatch<React.SetStateAction<string>>;
+  setDiagnosis: React.Dispatch<React.SetStateAction<string>>;
+  setClinicalNote: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const usePatientDataExtraction = ({
@@ -24,6 +26,8 @@ const usePatientDataExtraction = ({
   setRut,
   setBirthDate,
   setGender,
+  setDiagnosis,
+  setClinicalNote,
 }: UsePatientDataExtractionParams) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +50,8 @@ const usePatientDataExtraction = ({
         if (extractedData.rut) setRut(extractedData.rut);
         if (extractedData.birthDate) setBirthDate(extractedData.birthDate);
         if (extractedData.gender) setGender(extractedData.gender);
+        if (extractedData.diagnosis) setDiagnosis(extractedData.diagnosis);
+        if (extractedData.clinicalNote) setClinicalNote(extractedData.clinicalNote);
         addToast('success', 'Datos extraídos');
       }
     } catch (error: any) {
@@ -58,7 +64,7 @@ const usePatientDataExtraction = ({
 
   const handleExtractFromAttachments = async (
     attachedFiles: AttachedFile[],
-    currentFields: { name: string; rut: string; birthDate: string; gender: string },
+    currentFields: { name: string; rut: string; birthDate: string; gender: string; diagnosis: string; clinicalNote: string },
   ) => {
     if (!attachedFiles.length) {
       return addToast('info', 'Primero agrega adjuntos del paciente.');
@@ -98,6 +104,14 @@ const usePatientDataExtraction = ({
             if (extractedData.gender && extractedData.gender !== currentFields.gender) {
               setGender(extractedData.gender);
               updatedFields.add('Género');
+            }
+            if (extractedData.diagnosis && extractedData.diagnosis !== currentFields.diagnosis) {
+              setDiagnosis(extractedData.diagnosis);
+              updatedFields.add('Diagnóstico');
+            }
+            if (extractedData.clinicalNote && extractedData.clinicalNote !== currentFields.clinicalNote) {
+              setClinicalNote(extractedData.clinicalNote);
+              updatedFields.add('Nota');
             }
           }
 
@@ -140,8 +154,8 @@ const usePatientDataExtraction = ({
           birthDate: p.birthDate,
           gender: p.gender,
           type: PatientType.POLICLINICO,
-          diagnosis: '',
-          clinicalNote: '',
+          diagnosis: p.diagnosis || '',
+          clinicalNote: p.clinicalNote || '',
           pendingTasks: [],
           attachedFiles: [],
           date: selectedDate,

@@ -81,6 +81,8 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
     setRut,
     setBirthDate,
     setGender,
+    setDiagnosis,
+    setClinicalNote,
   });
 
   // Reset form strictly when modal opens
@@ -133,7 +135,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
   };
 
   const handleExtractFromAttachments = () => {
-    extractFromAttachments(attachedFiles, { name, rut, birthDate, gender });
+    extractFromAttachments(attachedFiles, { name, rut, birthDate, gender, diagnosis, clinicalNote });
   };
 
   const handleSave = () => {

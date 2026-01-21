@@ -35,6 +35,8 @@ const patientExtractionSchema = {
     rut: { type: SchemaType.STRING },
     birthDate: { type: SchemaType.STRING },
     gender: { type: SchemaType.STRING },
+    diagnosis: { type: SchemaType.STRING },
+    clinicalNote: { type: SchemaType.STRING },
   },
   required: ['name', 'rut', 'birthDate', 'gender'],
 };
@@ -109,7 +111,7 @@ const handler: Handler = async (event) => {
               parts: [
                 {
                   text:
-                    'Extract data in Spanish documents: name (if it appears as "Apellidos, Nombre" reorder to "Nombre Apellidos" and Title Case), rut, birthDate (YYYY-MM-DD), and gender/sex as it appears (Ej: "Sexo: F", "Masculino/Femenino").',
+                    'Extract data in Spanish documents: name (if it appears as "Apellidos, Nombre" reorder to "Nombre Apellidos" and Title Case), rut, birthDate (YYYY-MM-DD), and gender/sex (Ej: "Sexo: F", "Masculino/Femenino"). ALSO EXTRACT: "diagnosis" from "HIPOTESIS DIAGNÓSTICA" section, and "clinicalNote" from "INDICACIONES MÉDICAS / PLAN DE TTO" section.',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
@@ -129,7 +131,7 @@ const handler: Handler = async (event) => {
               parts: [
                 {
                   text:
-                    'Extract a list of patients from this image. For each patient return name (reorder "Apellidos, Nombre" to "Nombre Apellidos" in Title Case), rut, birthDate (YYYY-MM-DD), and gender/sex.',
+                    'Extract a list of patients. For each patient return name (reorder "Apellidos, Nombre" to "Nombre Apellidos" in Title Case), rut, birthDate (YYYY-MM-DD), gender/sex, "diagnosis" (from "HIPOTESIS DIAGNÓSTICA"), and "clinicalNote" (from "INDICACIONES MÉDICAS / PLAN DE TTO").',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],

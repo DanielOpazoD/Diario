@@ -79,6 +79,8 @@ export interface ExtractedPatientData {
   rut: string;
   birthDate: string;
   gender: string;
+  diagnosis?: string;
+  clinicalNote?: string;
 }
 
 export interface User {
