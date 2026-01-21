@@ -63,29 +63,53 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
   // Global Paste Listener
   useEffect(() => {
-    const handleGlobalPaste = (e: ClipboardEvent) => {
+    let isPasting = false;
+
+    const handleGlobalPaste = async (e: ClipboardEvent) => {
       // Solo actuar si estamos en la interfaz de archivos y no escribiendo en un input/textarea
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+      if (isPasting) return;
 
       const items = e.clipboardData?.items;
-      if (!items) return;
 
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.indexOf('image') !== -1) {
-          const blob = item.getAsFile();
-          if (blob) {
-            setPastedImage(blob);
-            break;
+      if (items && items.length > 0) {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.type.indexOf('image') !== -1) {
+            const blob = item.getAsFile();
+            if (blob) {
+              setPastedImage(blob);
+              return;
+            }
           }
         }
+      }
+
+      // Fallback: Intentar leer del portapapeles directamente si el evento no trae datos
+      // Esto ayuda en navegadores donde el evento 'paste' es restringido
+      isPasting = true;
+      try {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const item of clipboardItems) {
+          for (const type of item.types) {
+            if (type.startsWith('image/')) {
+              const blob = await item.getType(type);
+              setPastedImage(blob);
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        // Silently fail fallback if permissions not granted
+      } finally {
+        isPasting = false;
       }
     };
 
     window.addEventListener('paste', handleGlobalPaste);
     return () => window.removeEventListener('paste', handleGlobalPaste);
-  }, []);
+  }, [addToast]);
 
   const handleConfirmPaste = async (metadata: { title: string; note: string; date: string }) => {
     if (!pastedImage) return;
