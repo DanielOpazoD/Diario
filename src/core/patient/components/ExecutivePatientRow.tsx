@@ -158,12 +158,6 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                     {/* Indicators & Actions */}
                     <div className="flex items-center gap-2 shrink-0">
 
-                        {pendingCount > 0 && (
-                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[10px] font-bold text-amber-600 dark:text-amber-500">
-                                {pendingCount}
-                            </div>
-                        )}
-
                         {/* Split Action Buttons */}
                         <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-100 dark:border-gray-800">
                             <button
@@ -182,10 +176,14 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); handleTabClick('tasks'); }}
-                                className={`p-1.5 rounded-md transition-colors ${activeTab === 'tasks' ? 'bg-amber-100 text-amber-700' : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20'}`}
+                                className={`min-w-[32px] h-8 flex items-center justify-center rounded-md transition-all ${activeTab === 'tasks' ? 'bg-amber-100 text-amber-700' : pendingCount > 0 ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20'}`}
                                 title="Tareas"
                             >
-                                <CheckSquare className="w-4 h-4" />
+                                {pendingCount > 0 ? (
+                                    <span className="text-[11px] font-bold px-1.5">{pendingCount}</span>
+                                ) : (
+                                    <CheckSquare className="w-4 h-4" />
+                                )}
                             </button>
                         </div>
 
