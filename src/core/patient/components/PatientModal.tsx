@@ -204,7 +204,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
         <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50/20 dark:bg-gray-900/10">
           <div className="flex flex-col gap-0">
             {isEditingDemographics && (
-              <div className="px-4 md:px-6 py-2.5 border-b border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 animate-fade-in">
+              <div className="px-3 md:px-5 py-2 border-b border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 animate-fade-in shadow-inner">
                 <PatientForm
                   name={name}
                   rut={rut}
@@ -228,7 +228,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
                   onExitTimeChange={setExitTime}
                   isExtractingFromFiles={isExtractingFromFiles}
                   onExtractFromAttachments={handleExtractFromAttachments}
-                  defaultExpanded={true}
+                  superMinimalist={true}
                 />
               </div>
             )}

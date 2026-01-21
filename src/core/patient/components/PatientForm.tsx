@@ -29,6 +29,7 @@ interface PatientFormProps {
   onExtractFromAttachments?: () => void;
   defaultExpanded?: boolean;
   minimalist?: boolean;
+  superMinimalist?: boolean;
 }
 
 const PatientForm: React.FC<PatientFormProps> = ({
@@ -56,6 +57,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
   onExtractFromAttachments,
   defaultExpanded = false,
   minimalist = false,
+  superMinimalist = false,
 }) => {
   const nameId = useId();
   const rutId = useId();
@@ -69,7 +71,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
   const selectedType = patientTypes.find(t => t.id === typeId);
 
   // --- Collapsed / Summary View ---
-  if (!isExpanded && !compact && !minimalist && name) {
+  if (!isExpanded && !compact && !minimalist && !superMinimalist && name) {
     return (
       <div
         onClick={() => setIsExpanded(true)}
@@ -109,22 +111,26 @@ const PatientForm: React.FC<PatientFormProps> = ({
   }
 
   // --- Expanded / Full Form View ---
-  const cardClasses = minimalist
-    ? "space-y-3"
-    : compact
-      ? "space-y-2"
-      : "p-3 md:p-4 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm space-y-3 animate-slide-up transition-all";
+  const cardClasses = superMinimalist
+    ? "space-y-1.5"
+    : minimalist
+      ? "space-y-3"
+      : compact
+        ? "space-y-2"
+        : "p-3 md:p-4 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm space-y-3 animate-slide-up transition-all";
 
-  const typeClasses = minimalist
-    ? "space-y-3 pt-2"
-    : compact
-      ? "space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800"
-      : "p-3 md:p-4 rounded-2xl border-2 border-blue-50 dark:border-blue-900/10 bg-blue-50/20 dark:bg-blue-900/5 space-y-3 animate-slide-up delay-75 transition-all";
+  const typeClasses = superMinimalist
+    ? "space-y-1.5 pt-1.5"
+    : minimalist
+      ? "space-y-3 pt-2"
+      : compact
+        ? "space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800"
+        : "p-3 md:p-4 rounded-2xl border-2 border-blue-50 dark:border-blue-900/10 bg-blue-50/20 dark:bg-blue-900/5 space-y-3 animate-slide-up delay-75 transition-all";
 
   return (
-    <div className={`w-full min-w-0 overflow-hidden ${minimalist ? "pt-1 pb-2" : compact ? "space-y-2" : "space-y-3"}`}>
+    <div className={`w-full min-w-0 overflow-hidden ${superMinimalist ? "py-1" : minimalist ? "pt-1 pb-2" : compact ? "space-y-2" : "space-y-3"}`}>
       <div className={cardClasses}>
-        {!compact && !minimalist && (
+        {!compact && !minimalist && !superMinimalist && (
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-1.5 tracking-[0.15em]">
               <Users className="w-3.5 h-3.5 text-blue-500" /> Datos Principales
@@ -152,10 +158,10 @@ const PatientForm: React.FC<PatientFormProps> = ({
           </div>
         )}
 
-        <div className={compact || minimalist ? "space-y-1.5" : "space-y-3"}>
-          <div className={compact || minimalist ? "flex flex-wrap gap-2" : "grid grid-cols-1 md:grid-cols-4 gap-3"}>
-            <div className={compact || minimalist ? "flex-1 min-w-[200px]" : "md:col-span-2"}>
-              <label htmlFor={nameId} className={`${compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider ml-1`}>
+        <div className={compact || minimalist || superMinimalist ? "space-y-1.5" : "space-y-3"}>
+          <div className={superMinimalist ? "flex flex-nowrap items-end gap-1.5" : compact || minimalist ? "flex flex-wrap gap-2" : "grid grid-cols-1 md:grid-cols-4 gap-3"}>
+            <div className={superMinimalist ? "flex-[3] min-w-0" : compact || minimalist ? "flex-1 min-w-[200px]" : "md:col-span-2"}>
+              <label htmlFor={nameId} className={`${superMinimalist ? 'text-[8px]' : compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase tracking-wider ml-1`}>
                 Nombre Completo
               </label>
               <input
@@ -164,11 +170,11 @@ const PatientForm: React.FC<PatientFormProps> = ({
                 onChange={(e) => onNameChange(e.target.value)}
                 onBlur={onNameBlur}
                 placeholder="Nombre Apellido"
-                className={`w-full px-3 ${compact || minimalist ? 'py-1.5 text-xs' : 'py-2 text-sm'} rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900 dark:text-white`}
+                className={`w-full px-2.5 ${superMinimalist ? 'py-1 text-[11px]' : compact || minimalist ? 'py-1.5 text-xs' : 'py-2 text-sm'} rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
               />
             </div>
-            <div className={compact || minimalist ? "flex-1 min-w-[120px]" : "md:col-span-1"}>
-              <label htmlFor={rutId} className={`${compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider ml-1`}>
+            <div className={superMinimalist ? "flex-[1.5] min-w-0" : compact || minimalist ? "flex-1 min-w-[120px]" : "md:col-span-1"}>
+              <label htmlFor={rutId} className={`${superMinimalist ? 'text-[8px]' : compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase tracking-wider ml-1`}>
                 RUT
               </label>
               <input
@@ -176,12 +182,12 @@ const PatientForm: React.FC<PatientFormProps> = ({
                 value={rut}
                 onChange={(e) => onRutChange(e.target.value)}
                 placeholder="12.345.678-9"
-                className={`w-full px-3 ${compact || minimalist ? 'py-1.5 text-xs' : 'py-2 text-sm'} rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900 dark:text-white`}
+                className={`w-full px-2.5 ${superMinimalist ? 'py-1 text-[11px]' : compact || minimalist ? 'py-1.5 text-xs' : 'py-2 text-sm'} rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
               />
             </div>
-            <div className={compact || minimalist ? "flex gap-2 min-w-[140px]" : "md:col-span-1 flex gap-2"}>
-              <div className="flex-1 min-w-0">
-                <label htmlFor={birthDateId} className={`${compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider ml-1 truncate`}>
+            <div className={superMinimalist ? "flex-[1.5] min-w-0 flex gap-1.5" : compact || minimalist ? "flex gap-2 min-w-[140px]" : "md:col-span-1 flex gap-2"}>
+              <div className="flex-[2] min-w-0">
+                <label htmlFor={birthDateId} className={`${superMinimalist ? 'text-[8px]' : compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase tracking-wider ml-1 truncate`}>
                   Nacim.
                 </label>
                 <input
@@ -189,18 +195,18 @@ const PatientForm: React.FC<PatientFormProps> = ({
                   id={birthDateId}
                   value={birthDate}
                   onChange={(e) => onBirthDateChange(e.target.value)}
-                  className={`w-full px-2 ${compact || minimalist ? 'py-1.5 text-[11px]' : 'py-2 text-xs'} rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900 dark:text-white`}
+                  className={`w-full px-1.5 ${superMinimalist ? 'py-1 text-[10px]' : compact || minimalist ? 'py-1.5 text-[11px]' : 'py-2 text-xs'} rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
                 />
               </div>
-              <div className="w-16">
-                <label htmlFor={genderId} className={`${compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider ml-1`}>
+              <div className="flex-1 min-w-0">
+                <label htmlFor={genderId} className={`${superMinimalist ? 'text-[8px]' : compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase tracking-wider ml-1`}>
                   Gén.
                 </label>
                 <select
                   id={genderId}
                   value={gender}
                   onChange={(e) => onGenderChange(e.target.value)}
-                  className={`w-full px-1 ${compact || minimalist ? 'py-1.5 text-[11px]' : 'py-2 text-xs'} rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-gray-900 dark:text-white appearance-none text-center`}
+                  className={`w-full px-1 ${superMinimalist ? 'py-1 text-[10px]' : compact || minimalist ? 'py-1.5 text-[11px]' : 'py-2 text-xs'} rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white appearance-none text-center`}
                 >
                   <option value="">-</option>
                   <option value="Masculino">M</option>
@@ -214,15 +220,15 @@ const PatientForm: React.FC<PatientFormProps> = ({
       </div>
 
       <div className={typeClasses}>
-        {!compact && !minimalist && (
+        {!compact && !minimalist && !superMinimalist && (
           <h3 className="text-[9px] font-black uppercase text-blue-600/60 mb-1 flex items-center gap-1.5 tracking-[0.2em] ml-1">
             <Clock className="w-3.5 h-3.5" /> Selección de Atención
           </h3>
         )}
-        <div className={compact || minimalist ? "space-y-1.5" : "space-y-3"}>
+        <div className={compact || minimalist || superMinimalist ? "space-y-1.5" : "space-y-3"}>
           <div className="flex flex-wrap items-center gap-2">
-            {!compact && minimalist && (
-              <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mr-1">Atención:</span>
+            {!compact && (minimalist || superMinimalist) && (
+              <span className={`${superMinimalist ? 'text-[7px]' : 'text-[8px]'} font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mr-1`}>Atención:</span>
             )}
             <div className="flex flex-wrap gap-1 flex-1">
               {patientTypes.map((patientType) => (
@@ -231,8 +237,8 @@ const PatientForm: React.FC<PatientFormProps> = ({
                   onClick={() => onSelectType(patientType.id, patientType.label)}
                   type="button"
                   aria-pressed={typeId === patientType.id}
-                  className={`text-[9px] whitespace-nowrap font-black py-1.5 px-3 rounded-xl border transition-all flex-1 md:flex-none justify-center uppercase tracking-tight ${typeId === patientType.id
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20 ring-1 ring-blue-500 ring-offset-1 dark:ring-offset-gray-900'
+                  className={`${superMinimalist ? 'text-[8px] py-1 px-2.5' : 'text-[9px] py-1.5 px-3'} whitespace-nowrap font-black rounded-lg border transition-all flex-1 md:flex-none justify-center uppercase tracking-tight ${typeId === patientType.id
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/10'
                     : 'bg-white dark:bg-gray-800/10 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-700/50 hover:border-blue-300'
                     }`}
                 >
@@ -241,11 +247,11 @@ const PatientForm: React.FC<PatientFormProps> = ({
               ))}
             </div>
 
-            {(compact || minimalist) && onSave && (
+            {(compact || minimalist || superMinimalist) && onSave && (
               <div className="flex gap-1 ml-auto">
-                <Button variant="ghost" size="sm" onClick={onClose} className="text-[9px] font-bold h-7 px-2">CANCELAR</Button>
-                <Button size="sm" onClick={onSave} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-black text-[9px] h-7 px-3">
-                  <Save className="w-3.5 h-3.5 mr-1" /> GUARDAR
+                <Button variant="ghost" size="sm" onClick={onClose} className={`${superMinimalist ? 'text-[8px] h-6 px-1.5' : 'text-[9px] h-7 px-2'} font-bold`}>CANCELAR</Button>
+                <Button size="sm" onClick={onSave} className={`bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-black ${superMinimalist ? 'text-[8px] h-6 px-2.5' : 'text-[9px] h-7 px-3'}`}>
+                  <Save className={`${superMinimalist ? 'w-3 h-3' : 'w-3.5 h-3.5'} mr-1`} /> GUARDAR
                 </Button>
               </div>
             )}
