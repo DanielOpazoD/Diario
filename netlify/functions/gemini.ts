@@ -116,8 +116,8 @@ const handler: Handler = async (event) => {
                     '- rut: Full RUT.\n' +
                     '- birthDate: YYYY-MM-DD.\n' +
                     '- gender: Sex/Gender.\n' +
-                    '- diagnosis: Use only "HIPOTESIS DIAGNÓSTICA". IGNORE "DIAGNÓSTICO PRI" (CIE-10). STOP before "Comentario" or "Plan".\n' +
-                    '- clinicalNote: All text from "INDICACIONES", "PLAN", "EVOLUCIÓN", "TRATAMIENTO", or "Comentario".',
+                    '- diagnosis: Use ONLY "HIPOTESIS DIAGNÓSTICA". IGNORE "DIAGNÓSTICO PRI". STOP strictly at "INDICACIONES MÉDICAS / PLAN DE TTO", "Comentario", or any other section.\n' +
+                    '- clinicalNote: Content from "INDICACIONES MÉDICAS / PLAN DE TTO", "PLAN", "EVOLUCIÓN", or "Comentario". CRITICAL: DO NOT include the headers (like "INDICACIONES MÉDICAS / PLAN DE TTO:") in the value.',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
@@ -142,8 +142,8 @@ const handler: Handler = async (event) => {
                     '- rut: Full RUT.\n' +
                     '- birthDate: YYYY-MM-DD.\n' +
                     '- gender: Sex/Gender.\n' +
-                    '- diagnosis: Use only "HIPOTESIS DIAGNÓSTICA". IGNORE "DIAGNÓSTICO PRI" (CIE-10). STOP before "Comentario" or "Plan".\n' +
-                    '- clinicalNote: Text from "INDICACIONES", "PLAN", "EVOLUCIÓN", "TRATAMIENTO", or "Comentario".',
+                    '- diagnosis: Use ONLY "HIPOTESIS DIAGNÓSTICA". IGNORE "DIAGNÓSTICO PRI". STOP at "INDICACIONES MÉDICAS" or "Plan".\n' +
+                    '- clinicalNote: Content from "INDICACIONES MÉDICAS / PLAN DE TTO", "PLAN", or "EVOLUCIÓN". STRIP labels from the text.',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
               ],
