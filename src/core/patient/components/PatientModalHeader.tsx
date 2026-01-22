@@ -41,34 +41,34 @@ const PatientModalHeader: React.FC<PatientModalHeaderProps> = ({
     onClose,
 }) => {
     return (
-        <div className="flex items-center justify-between px-4 md:px-6 py-2 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 select-none">
+        <div className="flex items-center justify-between px-5 md:px-7 py-3 border-b border-gray-100/30 dark:border-gray-800/30 bg-white/40 dark:bg-gray-900/40 shrink-0 select-none backdrop-blur-md">
             {/* Left Section: Nav / Info */}
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div
                     onClick={onEditToggle}
-                    className={`p-2 rounded-xl transition-all cursor-pointer ${isEditing
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-2 ring-blue-500/20'
-                        : 'bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    className={`p-2.5 rounded-2xl transition-all duration-300 cursor-pointer shadow-premium-sm ${isEditing
+                        ? 'bg-brand-500 text-white shadow-brand-500/40 scale-110'
+                        : 'glass-card text-gray-400 dark:text-gray-500 hover:text-brand-500 hover:scale-105 active:scale-95'
                         }`}
                 >
-                    <UserCog className="w-5 h-5" />
+                    <UserCog className="w-5.5 h-5.5" />
                 </div>
 
                 <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-1.5">
-                        <h2 className="text-sm md:text-base font-black text-gray-900 dark:text-white truncate uppercase tracking-tight">
-                            {name || (isNewPatient ? 'NUEVO INGRESO' : 'EDITAR PACIENTE')}
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-base md:text-lg font-black text-gray-900 dark:text-white truncate uppercase tracking-tighter">
+                            {name || (isNewPatient ? 'Nuevo Ingreso' : 'Editar Ficha')}
                         </h2>
                         {!isNewPatient && (
-                            <span className="shrink-0 text-[9px] font-black bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-800 uppercase">
+                            <span className="shrink-0 text-[10px] font-black bg-brand-500/10 text-brand-600 dark:text-brand-400 px-2.5 py-1 rounded-pill border border-brand-500/20 uppercase tracking-widest shadow-inner">
                                 {formatToDisplayDate(date)}
                             </span>
                         )}
                     </div>
 
                     {(name || rut) && (
-                        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest whitespace-nowrap">
-                            {rut && <span>{rut}</span>}
+                        <div className="flex items-center gap-2 mt-1 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em] whitespace-nowrap">
+                            {rut && <span className="text-brand-500/60">{rut}</span>}
                             {age && (
                                 <>
                                     <span className="h-1 w-1 rounded-full bg-gray-200 dark:bg-gray-700" />
@@ -78,7 +78,7 @@ const PatientModalHeader: React.FC<PatientModalHeaderProps> = ({
                             {gender && (
                                 <>
                                     <span className="h-1 w-1 rounded-full bg-gray-200 dark:bg-gray-700" />
-                                    <span>{gender.charAt(0)}</span>
+                                    <span>{gender}</span>
                                 </>
                             )}
                         </div>
@@ -116,22 +116,22 @@ const PatientModalHeader: React.FC<PatientModalHeaderProps> = ({
                     </div>
                 )}
 
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center gap-1">
                     {/* Mobile Only Scan */}
                     {isNewPatient && (
                         <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="md:hidden p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
+                            className="md:hidden p-2 text-gray-400 hover:text-brand-500 transition-all active:scale-90"
                         >
-                            <Camera className="w-4 h-4" />
+                            <Camera className="w-5 h-5" />
                         </button>
                     )}
 
                     <button
                         onClick={onClose}
-                        className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 group rounded-xl transition-all"
+                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 group rounded-2xl transition-all duration-300 hover:rotate-90"
                     >
-                        <X className="w-4 h-4 text-gray-400 group-hover:text-red-500" />
+                        <X className="w-5 h-5 text-gray-400 group-hover:text-red-500" />
                     </button>
                 </div>
             </div>

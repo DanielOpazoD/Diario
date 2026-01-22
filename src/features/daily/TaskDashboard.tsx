@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { format, isSameDay, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CheckSquare, Square, Calendar, ArrowRight, AlertCircle, Clock, Sticker, Plus, Trash2 } from 'lucide-react';
+import { CheckSquare, Square, Calendar, ArrowRight, AlertCircle, Clock, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@core/ui';
 import { PatientRecord, PendingTask, GeneralTask } from '@shared/types';
 import useAppStore from '@core/stores/useAppStore';
@@ -116,28 +116,51 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
   const renderTaskGroup = (title: string, tasks: EnrichedTask[], colorClass: string, icon: React.ReactNode) => {
     if (tasks.length === 0) return null;
     return (
-      <div className="mb-6 animate-fade-in">
-        <div className="flex items-center mb-3 pb-2 border-b border-gray-100 dark:border-gray-700/50">
-          <div className={`p-1.5 rounded-lg mr-2 ${colorClass}`}>{icon}</div>
-          <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wide">{title}</h3>
-          <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-500">{tasks.length}</span>
+      <div className="mb-6 animate-fade-in glass-card rounded-panel border-none shadow-premium overflow-hidden">
+        <div className={`flex items-center px-5 py-3 border-b border-gray-100 dark:border-gray-800/50 ${colorClass}`}>
+          <div className="p-1.5 rounded-lg mr-3 bg-white/50 dark:bg-gray-800/50 shadow-sm border border-black/5 dark:border-white/5">{icon}</div>
+          <h3 className="text-[11px] font-black uppercase tracking-[0.2em] opacity-80">{title}</h3>
+          <span className="ml-auto px-2 py-0.5 rounded-pill text-[9px] font-black bg-black/5 dark:bg-white/5 tracking-tighter shadow-inner">{tasks.length}</span>
         </div>
-        <div className="space-y-2">
+        <div className="divide-y divide-gray-100/30 dark:divide-gray-800/30">
           {tasks.map(task => (
-            <div key={task.id} className="group bg-white/95 dark:bg-gray-800/90 p-3 rounded-card shadow-card border border-gray-100 dark:border-gray-700/50 hover:shadow-elevated transition-all">
-              <div className="flex justify-between items-start mb-1">
-                <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 flex items-center uppercase">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  {format(new Date(task.date + 'T00:00:00'), "d MMM", { locale: es })}
-                </div>
-                <button onClick={() => { const p = records.find(r => r.id === task.patientId); if (p) onNavigateToPatient(p); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-500"><ArrowRight className="w-3 h-3" /></button>
-              </div>
-              <h4 className="font-bold text-gray-900 dark:text-gray-100 text-xs mb-2 uppercase">{task.patientName}</h4>
-              <div className="flex items-start gap-2">
-                <button onClick={() => onTogglePatientTask(task.patientId, task.id)} className="flex-shrink-0 text-gray-300 hover:text-blue-500 transition-colors">
-                  {task.isCompleted ? <CheckSquare className="w-4 h-4 text-green-500" /> : <Square className="w-4 h-4" />}
+            <div key={task.id} className="group relative transition-all duration-300 hover:bg-white/40 dark:hover:bg-brand-900/10">
+              <div className="flex items-center px-5 py-3 gap-4">
+                <button
+                  onClick={() => onTogglePatientTask(task.patientId, task.id)}
+                  className="flex-shrink-0 transition-transform hover:scale-110 active:scale-90"
+                >
+                  {task.isCompleted
+                    ? <div className="p-0.5 rounded-md bg-green-500 text-white shadow-sm shadow-green-500/20"><CheckSquare className="w-4 h-4" /></div>
+                    : <div className="p-0.5 rounded-md text-gray-300 dark:text-gray-600 hover:text-brand-500"><Square className="w-4 h-4" /></div>
+                  }
                 </button>
-                <p className={`text-xs leading-relaxed ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>{task.text}</p>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <button
+                      onClick={() => { const p = records.find(r => r.id === task.patientId); if (p) onNavigateToPatient(p); }}
+                      className="text-[11px] font-black text-gray-900 dark:text-white truncate uppercase tracking-tight hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+                    >
+                      {task.patientName}
+                    </button>
+                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-600 whitespace-nowrap">
+                      • {format(new Date(task.date + 'T00:00:00'), "d 'de' MMM", { locale: es })}
+                    </span>
+                  </div>
+                  <p className={`text-[13px] font-bold leading-none tracking-tight ${task.isCompleted ? 'line-through text-gray-400 italic opacity-60' : 'text-gray-700 dark:text-gray-300'}`}>
+                    {task.text}
+                  </p>
+                </div>
+
+                <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-all">
+                  <button
+                    onClick={() => { const p = records.find(r => r.id === task.patientId); if (p) onNavigateToPatient(p); }}
+                    className="p-2 rounded-xl text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 active:scale-95 transition-all"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -147,95 +170,127 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-16 h-[calc(100vh-120px)] flex flex-col">
-      <div className="rounded-panel border border-gray-200/70 dark:border-gray-800/60 bg-white/85 dark:bg-gray-900/65 shadow-md backdrop-blur-sm px-4 py-3 mb-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">Centro de tareas</p>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">Prioriza tu día</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{pendingPatientTasks} tareas de pacientes • {pendingGeneralTasks} notas generales</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Hoy: {todayPending} pendientes directos</p>
-          </div>
-          <div className="flex flex-wrap gap-1.5 justify-end">
-            <Button variant="secondary" size="sm" className="rounded-pill" onClick={() => setFilter('pending')}>
-              Ver pendientes
-            </Button>
-            <Button size="sm" className="rounded-pill" onClick={() => quickAddRef.current?.focus()}>
-              Nueva nota rápida
-            </Button>
+    <div className="max-w-5xl mx-auto pb-8 h-[calc(100vh-140px)] flex flex-col px-4 md:px-6">
+      {/* Compact Status Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Mis Tareas</h2>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="px-2 py-0.5 rounded-pill bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[10px] font-black uppercase tracking-tighter border border-amber-500/20">
+              {pendingPatientTasks} Pacientes
+            </span>
+            <span className="px-2 py-0.5 rounded-pill bg-brand-500/10 text-brand-600 dark:text-brand-400 text-[10px] font-black uppercase tracking-tighter border border-brand-500/20">
+              {pendingGeneralTasks} Notas
+            </span>
+            {todayPending > 0 && (
+              <span className="px-2 py-0.5 rounded-pill bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-tighter border border-red-500/20">
+                {todayPending} Hoy
+              </span>
+            )}
           </div>
         </div>
-      </div>
 
-      <div className="flex items-center justify-between mb-4 px-1.5">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Agrupa por estado</h2>
-        <div className="flex bg-gray-200/70 dark:bg-gray-700/70 p-1 rounded-pill shadow-sm">
-          {(['pending', 'all', 'completed'] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)} className={`px-2.5 py-1.5 rounded-pill text-[11px] font-bold uppercase transition-all ${filter === f ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>{f === 'pending' ? 'Pendientes' : f === 'all' ? 'Todas' : 'Listas'}</button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex bg-gray-100/80 dark:bg-gray-800/80 p-1 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
+            {(['pending', 'all', 'completed'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-4 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${filter === f
+                  ? 'bg-white dark:bg-gray-700 text-brand-600 dark:text-white shadow-sm ring-1 ring-gray-200/50 dark:ring-gray-600'
+                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                  }`}
+              >
+                {f === 'pending' ? 'Pendientes' : f === 'all' ? 'Todas' : 'Listas'}
+              </button>
+            ))}
+          </div>
+          <Button
+            size="sm"
+            onClick={() => quickAddRef.current?.focus()}
+            className="rounded-xl h-9 bg-brand-500 hover:bg-brand-600 shadow-lg shadow-brand-500/20 font-black text-[10px] tracking-widest"
+          >
+            + NOTA
+          </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 overflow-hidden">
-        {/* LEFT: Patient Context Tasks */}
-        <div className="lg:col-span-7 overflow-y-auto pr-2 custom-scrollbar">
+        {/* LEFT: Task Groups */}
+        <div className="lg:col-span-8 flex flex-col gap-6 overflow-y-auto pr-2 no-scrollbar">
           {filteredPatientTasks.length === 0 && (
-            <div className="text-center py-20 opacity-50 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-panel">
-              <CheckSquare className="w-12 h-12 mx-auto text-gray-300 mb-2" />
-              <p className="text-sm font-medium">Sin tareas de pacientes</p>
+            <div className="flex-1 glass-card rounded-panel border-none shadow-premium flex flex-col items-center justify-center py-24 text-gray-400 text-center">
+              <CheckSquare className="w-12 h-12 mb-4 opacity-10 text-brand-500" />
+              <p className="text-sm font-black uppercase tracking-widest opacity-60">Sin tareas de pacientes</p>
+              <p className="text-[10px] mt-1 font-bold opacity-40 uppercase">Todo está al día</p>
             </div>
           )}
+
           {filter !== 'completed' && (
             <>
-              {renderTaskGroup('Atrasadas', groupedTasks.overdue, 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400', <AlertCircle className="w-4 h-4" />)}
-              {renderTaskGroup('Hoy', groupedTasks.todayTasks, 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400', <Clock className="w-4 h-4" />)}
-              {renderTaskGroup('Futuras', groupedTasks.upcoming, 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', <Calendar className="w-4 h-4" />)}
+              {renderTaskGroup('Atrasadas', groupedTasks.overdue, 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', <AlertCircle className="w-3.5 h-3.5" />)}
+              {renderTaskGroup('Hoy', groupedTasks.todayTasks, 'bg-brand-500/10 text-brand-600 dark:text-brand-400 border-brand-500/20', <Clock className="w-3.5 h-3.5" />)}
+              {renderTaskGroup('Futuras', groupedTasks.upcoming, 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20', <Calendar className="w-3.5 h-3.5" />)}
             </>
           )}
-          {(filter === 'completed' || filter === 'all') && renderTaskGroup('Historial', groupedTasks.completed, 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400', <CheckSquare className="w-4 h-4" />)}
+          {(filter === 'completed' || filter === 'all') && renderTaskGroup('Historial', groupedTasks.completed, 'bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-500/20', <CheckSquare className="w-3.5 h-3.5" />)}
         </div>
 
-        {/* RIGHT: General Tasks (Sticky Note Style) */}
-        <div className="lg:col-span-5 flex flex-col bg-yellow-50/60 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30 rounded-panel p-5 h-full overflow-hidden relative shadow-soft">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-yellow-200/50 to-transparent rounded-bl-full pointer-events-none"></div>
+        {/* RIGHT: Quick Notes Panel */}
+        <div className="lg:col-span-4 flex flex-col h-full overflow-hidden">
+          <div className="glass-card rounded-panel border-none shadow-premium p-5 flex flex-col h-full overflow-hidden relative group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-brand-500/5 blur-3xl rounded-full -mr-8 -mt-8 pointer-events-none group-hover:bg-brand-500/10 transition-colors duration-700"></div>
 
-          <div className="flex items-center gap-2 mb-4 text-yellow-800 dark:text-yellow-500">
-            <Sticker className="w-5 h-5" />
-            <h3 className="text-lg font-bold">Notas Rápidas</h3>
-          </div>
-
-          <div className="relative mb-4">
-            <input
-              type="text"
-              ref={quickAddRef}
-              value={newGeneralTask}
-              onChange={e => setNewGeneralTask(e.target.value)}
-              onKeyDown={handleAddGeneralTask}
-              placeholder="Escribe y presiona Enter..."
-              className="w-full bg-white dark:bg-gray-800 border border-yellow-100/60 dark:border-yellow-900/40 shadow-soft rounded-card py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-yellow-500 outline-none"
-            />
-            <Plus className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          </div>
-
-          <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-2">
-            {generalTasks.length === 0 && (
-              <div className="text-center mt-10 text-yellow-700/40 dark:text-yellow-500/30 text-sm italic">
-                No hay recordatorios generales.
+            <div className="flex items-center gap-3 mb-5 shrink-0">
+              <div className="p-2 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 shadow-inner ring-1 ring-brand-500/10">
+                <Plus className="w-4 h-4" />
               </div>
-            )}
-            {generalTasks.sort((a, b) => b.createdAt - a.createdAt).map(task => (
-              <div key={task.id} className={`group flex items-start p-3 bg-white/95 dark:bg-gray-800/90 rounded-card shadow-card border-l-4 transition-all ${task.isCompleted ? 'border-gray-300 opacity-60' : 'border-yellow-400 hover:translate-x-1'}`}>
-                <button onClick={() => toggleGeneralTaskAction(task.id)} className="mt-0.5 flex-shrink-0 text-gray-300 hover:text-yellow-500 transition-colors">
-                  {task.isCompleted ? <CheckSquare className="w-4 h-4 text-gray-400" /> : <Square className="w-4 h-4" />}
-                </button>
-                <span className={`ml-3 text-sm flex-1 leading-snug ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
-                  {task.text}
-                </span>
-                <button onClick={() => deleteGeneralTaskAction(task.id)} className="ml-2 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 transition-all">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+              <h3 className="text-sm font-black tracking-widest text-gray-900 dark:text-white uppercase leading-none">Notas Rápidas</h3>
+            </div>
+
+            <div className="relative mb-5 shrink-0">
+              <input
+                type="text"
+                ref={quickAddRef}
+                value={newGeneralTask}
+                onChange={e => setNewGeneralTask(e.target.value)}
+                onKeyDown={handleAddGeneralTask}
+                placeholder="Anotar pendiente..."
+                className="w-full bg-gray-50/50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl py-3 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/30 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 placeholder:italic"
+              />
+              <Plus className="w-3.5 h-3.5 text-brand-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-1 no-scrollbar space-y-3">
+              {generalTasks.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-40 text-center opacity-30">
+                  <Plus className="w-8 h-8 mb-2" />
+                  <p className="text-[10px] font-black uppercase tracking-widest">Sin recordatorios</p>
+                </div>
+              )}
+              {generalTasks.sort((a, b) => b.createdAt - a.createdAt).map(task => (
+                <div key={task.id} className={`group flex items-start p-3.5 rounded-xl transition-all duration-300 border border-transparent ${task.isCompleted ? 'bg-gray-50/50 dark:bg-gray-900/30 opacity-60' : 'bg-white/40 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800 hover:border-brand-500/20 hover:shadow-premium-sm'}`}>
+                  <button
+                    onClick={() => toggleGeneralTaskAction(task.id)}
+                    className="mt-0.5 flex-shrink-0 transition-transform hover:scale-110 active:scale-90"
+                  >
+                    {task.isCompleted
+                      ? <div className="p-0.5 rounded-md bg-green-500/10 text-green-500"><CheckSquare className="w-3.5 h-3.5" /></div>
+                      : <div className="p-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:text-brand-500"><Square className="w-3.5 h-3.5" /></div>
+                    }
+                  </button>
+                  <span className={`ml-3 text-[11px] font-bold flex-1 leading-relaxed tracking-tight ${task.isCompleted ? 'line-through text-gray-400 italic' : 'text-gray-700 dark:text-gray-200'}`}>
+                    {task.text}
+                  </span>
+                  <button
+                    onClick={() => deleteGeneralTaskAction(task.id)}
+                    className="ml-2 opacity-0 group-hover:opacity-100 text-red-500 p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

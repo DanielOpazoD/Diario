@@ -76,21 +76,21 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
     };
 
     return (
-        <div className={`group relative border-b overflow-hidden ${!patient.name ? 'border-gray-300 dark:border-gray-600 border-2 rounded-lg my-1 mx-1' : 'border-gray-100 dark:border-gray-800'} last:border-0 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors ${selectionMode && selected ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}>
+        <div className={`group relative overflow-hidden transition-all duration-300 border-b border-gray-100/50 dark:border-gray-800/50 hover:bg-white/40 dark:hover:bg-brand-900/10 hover:shadow-premium-sm ${selectionMode && selected ? 'bg-brand-50/50 dark:bg-brand-900/20 ring-1 ring-brand-500/20' : ''}`}>
             <div className="flex">
-                {/* Color Indicator Strip */}
-                <div className={`w-1.5 shrink-0 ${!patient.name ? 'bg-gray-400' : `bg-${coreColor}-500`} opacity-100 self-stretch rounded-r-sm my-1 ml-0.5`}></div>
+                {/* Color Indicator Strip - Refined */}
+                <div className={`w-1 shrink-0 ${!patient.name ? 'bg-gray-300/50' : `bg-${coreColor}-500/80`} opacity-100 self-stretch rounded-r-pill my-2 ml-1 shadow-[0_0_10px_rgba(var(--brand-500-rgb),0.2)]`}></div>
 
                 {/* Main Row Content */}
                 <div
                     onClick={() => {
                         if (activeTab) {
-                            setActiveTab(null); // Close editor if open
+                            setActiveTab(null);
                         } else {
                             setIsExpanded(!isExpanded);
                         }
                     }}
-                    className="flex-1 flex items-center px-3 py-2.5 gap-3 cursor-pointer min-h-[56px] overflow-hidden"
+                    className="flex-1 flex items-center px-4 py-3 gap-3 cursor-pointer min-h-[60px] overflow-hidden"
                 >
                     {/* Selection Checkbox */}
                     {selectionMode && (
@@ -120,24 +120,24 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                             </div>
                         ) : (
                             <>
-                                <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex items-center gap-2.5 flex-wrap">
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleTabClick('demographics'); }}
-                                        className="text-base font-bold text-gray-900 dark:text-white truncate leading-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                                        className="text-base font-black text-gray-900 dark:text-white truncate leading-none hover:text-brand-600 dark:hover:text-brand-400 transition-all border-b border-transparent hover:border-brand-500/30 active:scale-95 text-left tracking-tight"
                                         title="Editar datos demográficos"
                                     >
                                         {patient.name}
                                     </button>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-500 font-medium whitespace-nowrap">
+                                        <span className="text-sm text-gray-400 dark:text-gray-500 font-black tracking-tighter">
                                             {calculateAge(patient.birthDate)}
                                         </span>
-                                        <span className="font-mono text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 rounded text-[10px] uppercase font-bold tracking-wider">
+                                        <span className="font-mono text-[9px] text-gray-400 bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 px-2 py-0.5 rounded-pill uppercase font-black tracking-widest shadow-inner">
                                             {patient.rut}
                                         </span>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onDelete(patient.id); }}
-                                            className="text-red-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                            className="text-red-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all opacity-0 group-hover:opacity-100 active:scale-90"
                                             title="Eliminar Paciente"
                                         >
                                             <Trash2 className="w-3.5 h-3.5" />
@@ -145,10 +145,10 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 mt-0.5 text-[11px]">
-                                    <span className="font-bold text-gray-400 shrink-0">DG:</span>
-                                    <span className={`${patient.diagnosis ? 'text-gray-600 dark:text-gray-300' : 'text-amber-500/70 italic'} truncate`}>
-                                        {patient.diagnosis || 'completar con diagnóstico'}
+                                <div className="flex items-center gap-2 mt-1 text-[11px] opacity-80">
+                                    <span className="font-black text-brand-500/60 shrink-0 tracking-widest uppercase text-[9px]">DG</span>
+                                    <span className={`${patient.diagnosis ? 'text-gray-600 dark:text-gray-400' : 'text-amber-500/60 italic'} truncate font-semibold tracking-tight`}>
+                                        {patient.diagnosis || 'Pendiente de diagnóstico'}
                                     </span>
                                 </div>
                             </>
@@ -158,36 +158,36 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                     {/* Indicators & Actions */}
                     <div className="flex items-center gap-2 shrink-0">
 
-                        {/* Split Action Buttons */}
-                        <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-100 dark:border-gray-800">
+                        {/* Split Action Buttons - Glass Aesthetic */}
+                        <div className="flex items-center gap-1.5 ml-3 pl-3 border-l border-gray-100 dark:border-gray-800/50">
                             <button
                                 onClick={(e) => { e.stopPropagation(); handleTabClick('clinical'); }}
-                                className={`p-1.5 rounded-md transition-colors ${activeTab === 'clinical' ? 'bg-teal-100 text-teal-700' : 'text-gray-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20'}`}
+                                className={`p-2 rounded-xl transition-all duration-300 shadow-premium-sm ${activeTab === 'clinical' ? 'bg-brand-500 text-white shadow-brand-500/30' : 'text-gray-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30'}`}
                                 title="Ficha Clínica"
                             >
                                 <Stethoscope className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); handleTabClick('files'); }}
-                                className={`p-1.5 rounded-md transition-colors ${activeTab === 'files' ? 'bg-indigo-100 text-indigo-700' : attachmentsCount > 0 ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
+                                className={`p-2 rounded-xl transition-all duration-300 shadow-premium-sm ${activeTab === 'files' ? 'bg-indigo-500 text-white shadow-indigo-500/30' : attachmentsCount > 0 ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'}`}
                                 title="Archivos"
                             >
                                 <Paperclip className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); handleTabClick('tasks'); }}
-                                className={`min-w-[32px] h-8 flex items-center justify-center rounded-md transition-all ${activeTab === 'tasks' ? 'bg-amber-100 text-amber-700' : pendingCount > 0 ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20'}`}
+                                className={`min-w-[36px] h-9 flex items-center justify-center rounded-xl transition-all duration-300 shadow-premium-sm ${activeTab === 'tasks' ? 'bg-amber-500 text-white shadow-amber-500/30' : pendingCount > 0 ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100' : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30'}`}
                                 title="Tareas"
                             >
                                 {pendingCount > 0 ? (
-                                    <span className="text-[11px] font-bold px-1.5">{pendingCount}</span>
+                                    <span className="text-[11px] font-black px-2">{pendingCount}</span>
                                 ) : (
                                     <CheckSquare className="w-4 h-4" />
                                 )}
                             </button>
                         </div>
 
-                        <ChevronDown className={`w-4 h-4 text-gray-300 transition-transform duration-200 ml-1 ${isExpanded || activeTab ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-4 h-4 text-gray-300 transition-transform duration-300 ml-1.5 ${isExpanded || activeTab ? 'rotate-180 text-brand-500' : ''}`} />
                     </div>
                 </div>
             </div>

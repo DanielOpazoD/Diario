@@ -15,11 +15,11 @@ const PatientModalFooter: React.FC<PatientModalFooterProps> = ({
     cancelLabel = 'Cancelar',
 }) => {
     return (
-        <div className="flex justify-end gap-2 px-4 md:px-6 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 shrink-0 z-20">
-            <Button variant="ghost" onClick={onCancel} className="flex-1 md:flex-none text-[11px] h-8 px-3">
+        <div className="flex justify-end gap-3 px-5 md:px-7 py-4 border-t border-gray-100/30 dark:border-gray-800/30 bg-white/20 dark:bg-gray-900/20 shrink-0 z-20 backdrop-blur-md">
+            <Button variant="ghost" onClick={onCancel} className="flex-1 md:flex-none h-10 px-6 font-black tracking-widest text-[11px]">
                 {cancelLabel}
             </Button>
-            <Button onClick={onSave} className="flex-1 md:flex-none px-5 shadow-lg shadow-blue-500/20 text-[11px] h-8 font-black uppercase tracking-tight">
+            <Button onClick={onSave} className="flex-1 md:flex-none px-8 shadow-premium-lg shadow-brand-500/30 h-10 bg-brand-500 font-black uppercase tracking-widest text-[11px] transition-all hover:shadow-premium-xl active:scale-95">
                 {saveLabel}
             </Button>
         </div>

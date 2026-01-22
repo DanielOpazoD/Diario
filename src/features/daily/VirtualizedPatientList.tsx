@@ -40,7 +40,7 @@ const VirtualizedPatientList: React.FC<VirtualizedPatientListProps> = ({
     return (
         <div
             ref={parentRef}
-            className="flex-1 overflow-auto bg-white dark:bg-gray-900 shadow-sm"
+            className="flex-1 overflow-auto bg-transparent divide-y divide-gray-100/30 dark:divide-gray-800/30 no-scrollbar"
             style={{ contain: 'strict' }}
         >
             <div

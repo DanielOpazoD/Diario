@@ -41,36 +41,37 @@ const AppMenuModal: React.FC<AppMenuModalProps> = ({ isOpen, onClose, onNavigate
     ];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm transition-opacity">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-gray-950/40 backdrop-blur-md" onClick={onClose}></div>
             <div
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all scale-100 opacity-100"
+                className="relative glass rounded-panel shadow-premium-xl w-full max-w-sm overflow-hidden transform transition-all border-white/40 dark:border-white/10"
                 role="dialog"
                 aria-modal="true"
             >
-                <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Menú Principal</h2>
+                <div className="p-5 border-b border-gray-100/30 dark:border-gray-800/30 flex items-center justify-between bg-white/20 dark:bg-gray-900/20 backdrop-blur-md">
+                    <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-[0.2em]">Menú Principal</h2>
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        className="p-2 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 group transition-all duration-300 hover:rotate-90"
                         aria-label="Cerrar menú"
                     >
-                        <X className="w-5 h-5 text-gray-500" />
+                        <X className="w-5 h-5 text-gray-400 group-hover:text-red-500" />
                     </button>
                 </div>
 
-                <div className="p-4 grid gap-3">
+                <div className="p-5 grid gap-3 bg-gray-50/10 dark:bg-gray-950/10">
                     {menuItems.map((item) => (
                         <button
                             key={item.id}
                             onClick={() => handleNavigation(item.id as ViewMode)}
-                            className="flex items-center p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all border border-gray-100 dark:border-gray-700/50 hover:border-blue-200 dark:hover:border-blue-800 group text-left w-full"
+                            className="flex items-center p-4 glass-card rounded-2xl hover:bg-white dark:hover:bg-gray-800 transition-all border-none shadow-premium-sm hover:shadow-premium group text-left w-full transform hover:-translate-y-1 active:scale-95 duration-300"
                         >
-                            <div className={`p-3 rounded-lg ${item.color} mr-4`}>
+                            <div className={`p-3.5 rounded-xl ${item.color.replace('100', '500/10')} group-hover:scale-110 transition-transform duration-500 shadow-inner`}>
                                 <item.icon className="w-6 h-6" />
                             </div>
-                            <div>
-                                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{item.label}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{item.description}</p>
+                            <div className="ml-4">
+                                <h3 className="text-xs font-black text-gray-900 dark:text-gray-100 uppercase tracking-widest group-hover:text-brand-500 transition-colors">{item.label}</h3>
+                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-0.5 uppercase tracking-tight">{item.description}</p>
                             </div>
                         </button>
                     ))}

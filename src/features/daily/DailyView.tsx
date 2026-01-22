@@ -94,55 +94,66 @@ const DailyView: React.FC<DailyViewProps> = ({
 
 
   return (
-    <div className="h-full flex flex-col max-w-5xl mx-auto">
-      {/* Minimalist Header */}
-      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10 px-4 py-2 mb-0 transition-all">
-        <div className="flex items-center justify-between gap-2">
-          {/* Filter Bar - Left aligned, subtle */}
-          <div className="flex-1 overflow-hidden">
-            <FilterBar
-              activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
-              stats={summaryStats}
-              totalCount={dailyRecords.length}
-            />
-          </div>
+    <div className="h-full flex flex-col max-w-5xl mx-auto px-4 md:px-6">
+      {/* Minimalist Floating Glass Header */}
+      <div className="sticky top-4 z-20 mb-6 group">
+        <div className="glass shadow-premium-lg rounded-panel px-5 py-3 transition-all duration-500 border-white/40 dark:border-white/10 group-hover:shadow-premium-xl group-hover:border-white/60">
+          <div className="flex items-center justify-between gap-4">
+            {/* Filter Bar - Modern compact layout */}
+            <div className="flex-1 min-w-0">
+              <FilterBar
+                activeFilter={activeFilter}
+                onFilterChange={setActiveFilter}
+                stats={summaryStats}
+                totalCount={dailyRecords.length}
+              />
+            </div>
 
-          {/* Action Buttons - Right aligned */}
-          <div className="flex gap-1.5 items-center shrink-0">
-            {pendingTasks > 0 && (
-              <span className="text-[10px] font-medium text-amber-600 dark:text-amber-500">
-                {pendingTasks} ⚡
-              </span>
-            )}
-            <Button
-              variant={selectionMode ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={toggleSelectionMode}
-              className="px-2 text-xs h-7"
-            >
-              {selectionMode ? '✕' : '☐'}
-            </Button>
+            {/* Action Buttons - Premium styling */}
+            <div className="flex gap-2 items-center shrink-0 pl-4 border-l border-gray-100 dark:border-gray-800/50">
+              {pendingTasks > 0 && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-pill bg-amber-500/10 text-amber-600 dark:text-amber-500 animate-pulse border border-amber-500/20">
+                  <span className="text-[10px] font-black uppercase tracking-tighter">{pendingTasks}</span>
+                  <span className="text-[9px]">⚡</span>
+                </div>
+              )}
 
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handlePdfUpload}
-              accept="application/pdf"
-              multiple
-              className="hidden"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={triggerPicker}
-              isLoading={isImporting}
-              icon={<FileText className="w-3.5 h-3.5" />}
-              className="px-2 text-gray-500 text-xs h-7"
-            />
-            <Button onClick={handleAddBlankPatient} size="sm" className="rounded-md px-2.5 text-xs h-7">
-              +
-            </Button>
+              <div className="flex items-center gap-1 p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
+                <Button
+                  variant={selectionMode ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={toggleSelectionMode}
+                  className={`min-w-[32px] h-8 rounded-lg !p-0 ${selectionMode ? 'bg-brand-500 shadow-brand-500/40' : 'text-gray-500'}`}
+                >
+                  {selectionMode ? '✕' : '☐'}
+                </Button>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePdfUpload}
+                  accept="application/pdf"
+                  multiple
+                  className="hidden"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={triggerPicker}
+                  isLoading={isImporting}
+                  icon={<FileText className="w-4 h-4" />}
+                  className="w-8 h-8 rounded-lg !p-0 text-gray-500 hover:text-brand-500 hover:bg-brand-500/10"
+                />
+              </div>
+
+              <Button
+                onClick={handleAddBlankPatient}
+                size="sm"
+                className="rounded-xl px-4 h-9 font-black bg-brand-500 hover:bg-brand-600 shadow-lg shadow-brand-500/30 text-xs transition-all active:scale-95"
+              >
+                + NUEVO
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -166,26 +177,29 @@ const DailyView: React.FC<DailyViewProps> = ({
       )}
 
       {visibleRecords.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-center flex-1">
-          <CalendarIcon className="w-12 h-12 mb-3 opacity-20" />
-          <p className="text-sm font-medium">No hay pacientes para mostrar</p>
+        <div className="flex-1 glass-card rounded-panel border-none shadow-premium flex flex-col items-center justify-center py-24 text-gray-400 text-center">
+          <CalendarIcon className="w-12 h-12 mb-4 opacity-20 text-brand-500" />
+          <p className="text-sm font-black uppercase tracking-widest opacity-60">No hay pacientes para mostrar</p>
+          <p className="text-[10px] mt-1 font-bold opacity-40 uppercase">Selecciona otra fecha o agrega uno nuevo</p>
         </div>
       ) : visibleRecords.length > 20 ? (
         // Use virtualized list for large datasets
-        <VirtualizedPatientList
-          patients={visibleRecords}
-          onEdit={onEditPatient}
-          onDelete={onDeletePatient}
-          selectionMode={selectionMode}
-          selectedPatients={selectedPatients}
-          onToggleSelect={togglePatientSelection}
-          addToast={addToast}
-          selectedDate={format(currentDate, 'yyyy-MM-dd')}
-        />
+        <div className="flex-1 glass-card rounded-panel overflow-hidden border-none shadow-premium">
+          <VirtualizedPatientList
+            patients={visibleRecords}
+            onEdit={onEditPatient}
+            onDelete={onDeletePatient}
+            selectionMode={selectionMode}
+            selectedPatients={selectedPatients}
+            onToggleSelect={togglePatientSelection}
+            addToast={addToast}
+            selectedDate={format(currentDate, 'yyyy-MM-dd')}
+          />
+        </div>
       ) : (
         // Standard rendering for small lists
-        <div className="flex-1 bg-white dark:bg-gray-900 shadow-sm">
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+        <div className="flex-1 glass-card rounded-panel overflow-hidden border-none shadow-premium transition-all duration-500">
+          <div className="divide-y divide-gray-100/30 dark:divide-gray-800/30">
             {visibleRecords.map(patient => (
               <ExecutivePatientRow
                 key={patient.id}

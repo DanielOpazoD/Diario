@@ -18,21 +18,21 @@ const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed';
+    'inline-flex items-center justify-center rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-gray-950 disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-95 hover:-translate-y-0.5';
 
   const sizes = {
-    sm: 'px-2.5 py-1.5 text-xs',
-    md: 'px-3.5 py-1.5 text-sm',
-    lg: 'px-5 py-2.5 text-base'
+    sm: 'px-3 py-1.5 text-[10px]',
+    md: 'px-4 py-2 text-[11px]',
+    lg: 'px-6 py-3 text-xs'
   };
 
   const variants = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-500/20',
+    primary: 'bg-brand-500 hover:bg-brand-600 text-white shadow-premium hover:shadow-premium-lg border border-brand-400/20',
     secondary:
-      'bg-white/85 dark:bg-gray-800/75 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm',
-    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm border border-red-500/20',
-    ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300',
-    ai: 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-md border border-transparent'
+      'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100 hover:bg-white dark:hover:bg-gray-750 shadow-premium-sm hover:shadow-premium',
+    danger: 'bg-red-500 hover:bg-red-600 text-white shadow-premium hover:shadow-premium-lg border border-red-400/20',
+    ghost: 'bg-transparent hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400',
+    ai: 'bg-gradient-to-br from-brand-400 to-indigo-600 hover:from-brand-500 hover:to-indigo-700 text-white shadow-premium-lg hover:shadow-premium-xl border border-white/20'
   };
 
   return (

@@ -90,7 +90,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
   };
 
   return (
-    <div className="flex flex-col w-full max-w-2xl mx-auto relative group">
+    <div className="flex flex-col w-full max-w-lg mx-auto relative group">
       <div className="flex items-center justify-between mb-1 px-2 pt-1 relative z-20">
         <button onClick={() => onSelectDate(addDays(currentDate, -1))} className="p-2 rounded-full hover:bg-gray-200/50 dark:hover:bg-gray-700/50 text-gray-400 transition-colors active:scale-95"><ChevronLeft className="w-4 h-4" /></button>
 
