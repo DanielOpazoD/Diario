@@ -47,6 +47,23 @@ export const syncPatientsToFirebase = async (patients: PatientRecord[]) => {
     if (currentStateHash === lastSyncedStateHash) return;
 
     try {
+        await syncIncrementalPatientsToFirebase(patients);
+        lastSyncedStateHash = currentStateHash;
+    } catch (error) {
+        emitStructuredLog("error", "Firebase", "Critical error during full sync", { error });
+        throw error;
+    }
+};
+
+/**
+ * Specifically syncs a list of patients (assumed to be dirty/changed) using batches.
+ */
+export const syncIncrementalPatientsToFirebase = async (patients: PatientRecord[]) => {
+    if (!auth || !db || patients.length === 0) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
         const userPatientsRef = collection(db, "users", user.uid, PATIENTS_COLLECTION);
 
         const CHUNK_SIZE = 400;
@@ -62,16 +79,13 @@ export const syncPatientsToFirebase = async (patients: PatientRecord[]) => {
             });
 
             await batch.commit();
-            emitStructuredLog("info", "Firebase", "Batch synced successfully", {
+            emitStructuredLog("info", "Firebase", "Incremental batch synced successfully", {
                 index: i / CHUNK_SIZE + 1,
                 count: chunk.length
             });
         }
-
-        lastSyncedStateHash = currentStateHash;
-        emitStructuredLog("info", "Firebase", "Full sync completed", { total: totalPatients });
     } catch (error) {
-        emitStructuredLog("error", "Firebase", "Critical error during sync", { error });
+        emitStructuredLog("error", "Firebase", "Error during incremental sync", { error });
         throw error;
     }
 };

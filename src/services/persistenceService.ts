@@ -8,11 +8,16 @@ import {
 } from './storage';
 import { syncPatientsToFirebase } from './firebaseService';
 
+/**
+ * Tracking map for patient synchronization.
+ * Stores { id: updatedAt } to detect changes since last sync.
+ */
+const lastSyncedHashes = new Map<string, number>();
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * Initializes the persistence layer by subscribing to store changes.
- * Handles debounced saving to LocalStorage and Firebase.
+ * Handles debounced saving to LocalStorage and incremental sync to Firebase.
  */
 export const initPersistence = () => {
     return useAppStore.subscribe((state) => {
@@ -45,14 +50,29 @@ export const initPersistence = () => {
                 showBookmarkBar: state.showBookmarkBar,
             }));
 
-            // 2. Firebase Sync (Cloud Persistence)
-            try {
-                await syncPatientsToFirebase(state.records);
-            } catch (error) {
-                console.error('[Persistence] Error syncing to Firebase:', error);
-            }
+            // 2. Incremental Firebase Sync
+            if (state.user) {
+                const dirtyPatients = state.records.filter(patient => {
+                    const lastSync = lastSyncedHashes.get(patient.id);
+                    // Decide if it's dirty: never synced or updatedAt is newer
+                    return lastSync === undefined || (patient.updatedAt || 0) > lastSync;
+                });
 
-            console.log(' [AutoSave] Estado sincronizado con LocalStorage y Firebase');
+                if (dirtyPatients.length > 0) {
+                    try {
+                        console.log(`[Persistence] Syncing ${dirtyPatients.length} dirty patients to Firebase...`);
+                        await syncPatientsToFirebase(dirtyPatients);
+
+                        // Update tracking map upon success
+                        dirtyPatients.forEach(p => {
+                            lastSyncedHashes.set(p.id, p.updatedAt || 0);
+                        });
+                        console.log(' [AutoSave] Sincronización incremental exitosa');
+                    } catch (error) {
+                        console.error('[Persistence] Error syncing dirty patients:', error);
+                    }
+                }
+            }
         }, 500);
     });
 };
