@@ -94,7 +94,7 @@ const DailyView: React.FC<DailyViewProps> = ({
 
 
   return (
-    <div className="h-full flex flex-col max-w-5xl mx-auto px-4 md:px-6">
+    <div className="h-full min-h-0 flex flex-col max-w-5xl mx-auto px-4 md:px-6">
       {/* Minimalist Floating Glass Header */}
       <div className="sticky top-4 z-20 mb-6 group">
         <div className="glass shadow-premium-lg rounded-panel px-5 py-3 transition-all duration-500 border-white/40 dark:border-white/10 group-hover:shadow-premium-xl group-hover:border-white/60">
@@ -184,7 +184,7 @@ const DailyView: React.FC<DailyViewProps> = ({
         </div>
       ) : visibleRecords.length > 20 ? (
         // Use virtualized list for large datasets
-        <div className="flex-1 glass-card rounded-panel overflow-hidden border-none shadow-premium">
+        <div className="flex-1 min-h-0 glass-card rounded-panel overflow-y-auto overflow-x-hidden border-none shadow-premium custom-scrollbar">
           <VirtualizedPatientList
             patients={visibleRecords}
             onEdit={onEditPatient}
@@ -198,7 +198,7 @@ const DailyView: React.FC<DailyViewProps> = ({
         </div>
       ) : (
         // Standard rendering for small lists
-        <div className="flex-1 glass-card rounded-panel overflow-hidden border-none shadow-premium transition-all duration-500">
+        <div className="flex-1 min-h-0 glass-card rounded-panel overflow-y-auto overflow-x-hidden border-none shadow-premium transition-all duration-500 custom-scrollbar">
           <div className="divide-y divide-gray-100/30 dark:divide-gray-800/30">
             {visibleRecords.map(patient => (
               <ExecutivePatientRow
@@ -225,4 +225,3 @@ const DailyView: React.FC<DailyViewProps> = ({
 };
 
 export default DailyView;
-

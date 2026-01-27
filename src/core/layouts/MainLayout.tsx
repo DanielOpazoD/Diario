@@ -165,11 +165,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                     >
                       <Menu className="w-6 h-6" />
                     </button>
-                    {viewMode !== 'daily' && (
+                    {viewMode !== 'daily' && viewMode !== 'tasks' && (
                       <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight truncate">
                         {viewMode === 'stats' && 'Estadí­sticas'}
                         {viewMode === 'bookmarks' && 'Marcadores'}
-                        {viewMode === 'tasks' && 'Tareas'}
                         {viewMode === 'settings' && 'Ajustes'}
                       </h2>
                     )}
