@@ -69,7 +69,7 @@ const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient
     : paginatedVisits;
 
   return (
-    <div className="max-w-7xl mx-auto pb-16 px-3 md:px-6 animate-fade-in">
+    <div className="max-w-7xl mx-auto h-full min-h-0 flex flex-col px-3 md:px-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
@@ -198,14 +198,16 @@ const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient
       </div>
 
       {/* Main Table Section */}
-      <HistoryTable
-        visits={filteredVisits}
-        getTypeClass={getTypeClass}
-        onViewDetails={(record) => onEditPatient(record)}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-6">
+        <HistoryTable
+          visits={filteredVisits}
+          getTypeClass={getTypeClass}
+          onViewDetails={(record) => onEditPatient(record)}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      </div>
     </div>
   );
 };
