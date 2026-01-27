@@ -116,13 +116,13 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
   const renderTaskGroup = (title: string, tasks: EnrichedTask[], colorClass: string, icon: React.ReactNode) => {
     if (tasks.length === 0) return null;
     return (
-      <div className="mb-6 animate-fade-in glass-card rounded-panel border-none shadow-premium overflow-hidden">
+      <div className="mb-6 animate-fade-in glass-card rounded-panel border-none shadow-premium overflow-hidden flex flex-col">
         <div className={`flex items-center px-5 py-3 border-b border-gray-100 dark:border-gray-800/50 ${colorClass}`}>
           <div className="p-1.5 rounded-lg mr-3 bg-white/50 dark:bg-gray-800/50 shadow-sm border border-black/5 dark:border-white/5">{icon}</div>
           <h3 className="text-[11px] font-black uppercase tracking-[0.2em] opacity-80">{title}</h3>
           <span className="ml-auto px-2 py-0.5 rounded-pill text-[9px] font-black bg-black/5 dark:bg-white/5 tracking-tighter shadow-inner">{tasks.length}</span>
         </div>
-        <div className="divide-y divide-gray-100/30 dark:divide-gray-800/30">
+        <div className="divide-y divide-gray-100/30 dark:divide-gray-800/30 max-h-72 md:max-h-80 overflow-y-auto custom-scrollbar">
           {tasks.map(task => (
             <div key={task.id} className="group relative transition-all duration-300 hover:bg-white/40 dark:hover:bg-brand-900/10">
               <div className="flex items-center px-5 py-3 gap-4">
