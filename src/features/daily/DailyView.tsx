@@ -95,11 +95,11 @@ const DailyView: React.FC<DailyViewProps> = ({
 
   return (
     <div className="h-full min-h-0 flex flex-col max-w-5xl mx-auto px-4 md:px-6">
-      {/* Minimalist Floating Glass Header */}
-      <div className="sticky top-4 z-20 mb-6 group">
-        <div className="glass shadow-premium-lg rounded-panel px-5 py-3 transition-all duration-500 border-white/40 dark:border-white/10 group-hover:shadow-premium-xl group-hover:border-white/60">
-          <div className="flex items-center justify-between gap-4">
-            {/* Filter Bar - Modern compact layout */}
+      {/* Minimalist compact header */}
+      <div className="sticky top-3 z-20 mb-4">
+        <div className="rounded-2xl bg-white/95 backdrop-blur border border-gray-100 px-4 py-2 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            {/* Filter Bar - Compact selector */}
             <div className="flex-1 min-w-0">
               <FilterBar
                 activeFilter={activeFilter}
@@ -110,20 +110,20 @@ const DailyView: React.FC<DailyViewProps> = ({
             </div>
 
             {/* Action Buttons - Premium styling */}
-            <div className="flex gap-2 items-center shrink-0 pl-4 border-l border-gray-100 dark:border-gray-800/50">
+            <div className="flex gap-2 items-center shrink-0 pl-3 border-l border-gray-100">
               {pendingTasks > 0 && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-pill bg-amber-500/10 text-amber-600 dark:text-amber-500 animate-pulse border border-amber-500/20">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100">
                   <span className="text-[10px] font-black uppercase tracking-tighter">{pendingTasks}</span>
                   <span className="text-[9px]">⚡</span>
                 </div>
               )}
 
-              <div className="flex items-center gap-1 p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
+              <div className="flex items-center gap-1 p-1 bg-gray-50 rounded-xl border border-gray-200/60">
                 <Button
                   variant={selectionMode ? 'primary' : 'ghost'}
                   size="sm"
                   onClick={toggleSelectionMode}
-                  className={`min-w-[32px] h-8 rounded-lg !p-0 ${selectionMode ? 'bg-brand-500 shadow-brand-500/40' : 'text-gray-500'}`}
+                  className={`min-w-[30px] h-7 rounded-lg !p-0 ${selectionMode ? 'bg-brand-500 shadow-brand-500/30' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                   {selectionMode ? '✕' : '☐'}
                 </Button>
@@ -142,14 +142,14 @@ const DailyView: React.FC<DailyViewProps> = ({
                   onClick={triggerPicker}
                   isLoading={isImporting}
                   icon={<FileText className="w-4 h-4" />}
-                  className="w-8 h-8 rounded-lg !p-0 text-gray-500 hover:text-brand-500 hover:bg-brand-500/10"
+                  className="w-7 h-7 rounded-lg !p-0 text-gray-500 hover:text-brand-500 hover:bg-brand-500/10"
                 />
               </div>
 
               <Button
                 onClick={handleAddBlankPatient}
                 size="sm"
-                className="rounded-xl px-4 h-9 font-black bg-brand-500 hover:bg-brand-600 shadow-lg shadow-brand-500/30 text-xs transition-all active:scale-95"
+                className="rounded-xl px-3.5 h-8 font-black bg-brand-500 hover:bg-brand-600 shadow-md shadow-brand-500/20 text-[11px] tracking-wide transition-all active:scale-95"
               >
                 + NUEVO
               </Button>
@@ -159,8 +159,8 @@ const DailyView: React.FC<DailyViewProps> = ({
       </div>
 
       {selectionMode && (
-        <div className="bg-blue-50/90 dark:bg-blue-900/20 px-4 py-2 flex items-center justify-between border-b border-blue-100 dark:border-blue-800 animate-slide-down text-sm">
-          <span className="font-medium text-blue-800 dark:text-blue-200">{selectedPatients.size} seleccionados</span>
+        <div className="bg-blue-50/70 px-4 py-2 flex items-center justify-between border border-blue-100 rounded-xl mb-3 text-sm">
+          <span className="font-medium text-blue-800">{selectedPatients.size} seleccionados</span>
           <div className="flex items-center gap-2">
             <button className="text-blue-600 hover:underline px-2" onClick={clearSelection}>Limpiar</button>
             <div className="h-4 w-px bg-blue-200"></div>
@@ -168,7 +168,7 @@ const DailyView: React.FC<DailyViewProps> = ({
               type="date"
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
-              className="px-2 py-1 rounded border border-blue-200 text-xs"
+              className="px-2 py-1 rounded-lg border border-blue-200 text-xs bg-white"
             />
             <Button onClick={handleBatchMove} size="sm" variant="secondary" className="h-7 text-xs">Mover</Button>
             <Button onClick={handleBatchCopy} size="sm" variant="primary" className="h-7 text-xs">Copiar</Button>
@@ -177,14 +177,14 @@ const DailyView: React.FC<DailyViewProps> = ({
       )}
 
       {visibleRecords.length === 0 ? (
-        <div className="flex-1 glass-card rounded-panel border-none shadow-premium flex flex-col items-center justify-center py-24 text-gray-400 text-center">
+        <div className="flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-24 text-gray-400 text-center">
           <CalendarIcon className="w-12 h-12 mb-4 opacity-20 text-brand-500" />
           <p className="text-sm font-black uppercase tracking-widest opacity-60">No hay pacientes para mostrar</p>
           <p className="text-[10px] mt-1 font-bold opacity-40 uppercase">Selecciona otra fecha o agrega uno nuevo</p>
         </div>
       ) : visibleRecords.length > 20 ? (
         // Use virtualized list for large datasets
-        <div className="flex-1 min-h-0 glass-card rounded-panel overflow-y-auto overflow-x-hidden border-none shadow-premium custom-scrollbar">
+        <div className="flex-1 min-h-0 bg-white rounded-3xl overflow-y-auto overflow-x-hidden border border-gray-100 shadow-sm custom-scrollbar">
           <VirtualizedPatientList
             patients={visibleRecords}
             onEdit={onEditPatient}
@@ -198,8 +198,8 @@ const DailyView: React.FC<DailyViewProps> = ({
         </div>
       ) : (
         // Standard rendering for small lists
-        <div className="flex-1 min-h-0 glass-card rounded-panel overflow-y-auto overflow-x-hidden border-none shadow-premium transition-all duration-500 custom-scrollbar">
-          <div className="divide-y divide-gray-100/30 dark:divide-gray-800/30">
+        <div className="flex-1 min-h-0 bg-white rounded-3xl overflow-y-auto overflow-x-hidden border border-gray-100 shadow-sm transition-all duration-500 custom-scrollbar">
+          <div className="divide-y divide-gray-100">
             {visibleRecords.map(patient => (
               <ExecutivePatientRow
                 key={patient.id}

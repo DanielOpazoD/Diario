@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 interface FilterStat {
   id: string;
@@ -15,40 +15,92 @@ interface FilterBarProps {
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({ activeFilter, onFilterChange, stats, totalCount }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const filters = useMemo(
+    () => [{ id: 'all', label: 'Todos', count: totalCount, color: 'bg-brand-500 text-white' }, ...stats],
+    [stats, totalCount],
+  );
+
+  const activeOption = useMemo(() => {
+    if (activeFilter === 'all') {
+      return { id: 'all', label: 'Todos', count: totalCount, color: 'bg-brand-500 text-white' };
+    }
+    return filters.find(option => option.id === activeFilter) ?? filters[0];
+  }, [activeFilter, filters, totalCount]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
-    <div
-      className="flex overflow-x-auto no-scrollbar gap-2 py-0.5"
-      role="group"
-      aria-label="Filtros de pacientes"
-    >
-      <button
-        type="button"
-        onClick={() => onFilterChange('all')}
-        aria-pressed={activeFilter === 'all'}
-        className={`flex-shrink-0 flex items-center gap-2 px-3.5 py-1.5 rounded-pill text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${activeFilter === 'all'
-          ? 'bg-brand-500 text-white border-brand-400 shadow-premium group-hover:shadow-brand-500/30'
-          : 'bg-white/50 dark:bg-gray-800/50 text-gray-500 border-gray-100 dark:border-gray-800/50 hover:bg-white dark:hover:bg-gray-800 hover:text-brand-500'
-          }`}
-      >
-        <span>Todos</span>
-        <span className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>{totalCount}</span>
-      </button>
-      {stats.map(stat => (
+    <div className="flex items-center gap-2" ref={dropdownRef}>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Mostrar</span>
+      <div className="relative">
         <button
           type="button"
-          key={stat.id}
-          onClick={() => onFilterChange(stat.id)}
-          aria-pressed={activeFilter === stat.id}
-          className={`flex-shrink-0 flex items-center gap-2 px-3.5 py-1.5 rounded-pill text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${activeFilter === stat.id
-            ? 'bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-700 dark:border-gray-200 shadow-premium'
-            : 'bg-white/50 dark:bg-gray-800/50 text-gray-500 border-gray-100 dark:border-gray-800/50 hover:bg-white dark:hover:bg-gray-800 hover:text-brand-500'
-            }`}
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-gray-700 text-[11px] font-semibold uppercase tracking-wide shadow-sm hover:border-gray-300 hover:shadow-md transition"
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
         >
-          <span className={`w-1.5 h-1.5 rounded-full shadow-[0_0_5px_rgba(var(--brand-500-rgb),0.5)] ${stat.color.split(' ')[0].replace('100', '500')}`}></span>
-          <span>{stat.label}</span>
-          <span className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === stat.id ? 'bg-white/20 dark:bg-black/10 text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>{stat.count}</span>
+          <span className="flex items-center gap-2">
+            <span
+              className={`w-2 h-2 rounded-full ${activeOption.id === 'all'
+                ? 'bg-brand-500'
+                : activeOption.color.split(' ')[0].replace('100', '500')
+                }`}
+            ></span>
+            {activeOption.label}
+          </span>
+          <span className="px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500 text-[10px] font-bold">
+            {activeOption.count}
+          </span>
+          <span className="text-[10px] text-gray-400">▾</span>
         </button>
-      ))}
+
+        {isOpen && (
+          <div
+            className="absolute left-0 mt-2 w-48 rounded-xl border border-gray-200 bg-white shadow-lg py-1 z-50"
+            role="menu"
+          >
+            {filters.map(option => (
+              <button
+                type="button"
+                key={option.id}
+                onClick={() => {
+                  onFilterChange(option.id);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide transition ${activeFilter === option.id
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                role="menuitem"
+              >
+                <span className="flex items-center gap-2">
+                  <span
+                    className={`w-2 h-2 rounded-full ${option.id === 'all'
+                      ? 'bg-brand-500'
+                      : option.color.split(' ')[0].replace('100', '500')
+                      }`}
+                  ></span>
+                  {option.label}
+                </span>
+                <span className="text-[10px] text-gray-400 font-bold">{option.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
