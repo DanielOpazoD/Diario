@@ -1,7 +1,8 @@
 import React from 'react';
-import { Eye, ClipboardList, Paperclip, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, Paperclip, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PatientRecord } from '@shared/types';
 import { calculateAge, formatToDisplayDate } from '@shared/utils/dateUtils';
+import TaskStatusIndicator from '@core/components/TaskStatusIndicator';
 
 interface HistoryTableProps {
     visits: PatientRecord[];
@@ -46,11 +47,15 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {visits.map((record) => (
-                                <tr
-                                    key={record.id}
-                                    className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors group"
-                                >
+                            {visits.map((record) => {
+                                const pendingCount = record.pendingTasks.filter(task => !task.isCompleted).length;
+                                const completedCount = record.pendingTasks.filter(task => task.isCompleted).length;
+
+                                return (
+                                    <tr
+                                        key={record.id}
+                                        className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors group"
+                                    >
                                     <td className="px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
                                         {formatToDisplayDate(record.date)}
                                     </td>
@@ -80,15 +85,16 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
-
-                                            {record.pendingTasks.length > 0 && (
-                                                <div className="relative group/tooltip" title={`${record.pendingTasks.length} tareas`}>
-                                                    <ClipboardList className="w-4 h-4 text-amber-500 opacity-60 group-hover:opacity-100" />
-                                                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-amber-500 text-[8px] text-white">
-                                                        {record.pendingTasks.length}
-                                                    </span>
-                                                </div>
-                                            )}
+                                            <div
+                                                className="relative group/tooltip"
+                                                title={`Tareas: ${pendingCount} pendientes, ${completedCount} completadas`}
+                                            >
+                                                <TaskStatusIndicator
+                                                    pendingCount={pendingCount}
+                                                    completedCount={completedCount}
+                                                    iconClassName="w-4 h-4"
+                                                />
+                                            </div>
 
                                             {record.attachedFiles.length > 0 && (
                                                 <div title={`${record.attachedFiles.length} archivos`}>
@@ -98,7 +104,8 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

@@ -4,6 +4,7 @@ import { CheckSquare, Square, ChevronDown, Trash2, Paperclip, Stethoscope, FileT
 import { PatientRecord } from '@shared/types';
 import useAppStore from '@core/stores/useAppStore';
 import InlinePatientEditor from './InlinePatientEditor';
+import TaskStatusIndicator from '@core/components/TaskStatusIndicator';
 
 const calculateAge = (birthDateStr?: string) => {
     if (!birthDateStr) return '';
@@ -48,6 +49,7 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
 
     const tasks = patient.pendingTasks || [];
     const pendingCount = tasks.filter(t => !t.isCompleted).length;
+    const completedCount = tasks.filter(t => t.isCompleted).length;
     const attachmentsCount = patient.attachedFiles?.length || 0;
 
     const typeConfig = patientTypes.find(t => t.label === patient.type);
@@ -74,6 +76,14 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
         addToast('success', 'Cambios guardados correctamente');
         setActiveTab(null);
     };
+
+    const taskButtonClassName = activeTab === 'tasks'
+        ? 'bg-amber-500 text-white shadow-amber-500/30'
+        : pendingCount > 0
+          ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100'
+          : completedCount > 0
+            ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100'
+            : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30';
 
     return (
         <div className={`group relative overflow-hidden transition-all duration-300 border-b border-gray-100/50 dark:border-gray-800/50 hover:bg-white/40 dark:hover:bg-brand-900/10 hover:shadow-premium-sm ${selectionMode && selected ? 'bg-brand-50/50 dark:bg-brand-900/20 ring-1 ring-brand-500/20' : ''}`}>
@@ -176,14 +186,14 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); handleTabClick('tasks'); }}
-                                className={`min-w-[36px] h-9 flex items-center justify-center rounded-xl transition-all duration-300 shadow-premium-sm ${activeTab === 'tasks' ? 'bg-amber-500 text-white shadow-amber-500/30' : pendingCount > 0 ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100' : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30'}`}
-                                title="Tareas"
+                                className={`min-w-[36px] h-9 flex items-center justify-center rounded-xl transition-all duration-300 shadow-premium-sm ${taskButtonClassName}`}
+                                title={`Tareas: ${pendingCount} pendientes, ${completedCount} completadas`}
                             >
-                                {pendingCount > 0 ? (
-                                    <span className="text-[11px] font-black px-2">{pendingCount}</span>
-                                ) : (
-                                    <CheckSquare className="w-4 h-4" />
-                                )}
+                                <TaskStatusIndicator
+                                    pendingCount={pendingCount}
+                                    completedCount={completedCount}
+                                    iconClassName="w-4 h-4"
+                                />
                             </button>
                         </div>
 
