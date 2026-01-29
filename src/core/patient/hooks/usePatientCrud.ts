@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { PatientRecord, PatientFormData } from '@shared/types';
+import { PatientRecord, PatientCreateInput, PatientUpdateInput } from '@shared/types';
 import {
   savePatient,
   savePatientsBatch,
@@ -33,8 +33,10 @@ const usePatientCrud = ({
   addToast,
 }: UsePatientCrudParams) => {
   const handleSavePatient = useCallback(
-    (patientData: PatientFormData) => {
-      const result = savePatient(patientData, editingPatient);
+    (patientData: PatientCreateInput | PatientUpdateInput) => {
+      const patientId = (patientData as PatientRecord).id;
+      const existing = editingPatient || records.find((record) => record.id === patientId) || null;
+      const result = savePatient(patientData, existing);
 
       if (result.isUpdate) {
         updatePatient(result.patient);
@@ -44,11 +46,26 @@ const usePatientCrud = ({
       addToast('success', result.message);
       setEditingPatient(null);
     },
-    [addPatient, addToast, editingPatient, setEditingPatient, updatePatient]
+    [addPatient, addToast, editingPatient, records, setEditingPatient, updatePatient]
+  );
+
+  const handleAutoSavePatient = useCallback(
+    (patientData: PatientCreateInput | PatientUpdateInput) => {
+      const patientId = (patientData as PatientRecord).id;
+      const existing = editingPatient || records.find((record) => record.id === patientId) || null;
+      const result = savePatient(patientData, existing);
+
+      if (result.isUpdate) {
+        updatePatient(result.patient);
+      } else {
+        addPatient(result.patient);
+      }
+    },
+    [addPatient, editingPatient, records, updatePatient]
   );
 
   const handleSaveMultiplePatients = useCallback(
-    (patientsData: PatientFormData[]) => {
+    (patientsData: PatientCreateInput[]) => {
       const newPatients = savePatientsBatch(patientsData);
       newPatients.forEach(addPatient);
       addToast('success', `${newPatients.length} pacientes registrados`);
@@ -88,6 +105,7 @@ const usePatientCrud = ({
 
   return {
     handleSavePatient,
+    handleAutoSavePatient,
     handleSaveMultiplePatients,
     confirmDeletePatient,
     handleMovePatientsToDate,

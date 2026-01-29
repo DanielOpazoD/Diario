@@ -3,6 +3,7 @@ import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { Buffer } from 'buffer';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig(({ mode }) => {
   // Carga variables desde archivos .env locales
@@ -10,6 +11,7 @@ export default defineConfig(({ mode }) => {
 
   const googleClientId = env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
   const isPwaDisabled = env.VITE_DISABLE_PWA === 'true' || env.DISABLE_PWA === 'true';
+  const isBundleReport = env.VITE_BUNDLE_REPORT === 'true';
 
   return {
     test: {
@@ -53,6 +55,15 @@ export default defineConfig(({ mode }) => {
           ],
         },
       }),
+      isBundleReport
+        ? visualizer({
+            filename: 'dist/bundle-report.html',
+            template: 'treemap',
+            gzipSize: true,
+            brotliSize: true,
+            open: false,
+          })
+        : null,
     ],
     define: {
       'process.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
@@ -60,7 +71,7 @@ export default defineConfig(({ mode }) => {
     },
     // Solo exponer variables VITE_ relacionadas con Google y Firebase para evitar que otras claves
     // (p. ej., API keys sensibles) queden incrustadas en el bundle de cliente.
-    envPrefix: ['VITE_GOOGLE_', 'VITE_FIREBASE_', 'VITE_DISABLE_PWA', 'VITE_APP_VERSION'],
+    envPrefix: ['VITE_GOOGLE_', 'VITE_FIREBASE_', 'VITE_DISABLE_PWA', 'VITE_APP_VERSION', 'VITE_BUNDLE_REPORT'],
     resolve: {
       alias: {
         '@core': path.resolve(__dirname, './src/core'),
@@ -106,8 +117,6 @@ export default defineConfig(({ mode }) => {
             // Heavy dependencies - lazy loaded
             'charts': ['recharts'],
             'pdf': ['jspdf'],
-            // Google services - loaded on demand
-            'google-ai': ['@google/generative-ai'],
           },
           // Optimize chunk naming for better caching
           chunkFileNames: (chunkInfo) => {
@@ -146,8 +155,7 @@ export default defineConfig(({ mode }) => {
         'date-fns',
         'clsx',
         'tailwind-merge',
-        'recharts',
-        'lodash/get'
+        'recharts'
       ],
       // Exclude heavy deps that are truly standalone or problematic in pre-bundling
       exclude: [

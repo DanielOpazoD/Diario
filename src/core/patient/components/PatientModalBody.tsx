@@ -1,5 +1,5 @@
 import React from 'react';
-import { AttachedFile, PendingTask, PatientRecord, PatientTypeConfig } from '@shared/types';
+import { AttachedFile, PendingTask, PatientCreateInput, PatientRecord, PatientTypeConfig, PatientUpdateInput } from '@shared/types';
 import ClinicalNote from '@core/patient/components/ClinicalNote';
 import PatientForm from '@core/patient/components/PatientForm';
 import PatientAttachmentsSection from '@core/patient/components/PatientAttachmentsSection';
@@ -87,13 +87,13 @@ export const buildPatientPayload = ({
   attachedFiles: AttachedFile[];
   patientId: string;
   driveFolderId: string | null;
-}) => {
+}): PatientCreateInput | PatientUpdateInput => {
   const finalName = formatPatientName(name);
   const selectedType = patientTypes.find(t => t.id === typeId);
 
-  return {
+  const basePayload = {
     ...(initialData || {}),
-    id: patientId,
+    ...(initialData ? {} : { id: patientId }),
     name: finalName,
     rut: sanitizeRut(rut),
     birthDate,
@@ -108,8 +108,13 @@ export const buildPatientPayload = ({
     attachedFiles,
     driveFolderId,
     date: initialData ? initialData.date : selectedDate,
-    createdAt: initialData?.createdAt,
   };
+
+  if (initialData) {
+    return basePayload as PatientUpdateInput;
+  }
+
+  return basePayload as PatientCreateInput;
 };
 
 const PatientModalBody: React.FC<PatientModalBodyProps> = ({

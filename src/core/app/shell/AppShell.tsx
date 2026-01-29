@@ -17,12 +17,16 @@ import { AppViews, AppModals } from '@features/daily';
 import { useAppActions } from '@core/app/state/useAppActions';
 import { useAppState } from '@core/app/state/useAppState';
 import { pathFromView, viewFromPath } from '@shared/routes';
-import { AIChatDrawer } from '@features/ai';
+import AIChatEntry from '@features/ai/AIChatEntry';
+import { STORAGE_KEYS } from '@shared/constants/storageKeys';
 import useRouteGuard from '@core/app/shell/useRouteGuard';
 
 const DebugConsole = lazy(() => import('@core/components/DebugConsole'));
 const AppShell: React.FC = () => {
   const { addLog } = useLogger();
+  const showDebugConsole =
+    typeof window !== 'undefined' &&
+    localStorage.getItem(STORAGE_KEYS.DEBUG_MODE) === 'true';
   const {
     user,
     records,
@@ -68,6 +72,7 @@ const AppShell: React.FC = () => {
 
   const {
     handleSavePatient,
+    handleAutoSavePatient,
     handleSaveMultiplePatients,
     confirmDeletePatient,
     handleMovePatientsToDate,
@@ -133,9 +138,11 @@ const AppShell: React.FC = () => {
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">
       <UpdateBanner />
       <Toast />
-      <Suspense fallback={null}>
-        <DebugConsole />
-      </Suspense>
+      {showDebugConsole && (
+        <Suspense fallback={null}>
+          <DebugConsole />
+        </Suspense>
+      )}
       {isLocked && securityPin && (
         <LockScreen onUnlock={handleUnlock} autoLockMinutes={autoLockMinutes} />
       )}
@@ -179,6 +186,7 @@ const AppShell: React.FC = () => {
         onToast={addToast}
         onClosePatientModal={closePatientModal}
         onSavePatient={handleSavePatient}
+        onAutoSavePatient={handleAutoSavePatient}
         onSaveMultiplePatients={handleSaveMultiplePatients}
         onCloseDeleteConfirmation={closeDeleteConfirmation}
         onConfirmDelete={confirmDeletePatient}
@@ -188,7 +196,7 @@ const AppShell: React.FC = () => {
         onNavigate={handleNavigation}
       />
 
-      <AIChatDrawer />
+      <AIChatEntry />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 export { default as AIChatDrawer } from './AIChatDrawer';
+export { default as AIChatEntry } from './AIChatEntry';
 export { default as AIAttachmentAssistant } from './AIAttachmentAssistant';
 export { default as AIChatHeader } from './AIChatHeader';
 export { default as AIChatMessageList } from './AIChatMessageList';

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { copyPatientsToDate, movePatientsToDate, savePatient } from '@use-cases/patients';
-import type { PatientFormData, PatientRecord } from '@shared/types';
+import type { PatientCreateInput, PatientRecord } from '@shared/types';
 
 describe('patient use-cases', () => {
   const nowSpy = vi.spyOn(Date, 'now');
@@ -16,8 +16,7 @@ describe('patient use-cases', () => {
   });
 
   it('savePatient creates new patient when no editing patient', () => {
-    const payload: PatientFormData = {
-      id: 'ignored',
+    const payload: PatientCreateInput = {
       name: 'juan',
       rut: '',
       date: '2024-01-02',
@@ -48,7 +47,7 @@ describe('patient use-cases', () => {
       attachedFiles: [],
       createdAt: 123,
     };
-    const payload: PatientFormData = { ...existing, name: 'nuevo' };
+    const payload = { ...existing, name: 'nuevo' };
 
     const result = savePatient(payload, existing);
 

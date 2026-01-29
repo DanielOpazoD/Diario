@@ -1,10 +1,4 @@
-import {
-    ref,
-    uploadBytes,
-    getDownloadURL,
-    deleteObject
-} from "firebase/storage";
-import { storage, auth } from "./firebaseConfig";
+import { getFirebaseAuth, getFirebaseStorage } from "./firebaseConfig";
 import { AttachedFile } from '@shared/types';
 import { emitStructuredLog } from "./logger";
 
@@ -12,11 +6,14 @@ export const uploadFileToFirebase = async (
     file: File,
     patientId: string
 ): Promise<AttachedFile> => {
+    const storage = await getFirebaseStorage();
+    const auth = await getFirebaseAuth();
     if (!auth || !storage) throw new Error("Firebase not configured");
     const user = auth.currentUser;
     if (!user) throw new Error("User not authenticated");
 
     const fileId = crypto.randomUUID();
+    const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
     const storageRef = ref(storage, `users/${user.uid}/patients/${patientId}/${fileId}_${file.name}`);
 
     try {
@@ -39,10 +36,13 @@ export const uploadFileToFirebase = async (
 };
 
 export const deleteFileFromFirebase = async (patientId: string, fileName: string, fileId: string) => {
+    const storage = await getFirebaseStorage();
+    const auth = await getFirebaseAuth();
     if (!auth || !storage) return;
     const user = auth.currentUser;
     if (!user) return;
 
+    const { ref, deleteObject } = await import("firebase/storage");
     const storageRef = ref(storage, `users/${user.uid}/patients/${patientId}/${fileId}_${fileName}`);
 
     try {

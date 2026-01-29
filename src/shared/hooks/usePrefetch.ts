@@ -3,22 +3,14 @@ import { ViewMode } from '@shared/types';
 
 // Module prefetch functions - these match the lazy imports in App.tsx
 const prefetchModules = {
-  daily: () => import('@features/daily'),
-  stats: () => import('@features/stats/StatsView'),
+  daily: () => import('@features/daily/DailyView'),
+  stats: () => import('@features/stats/Stats'),
   history: () => import('@features/history/PatientsHistoryView'),
-  bookmarks: () => import('@features/bookmarks'),
+  bookmarks: () => import('@features/bookmarks/BookmarksView'),
   tasks: () => import('@features/daily/TaskDashboard'),
   settings: () => import('@features/settings/Settings'),
-  patientModal: () => import('@core/patient'),
+  patientModal: () => import('@core/patient/components/PatientModal'),
   bookmarksModal: () => import('@features/bookmarks/BookmarksModal'),
-};
-
-// Service prefetch functions
-const prefetchServices = {
-  report: () => import('@services/reportService'),
-
-  gemini: () => import('@services/geminiService'),
-  storage: () => import('@services/storage'),
 };
 
 // Track which modules have been prefetched
@@ -58,11 +50,20 @@ const prefetch = async (key: string, loader: () => Promise<any>) => {
  */
 export function usePrefetch(currentView: ViewMode) {
   const hasInitialPrefetch = useRef(false);
+  const canPrefetch = useRef(true);
 
   // Prefetch commonly accessed modules after initial load
   useEffect(() => {
     if (hasInitialPrefetch.current) return;
     hasInitialPrefetch.current = true;
+
+    const connection = (navigator as any).connection;
+    const saveData = Boolean(connection?.saveData);
+    const effectiveType = connection?.effectiveType as string | undefined;
+    const isSlowConnection = effectiveType === '2g' || effectiveType === 'slow-2g';
+
+    canPrefetch.current = !saveData && !isSlowConnection;
+    if (!canPrefetch.current) return;
 
     // After app loads, prefetch the most likely next modules
     const timer = setTimeout(() => {
@@ -81,6 +82,7 @@ export function usePrefetch(currentView: ViewMode) {
 
   // Prefetch on hover/focus of navigation items
   const prefetchOnHover = useCallback((view: ViewMode) => {
+    if (!canPrefetch.current) return;
     const loader = prefetchModules[view];
     if (loader) {
       prefetch(view, loader);
@@ -89,24 +91,16 @@ export function usePrefetch(currentView: ViewMode) {
 
   // Prefetch modal on button hover
   const prefetchModal = useCallback((modalType: 'patientModal' | 'bookmarksModal') => {
+    if (!canPrefetch.current) return;
     const loader = prefetchModules[modalType];
     if (loader) {
       prefetch(modalType, loader);
     }
   }, []);
 
-  // Prefetch service on action indication
-  const prefetchService = useCallback((serviceType: keyof typeof prefetchServices) => {
-    const loader = prefetchServices[serviceType];
-    if (loader) {
-      prefetch(serviceType, loader);
-    }
-  }, []);
-
   return {
     prefetchOnHover,
     prefetchModal,
-    prefetchService,
   };
 }
 

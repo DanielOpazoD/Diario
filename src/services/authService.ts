@@ -1,8 +1,6 @@
 
-import { signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged } from "firebase/auth";
-import { auth } from './firebaseConfig';
-import { User } from '@shared/types';
-import { UserSchema } from '@shared/schemas';
+import { getFirebaseAuth } from './firebaseConfig';
+import type { User } from '@shared/types';
 
 const ALLOWED_EMAILS = [
     "d.opazo.damiani@gmail.com",
@@ -16,10 +14,17 @@ export class AuthError extends Error {
     }
 }
 
+const loadUserSchema = async () => {
+    const { UserSchema } = await import('@shared/schemas');
+    return UserSchema;
+};
+
 export const loginWithGoogle = async (): Promise<User> => {
+    const auth = await getFirebaseAuth();
     if (!auth) throw new AuthError("Servicio de autenticación no disponible");
 
     try {
+        const { signInWithPopup, GoogleAuthProvider, signOut } = await import("firebase/auth");
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
@@ -37,6 +42,7 @@ export const loginWithGoogle = async (): Promise<User> => {
         };
 
         // Validate with Zod (Optional but good practice)
+        const UserSchema = await loadUserSchema();
         return UserSchema.parse(appUser);
 
     } catch (error: any) {
@@ -55,7 +61,9 @@ export const loginWithGoogle = async (): Promise<User> => {
 
 export const loginAsGuest = async (): Promise<User> => {
     try {
+        const auth = await getFirebaseAuth();
         if (auth) {
+            const { signInAnonymously } = await import("firebase/auth");
             await signInAnonymously(auth);
         }
 
@@ -65,6 +73,7 @@ export const loginAsGuest = async (): Promise<User> => {
             avatar: "https://ui-avatars.com/api/?name=Dr+Local&background=0D8ABC&color=fff"
         };
 
+        const UserSchema = await loadUserSchema();
         return UserSchema.parse(guestUser);
     } catch (error: any) {
         console.error("Guest Logic Error:", error);
@@ -77,24 +86,37 @@ export const loginAsGuest = async (): Promise<User> => {
 };
 
 export const logout = async () => {
+    const auth = await getFirebaseAuth();
     if (auth) {
+        const { signOut } = await import("firebase/auth");
         await signOut(auth);
     }
 };
 
 export const subscribeToAuthChanges = (callback: (user: User | null) => void) => {
-    if (!auth) return () => { };
+    let unsub = () => { };
+    let isActive = true;
 
-    return onAuthStateChanged(auth, (firebaseUser) => {
-        if (firebaseUser) {
-            const appUser: User = {
-                name: firebaseUser.displayName || "Usuario",
-                email: firebaseUser.email || "",
-                avatar: firebaseUser.photoURL || "",
-            };
-            callback(appUser);
-        } else {
-            callback(null);
-        }
-    });
+    (async () => {
+        const auth = await getFirebaseAuth();
+        if (!auth || !isActive) return;
+        const { onAuthStateChanged } = await import("firebase/auth");
+        unsub = onAuthStateChanged(auth, (firebaseUser) => {
+            if (firebaseUser) {
+                const appUser: User = {
+                    name: firebaseUser.displayName || "Usuario",
+                    email: firebaseUser.email || "",
+                    avatar: firebaseUser.photoURL || "",
+                };
+                callback(appUser);
+            } else {
+                callback(null);
+            }
+        });
+    })();
+
+    return () => {
+        isActive = false;
+        unsub();
+    };
 };

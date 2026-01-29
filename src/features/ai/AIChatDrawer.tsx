@@ -20,8 +20,12 @@ Creat [valor] BUN [valor] HCO3 [valor] K [valor]  Na [valor]
 Col total [valor]  LDL [valor]
 RAC [valor]      PSA [valor]`;
 
-const AIChatDrawer: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface AIChatDrawerProps {
+  initialOpen?: boolean;
+}
+
+const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ initialOpen = false }) => {
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {

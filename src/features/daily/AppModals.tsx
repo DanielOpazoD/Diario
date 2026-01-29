@@ -1,11 +1,11 @@
 import React, { Suspense, lazy } from 'react';
 import { format } from 'date-fns';
-import { PatientFormData, PatientRecord, ViewMode } from '@shared/types';
+import { PatientCreateInput, PatientRecord, PatientUpdateInput, ViewMode } from '@shared/types';
 import { ModalSkeleton } from '@core/ui';
 
-const PatientModal = lazy(() => import('@core/patient').then(m => ({ default: m.PatientModal })));
+const PatientModal = lazy(() => import('@core/patient/components/PatientModal'));
 const ConfirmationModal = lazy(() => import('@core/ui').then(m => ({ default: m.ConfirmationModal })));
-const BookmarksModal = lazy(() => import('@features/bookmarks').then(m => ({ default: m.BookmarksModal })));
+const BookmarksModal = lazy(() => import('@features/bookmarks/BookmarksModal'));
 const AppMenuModal = lazy(() => import('./AppMenuModal'));
 
 interface AppModalsProps {
@@ -19,8 +19,9 @@ interface AppModalsProps {
   isAppMenuOpen: boolean;
   onToast: (type: 'success' | 'error' | 'info', message: string) => void;
   onClosePatientModal: () => void;
-  onSavePatient: (patientData: PatientFormData) => void;
-  onSaveMultiplePatients: (patientsData: PatientFormData[]) => void;
+  onSavePatient: (patientData: PatientCreateInput | PatientUpdateInput) => void;
+  onAutoSavePatient: (patientData: PatientCreateInput | PatientUpdateInput) => void;
+  onSaveMultiplePatients: (patientsData: PatientCreateInput[]) => void;
   onCloseDeleteConfirmation: () => void;
   onConfirmDelete: () => void;
   onCloseBookmarksModal: () => void;
@@ -38,6 +39,7 @@ const AppModals: React.FC<AppModalsProps> = ({
   onToast,
   onClosePatientModal,
   onSavePatient,
+  onAutoSavePatient,
   onSaveMultiplePatients,
   onCloseDeleteConfirmation,
   onConfirmDelete,
@@ -54,6 +56,7 @@ const AppModals: React.FC<AppModalsProps> = ({
           isOpen={isPatientModalOpen}
           onClose={onClosePatientModal}
           onSave={onSavePatient}
+          onAutoSave={onAutoSavePatient}
           onSaveMultiple={onSaveMultiplePatients}
           addToast={onToast}
           initialData={editingPatient}

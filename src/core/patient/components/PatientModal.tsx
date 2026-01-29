@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PatientRecord, PatientFormData } from '@shared/types';
+import { PatientCreateInput, PatientRecord, PatientUpdateInput } from '@shared/types';
 import useAppStore from '@core/stores/useAppStore';
 import PatientModalHeader from '@core/patient/components/PatientModalHeader';
 import PatientModalFooter from '@core/patient/components/PatientModalFooter';
@@ -15,15 +15,16 @@ import usePendingTasks from '@core/patient/hooks/usePendingTasks';
 interface PatientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (patient: PatientFormData) => void;
-  onSaveMultiple?: (patients: PatientFormData[]) => void;
+  onSave: (patient: PatientCreateInput | PatientUpdateInput) => void;
+  onAutoSave: (patient: PatientCreateInput | PatientUpdateInput) => void;
+  onSaveMultiple?: (patients: PatientCreateInput[]) => void;
   addToast: (type: 'success' | 'error' | 'info', msg: string) => void;
   initialData?: PatientRecord | null;
   selectedDate: string;
   initialTab?: 'clinical' | 'files';
 }
 
-const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, addToast, initialData, selectedDate, initialTab = 'clinical' }) => {
+const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, onAutoSave, onSaveMultiple, addToast, initialData, selectedDate, initialTab = 'clinical' }) => {
   const patientTypes = useAppStore(state => state.patientTypes);
   const defaultTypeId = patientTypes.find(t => t.id === 'policlinico')?.id || patientTypes[0]?.id || '';
 
@@ -115,9 +116,34 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
     extractFromAttachments(attachedFiles, { name, rut, birthDate, gender, diagnosis, clinicalNote });
   };
 
+  const autoSaveInitialized = React.useRef(false);
+  const handleAutoSave = () => {
+    if (!name.trim()) return;
+    const patientToSave = buildPatientPayload({
+      initialData,
+      selectedDate,
+      patientTypes,
+      name,
+      rut,
+      birthDate,
+      gender,
+      type,
+      typeId,
+      entryTime,
+      exitTime,
+      diagnosis,
+      clinicalNote,
+      pendingTasks,
+      attachedFiles,
+      patientId,
+      driveFolderId,
+    });
+    onAutoSave(patientToSave);
+  };
+
   const handleSave = () => {
     if (!name.trim()) return addToast('error', 'Nombre requerido');
-    const patientToSave: PatientFormData = buildPatientPayload({
+    const patientToSave = buildPatientPayload({
       initialData,
       selectedDate,
       patientTypes,
@@ -139,6 +165,39 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
     onSave(patientToSave);
     onClose();
   };
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    if (!autoSaveInitialized.current) {
+      autoSaveInitialized.current = true;
+      return;
+    }
+    const timeout = setTimeout(() => {
+      handleAutoSave();
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [
+    name,
+    rut,
+    birthDate,
+    gender,
+    type,
+    typeId,
+    entryTime,
+    exitTime,
+    diagnosis,
+    clinicalNote,
+    pendingTasks,
+    attachedFiles,
+    driveFolderId,
+    isOpen,
+  ]);
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      autoSaveInitialized.current = false;
+    }
+  }, [isOpen]);
 
   const { toggleTask, deleteTask, addTask } = usePendingTasks({ setPendingTasks });
 
@@ -219,7 +278,11 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
           addToast={addToast}
         />
 
-        <PatientModalFooter onCancel={onClose} onSave={handleSave} />
+        <PatientModalFooter
+          onCancel={onClose}
+          onSave={handleSave}
+          showSave={false}
+        />
       </div>
     </div>
   );

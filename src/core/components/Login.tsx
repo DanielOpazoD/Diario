@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import useAppStore from '@core/stores/useAppStore';
-import { loginWithGoogle } from '@use-cases/auth';
 
 const Login: React.FC = () => {
   // Store Actions
@@ -15,6 +14,7 @@ const Login: React.FC = () => {
     setError('');
     setIsLoading(true);
     try {
+      const { loginWithGoogle } = await import('@use-cases/auth');
       const user = await loginWithGoogle();
       login(user); // Store handles persistence if needed, or we rely on session
     } catch (e: any) {

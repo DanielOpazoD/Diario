@@ -11,12 +11,12 @@ import {
   HistorySkeleton,
 } from '@core/ui';
 
-const DailyView = lazy(() => import('@features/daily').then(m => ({ default: m.DailyView })));
-const StatsView = lazy(() => import('@features/stats').then(m => ({ default: m.Stats })));
-const PatientsHistoryView = lazy(() => import('@features/history').then(m => ({ default: m.PatientsHistoryView })));
-const BookmarksView = lazy(() => import('@features/bookmarks').then(m => ({ default: m.BookmarksView })));
-const TaskDashboard = lazy(() => import('@features/daily').then(m => ({ default: m.TaskDashboard })));
-const Settings = lazy(() => import('@features/settings').then(m => ({ default: m.Settings })));
+const DailyView = lazy(() => import('@features/daily/DailyView'));
+const StatsView = lazy(() => import('@features/stats/Stats'));
+const PatientsHistoryView = lazy(() => import('@features/history/PatientsHistoryView'));
+const BookmarksView = lazy(() => import('@features/bookmarks/BookmarksView'));
+const TaskDashboard = lazy(() => import('@features/daily/TaskDashboard'));
+const Settings = lazy(() => import('@features/settings/Settings'));
 
 interface AppViewsProps {
   currentDate: Date;

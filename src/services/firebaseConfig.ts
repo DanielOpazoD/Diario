@@ -1,7 +1,3 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
-import { getAuth } from "firebase/auth";
 import { env } from "@shared/config/env";
 
 const firebaseConfig = {
@@ -16,13 +12,50 @@ const firebaseConfig = {
 // Validar si tenemos las credenciales mínimas
 const isConfigValid = env.flags.isFirebaseConfigured;
 
-// Initialize Firebase solo si hay config
-const app = isConfigValid ? initializeApp(firebaseConfig) : null;
+let appPromise: Promise<any | null> | null = null;
+let authPromise: Promise<any | null> | null = null;
+let dbPromise: Promise<any | null> | null = null;
+let storagePromise: Promise<any | null> | null = null;
 
-export const db = app ? getFirestore(app) : null;
-export const storage = app ? getStorage(app) : null;
-export const auth = app ? getAuth(app) : null;
+const getFirebaseApp = async () => {
+    if (!isConfigValid) return null;
+    if (!appPromise) {
+        appPromise = import("firebase/app").then(({ initializeApp }) => initializeApp(firebaseConfig));
+    }
+    return appPromise;
+};
+
+export const getFirebaseAuth = async () => {
+    if (!authPromise) {
+        authPromise = getFirebaseApp().then(async (app) => {
+            if (!app) return null;
+            const { getAuth } = await import("firebase/auth");
+            return getAuth(app);
+        });
+    }
+    return authPromise;
+};
+
+export const getFirestoreDb = async () => {
+    if (!dbPromise) {
+        dbPromise = getFirebaseApp().then(async (app) => {
+            if (!app) return null;
+            const { getFirestore } = await import("firebase/firestore");
+            return getFirestore(app);
+        });
+    }
+    return dbPromise;
+};
+
+export const getFirebaseStorage = async () => {
+    if (!storagePromise) {
+        storagePromise = getFirebaseApp().then(async (app) => {
+            if (!app) return null;
+            const { getStorage } = await import("firebase/storage");
+            return getStorage(app);
+        });
+    }
+    return storagePromise;
+};
 
 export const isFirebaseConfigured = isConfigValid;
-
-export default app;

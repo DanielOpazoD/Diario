@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import { z } from 'zod';
 import { extractPatientDataFromImage } from '@use-cases/ai';
 import { fileToBase64 } from '@services/storage';
 import { uploadFileToFirebase } from '@services/firebaseStorageService';
@@ -40,6 +39,7 @@ export const usePdfPatientImport = (currentDate: Date) => {
                 const extractedData: any = await extractPatientDataFromImage(base64, file.type);
 
                 // Zod Validation for Extracted Data
+                const { z } = await import('zod');
                 const ExtractedDataSchema = z.object({
                     name: z.string().optional(),
                     rut: z.string().optional(),

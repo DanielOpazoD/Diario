@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { differenceInYears } from 'date-fns';
 import { CheckSquare, Square, ChevronDown, Trash2, Paperclip, Stethoscope, FileText } from 'lucide-react';
 import { PatientRecord } from '@shared/types';
@@ -74,11 +74,15 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
         }
     };
 
-    const handleSaveInline = (updatedPatient: PatientRecord) => {
+    const handleSaveInline = useCallback((updatedPatient: PatientRecord) => {
         updatePatient(updatedPatient);
         addToast('success', 'Cambios guardados correctamente');
         setActiveTab(null);
-    };
+    }, [addToast, updatePatient]);
+
+    const handleAutoSaveInline = useCallback((updatedPatient: PatientRecord) => {
+        updatePatient(updatedPatient);
+    }, [updatePatient]);
 
     const taskButtonClassName = activeTab === 'tasks'
         ? 'bg-amber-500 text-white shadow-amber-500/30'
@@ -213,6 +217,7 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                         initialTab={activeTab}
                         onClose={() => setActiveTab(null)}
                         onSave={handleSaveInline}
+                        onAutoSave={handleAutoSaveInline}
                         addToast={addToast}
                         selectedDate={selectedDate}
                     />

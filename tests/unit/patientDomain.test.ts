@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { buildNewPatient, buildUpdatedPatient, normalizePatientName } from '@domain/patient';
-import type { PatientFormData, PatientRecord } from '@shared/types';
+import type { PatientCreateInput, PatientRecord } from '@shared/types';
 
 describe('patient domain', () => {
   beforeEach(() => {
@@ -17,8 +17,7 @@ describe('patient domain', () => {
   });
 
   it('builds new patient with defaults', () => {
-    const payload: PatientFormData = {
-      id: 'ignored',
+    const payload: PatientCreateInput = {
       name: 'maria LOPEZ',
       rut: '',
       birthDate: '',
@@ -53,10 +52,7 @@ describe('patient domain', () => {
       attachedFiles: [],
       createdAt: 123,
     };
-    const payload: PatientFormData = {
-      ...existing,
-      name: 'nuevo nombre',
-    };
+    const payload = { ...existing, name: 'nuevo nombre' };
 
     const result = buildUpdatedPatient(existing, payload);
 

@@ -1,6 +1,5 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { z } from 'zod';
 import { analyzeClinicalNote, generateClinicalSummary } from '@use-cases/ai';
 import { PendingTask } from '@shared/types';
 
@@ -104,6 +103,7 @@ const usePatientVoiceAndAI = ({
       const result = await analyzeClinicalNote(clinicalNote);
 
       // Validate AI Result
+      const { z } = await import('zod');
       const AIResultSchema = z.object({
         structuredDiagnosis: z.string(),
         extractedTasks: z.array(z.string())

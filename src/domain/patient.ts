@@ -1,20 +1,25 @@
-import { PatientFormData, PatientRecord } from '@shared/types';
+import { PatientCreateInput, PatientRecord, PatientUpdateInput } from '@shared/types';
 
 export const normalizePatientName = (name: string): string => {
   if (!name) return '';
   return name.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
 };
 
-export const buildNewPatient = (data: PatientFormData): PatientRecord => ({
-  ...data,
-  id: crypto.randomUUID(),
-  createdAt: Date.now(),
-  name: normalizePatientName(data.name),
-  pendingTasks: data.pendingTasks ?? [],
-  attachedFiles: data.attachedFiles ?? [],
-});
+export const buildNewPatient = (data: PatientCreateInput): PatientRecord => {
+  const maybeId = (data as PatientRecord).id;
+  const maybeCreatedAt = (data as PatientRecord).createdAt;
+  return {
+    ...data,
+    id: maybeId || crypto.randomUUID(),
+    createdAt: typeof maybeCreatedAt === 'number' ? maybeCreatedAt : Date.now(),
+    name: normalizePatientName(data.name),
+    pendingTasks: data.pendingTasks ?? [],
+    attachedFiles: data.attachedFiles ?? [],
+  };
+};
 
-export const buildUpdatedPatient = (existing: PatientRecord, data: PatientFormData): PatientRecord => ({
+export const buildUpdatedPatient = (existing: PatientRecord, data: PatientUpdateInput): PatientRecord => ({
+  ...existing,
   ...data,
   id: existing.id,
   createdAt: existing.createdAt,

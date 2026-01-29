@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePatientCrud } from '@core/patient';
-import type { PatientFormData } from '@shared/types';
+import type { PatientCreateInput } from '@shared/types';
 
 describe('usePatientCrud', () => {
     const mockAddPatient = vi.fn();
@@ -29,7 +29,7 @@ describe('usePatientCrud', () => {
         vi.clearAllMocks();
     });
 
-    const buildPatientFormData = (overrides: Partial<PatientFormData> = {}): PatientFormData => ({
+    const buildPatientFormData = (overrides: Partial<PatientCreateInput> = {}): PatientCreateInput => ({
         name: 'PACIENTE BASE',
         rut: '',
         date: '2024-03-20',

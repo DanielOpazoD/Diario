@@ -1,4 +1,4 @@
-import { PatientFormData, PatientRecord } from '@shared/types';
+import { PatientCreateInput, PatientRecord, PatientUpdateInput } from '@shared/types';
 import { formatToDisplayDate } from '@shared/utils/dateUtils';
 import {
   buildNewPatient,
@@ -22,25 +22,25 @@ type BatchResult = {
 const formatDateLabel = (dateStr: string) => formatToDisplayDate(dateStr) || dateStr;
 
 export const savePatient = (
-  patientData: PatientFormData,
+  patientData: PatientCreateInput | PatientUpdateInput,
   editingPatient: PatientRecord | null
 ): SavePatientResult => {
   if (editingPatient) {
     return {
-      patient: buildUpdatedPatient(editingPatient, patientData),
+      patient: buildUpdatedPatient(editingPatient, patientData as PatientUpdateInput),
       isUpdate: true,
       message: 'Paciente actualizado',
     };
   }
 
   return {
-    patient: buildNewPatient(patientData),
+    patient: buildNewPatient(patientData as PatientCreateInput),
     isUpdate: false,
     message: 'Nuevo paciente registrado',
   };
 };
 
-export const savePatientsBatch = (patientsData: PatientFormData[]): PatientRecord[] =>
+export const savePatientsBatch = (patientsData: PatientCreateInput[]): PatientRecord[] =>
   patientsData.map((patient) => buildNewPatient(patient));
 
 export const movePatientsToDate = (

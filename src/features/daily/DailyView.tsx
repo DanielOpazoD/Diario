@@ -1,17 +1,17 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, FileText } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@core/ui';
 import { ExecutivePatientRow } from '@core/patient';
 import FilterBar from '@features/daily/FilterBar';
 import VirtualizedPatientList from '@features/daily/VirtualizedPatientList';
+import PdfImportEntry from '@features/daily/components/PdfImportEntry';
 
 import { PatientRecord, PatientTypeConfig } from '@shared/types';
 import useAppStore from '@core/stores/useAppStore';
 import { useDailyMetrics } from '@shared/hooks/useDailyMetrics';
 import { usePatientFilter } from '@shared/hooks/usePatientFilter';
 import { useBatchOperations } from '@shared/hooks/useBatchOperations';
-import { usePdfPatientImport } from '@core/patient';
 
 interface DailyViewProps {
   currentDate: Date;
@@ -47,23 +47,18 @@ const DailyView: React.FC<DailyViewProps> = ({
     targetDate,
     toggleSelectionMode,
     togglePatientSelection,
+    selectAll,
     clearSelection,
     setTargetDate,
     handleBatchMove,
     handleBatchCopy,
+    selectedCount,
   } = useBatchOperations({
     onMovePatients,
     onCopyPatients,
     addToast,
     initialTargetDate: format(currentDate, 'yyyy-MM-dd'),
   });
-
-  const {
-    fileInputRef,
-    isImporting,
-    handlePdfUpload,
-    triggerPicker
-  } = usePdfPatientImport(currentDate);
 
   const addPatient = useAppStore(state => state.addPatient);
 
@@ -128,22 +123,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                   {selectionMode ? '✕' : '☐'}
                 </Button>
 
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handlePdfUpload}
-                  accept="application/pdf"
-                  multiple
-                  className="hidden"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={triggerPicker}
-                  isLoading={isImporting}
-                  icon={<FileText className="w-4 h-4" />}
-                  className="w-8 h-8 rounded-lg !p-0 text-gray-500 hover:text-brand-500 hover:bg-brand-500/10"
-                />
+                <PdfImportEntry currentDate={currentDate} />
               </div>
 
               <Button
@@ -159,10 +139,17 @@ const DailyView: React.FC<DailyViewProps> = ({
       </div>
 
       {selectionMode && (
-        <div className="bg-blue-50/90 dark:bg-blue-900/20 px-4 py-2 flex items-center justify-between border-b border-blue-100 dark:border-blue-800 animate-slide-down text-sm">
-          <span className="font-medium text-blue-800 dark:text-blue-200">{selectedPatients.size} seleccionados</span>
-          <div className="flex items-center gap-2">
-            <button className="text-blue-600 hover:underline px-2" onClick={clearSelection}>Limpiar</button>
+        <div className="bg-blue-50/90 dark:bg-blue-900/20 px-4 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 dark:border-blue-800 animate-slide-down text-sm">
+          <span className="font-medium text-blue-800 dark:text-blue-200">{selectedCount} seleccionados</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedCount < visibleRecords.length && (
+              <button className="text-blue-600 hover:underline px-2" onClick={() => selectAll(visibleRecords.map(p => p.id))}>
+                Seleccionar todos
+              </button>
+            )}
+            {selectedCount > 0 && (
+              <button className="text-blue-600 hover:underline px-2" onClick={clearSelection}>Limpiar</button>
+            )}
             <div className="h-4 w-px bg-blue-200"></div>
             <input
               type="date"
@@ -170,8 +157,8 @@ const DailyView: React.FC<DailyViewProps> = ({
               onChange={(e) => setTargetDate(e.target.value)}
               className="px-2 py-1 rounded border border-blue-200 text-xs"
             />
-            <Button onClick={handleBatchMove} size="sm" variant="secondary" className="h-7 text-xs">Mover</Button>
-            <Button onClick={handleBatchCopy} size="sm" variant="primary" className="h-7 text-xs">Copiar</Button>
+            <Button onClick={handleBatchMove} size="sm" variant="secondary" className="h-7 text-xs" disabled={selectedCount === 0}>Mover</Button>
+            <Button onClick={handleBatchCopy} size="sm" variant="primary" className="h-7 text-xs" disabled={selectedCount === 0}>Copiar</Button>
           </div>
         </div>
       )}
@@ -181,6 +168,10 @@ const DailyView: React.FC<DailyViewProps> = ({
           <CalendarIcon className="w-12 h-12 mb-4 opacity-20 text-brand-500" />
           <p className="text-sm font-black uppercase tracking-widest opacity-60">No hay pacientes para mostrar</p>
           <p className="text-[10px] mt-1 font-bold opacity-40 uppercase">Selecciona otra fecha o agrega uno nuevo</p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <Button size="sm" className="rounded-pill px-4" onClick={handleAddBlankPatient}>Agregar paciente</Button>
+            <PdfImportEntry currentDate={currentDate} />
+          </div>
         </div>
       ) : visibleRecords.length > 20 ? (
         // Use virtualized list for large datasets

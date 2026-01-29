@@ -1,8 +1,7 @@
 
-import React from 'react';
+import React, { Suspense, lazy, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Filter, Clock, TrendingUp } from 'lucide-react';
 import { Button } from '@core/ui';
 import { useStatsData } from '@features/stats/hooks/useStatsData';
@@ -11,7 +10,10 @@ interface StatsProps {
   currentDate: Date;
 }
 
+const StatsCharts = lazy(() => import('./StatsCharts'));
+
 const Stats: React.FC<StatsProps> = ({ currentDate }) => {
+  const [showCharts, setShowCharts] = useState(false);
   const {
     startDate,
     endDate,
@@ -30,6 +32,19 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
   } = useStatsData(currentDate);
 
   const COLORS = ['#ef4444', '#3b82f6', '#9333ea', '#10b981', '#f59e0b', '#ec4899', '#6366f1', '#6b7280'];
+  const monthLabel = format(currentDate, 'MMMM yyyy', { locale: es });
+  const trendPoints = useMemo(() => {
+    if (trendData.length === 0) return ['0,100', '100,100'];
+    const counts = trendData.map(item => item.count);
+    const max = Math.max(...counts, 1);
+    const min = Math.min(...counts);
+    const range = Math.max(max - min, 1);
+    return counts.map((value, index) => {
+      const x = counts.length === 1 ? 50 : (index / (counts.length - 1)) * 100;
+      const y = 100 - ((value - min) / range) * 100;
+      return `${x},${y}`;
+    });
+  }, [trendData]);
 
   return (
     <div className="space-y-4 md:space-y-6 animate-fade-in pb-14 pt-1.5 max-w-6xl mx-auto">
@@ -69,16 +84,27 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
             <h3 className={`${compactStats ? 'text-base' : 'text-lg'} font-bold text-gray-900 dark:text-white`}>Tendencia Semanal</h3>
             <span className="text-[11px] bg-green-100 text-green-800 px-2 py-1 rounded-full font-semibold">Últimos 7 días</span>
           </div>
-          <div className={`${compactStats ? 'h-20' : 'h-24'} w-full`}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData}>
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#f3f4f6', fontSize: '12px' }}
-                  labelStyle={{ color: '#9ca3af', marginBottom: '4px' }}
-                />
-                <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={compactStats ? 2.5 : 3} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className={`${compactStats ? 'h-20' : 'h-24'} w-full rounded-xl bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-800 border border-blue-100/60 dark:border-slate-700/60`}>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+              <defs>
+                <linearGradient id="trend-fill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.05" />
+                </linearGradient>
+              </defs>
+              <polyline
+                fill="none"
+                stroke="#2563eb"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={trendPoints.join(' ')}
+              />
+              <polygon
+                fill="url(#trend-fill)"
+                points={`0,100 ${trendPoints.join(' ')} 100,100`}
+              />
+            </svg>
           </div>
         </div>
       </div>
@@ -140,58 +166,29 @@ const Stats: React.FC<StatsProps> = ({ currentDate }) => {
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 lg:grid-cols-2 ${compactStats ? 'gap-4 md:gap-5' : 'gap-6 md:gap-8'}`}>
-        {/* Bar Chart */}
-        <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50 ${compactStats ? 'p-5' : 'p-6 md:p-8'}`}>
-          <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center ${compactStats ? 'mb-4' : 'mb-6'} gap-2`}>
-            <h3 className={`${compactStats ? 'text-lg' : 'text-xl'} font-bold text-gray-800 dark:text-gray-100`}>Flujo Mensual</h3>
-            <span className="text-xs font-semibold text-gray-600 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full capitalize">
-              {format(currentDate, 'MMMM yyyy', { locale: es })}
-            </span>
-          </div>
-          <div className={`${compactStats ? 'h-56 md:h-64' : 'h-64 md:h-72'} w-full`}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" className="dark:stroke-gray-700/50" />
-                <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 12 }} tickLine={false} axisLine={false} dy={10} />
-                <YAxis allowDecimals={false} stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 12 }} tickLine={false} axisLine={false} dx={-10} />
-                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '12px', color: '#f3f4f6', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }} itemStyle={{ color: '#f3f4f6' }} cursor={{ fill: 'transparent' }} />
-                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-
-                {chartTypes.map(({ id, label }, idx) => (
-                  <Bar
-                    key={id}
-                    dataKey={label}
-                    stackId="a"
-                    fill={COLORS[idx % COLORS.length]}
-                    name={label}
-                    radius={[0, 0, 0, 0]}
-                    maxBarSize={40}
-                  />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {showCharts ? (
+        <Suspense fallback={<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+          <div className="h-64 md:h-72 rounded-2xl bg-gray-100 dark:bg-gray-800/70 animate-pulse" />
+          <div className="h-64 md:h-72 rounded-2xl bg-gray-100 dark:bg-gray-800/70 animate-pulse" />
+        </div>}>
+          <StatsCharts
+            variant="charts"
+            monthlyData={monthlyData}
+            typeDistribution={typeDistribution}
+            chartTypes={chartTypes}
+            monthLabel={monthLabel}
+            compactStats={compactStats}
+            colors={COLORS}
+          />
+        </Suspense>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700/60 bg-gray-50/80 dark:bg-gray-900/40 p-6 md:p-8 text-center space-y-3">
+          <p className="text-sm text-gray-600 dark:text-gray-300">Los gráficos avanzados se cargan bajo demanda para acelerar la pantalla.</p>
+          <Button size="sm" className="rounded-pill px-4" onClick={() => setShowCharts(true)}>
+            Mostrar gráficos
+          </Button>
         </div>
-
-        {/* Pie Chart */}
-        <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50 ${compactStats ? 'p-5' : 'p-6 md:p-8'}`}>
-          <h3 className={`${compactStats ? 'text-lg' : 'text-xl'} font-bold text-gray-800 dark:text-gray-100 ${compactStats ? 'mb-4' : 'mb-6'}`}>Distribución por Tipo</h3>
-          <div className={`${compactStats ? 'h-56 md:h-64' : 'h-64 md:h-72'} w-full flex justify-center`}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={typeDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
-                  {typeDistribution.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '12px', color: '#f3f4f6' }} />
-                <Legend iconType="circle" layout="vertical" verticalAlign="middle" align="right" />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

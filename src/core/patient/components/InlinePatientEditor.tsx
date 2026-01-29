@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Save, X } from 'lucide-react';
 import { PatientRecord, AttachedFile } from '@shared/types';
 import { Button } from '@core/ui';
@@ -18,6 +18,7 @@ interface InlinePatientEditorProps {
     initialTab: 'demographics' | 'clinical' | 'files' | 'tasks';
     onClose: () => void;
     onSave: (patient: PatientRecord) => void;
+    onAutoSave?: (patient: PatientRecord) => void;
     addToast: (type: 'success' | 'error' | 'info', msg: string) => void;
     selectedDate: string;
 }
@@ -27,6 +28,7 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
     initialTab,
     onClose,
     onSave,
+    onAutoSave,
     addToast,
     selectedDate
 }) => {
@@ -81,13 +83,11 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
         setClinicalNote,
     });
 
-    const handleSave = () => {
-        if (!name.trim()) return addToast('error', 'Nombre requerido');
-
+    const buildUpdatedPatient = () => {
         const finalName = formatPatientName(name);
         const selectedType = patientTypes.find(t => t.id === typeId);
 
-        const updatedPatient: PatientRecord = {
+        return {
             ...patient,
             name: finalName,
             rut: sanitizeRut(rut),
@@ -103,9 +103,22 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
             attachedFiles,
             driveFolderId
         };
-
-        onSave(updatedPatient);
     };
+
+    const handleSave = () => {
+        if (!name.trim()) return addToast('error', 'Nombre requerido');
+        onSave(buildUpdatedPatient());
+    };
+
+    const autoSaveInitialized = useRef(false);
+    useEffect(() => {
+        if (!onAutoSave) return;
+        if (!autoSaveInitialized.current) {
+            autoSaveInitialized.current = true;
+            return;
+        }
+        onAutoSave(buildUpdatedPatient());
+    }, [pendingTasks, attachedFiles, driveFolderId, onAutoSave]);
 
     const handleExtractFromAttachmentsWrapper = () => {
         handleExtractFromAttachments(attachedFiles, { name, rut, birthDate, gender, diagnosis, clinicalNote });
@@ -194,7 +207,7 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
                 )}
             </div>
 
-            {initialTab !== 'demographics' && (
+            {initialTab === 'clinical' && (
                 <div className="flex justify-end gap-2 pt-2 mt-2 border-t border-gray-50 dark:border-gray-800">
                     <Button variant="ghost" size="sm" onClick={onClose} className="text-xs h-7">Cancelar</Button>
                     <Button size="sm" onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-bold text-xs h-7">

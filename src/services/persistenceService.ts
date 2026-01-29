@@ -1,4 +1,5 @@
 import useAppStore from '@core/stores/useAppStore';
+import { shallow } from 'zustand/shallow';
 import { STORAGE_KEYS } from '@shared/constants/storageKeys';
 import {
     saveRecordsToLocal,
@@ -20,8 +21,22 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null;
  * Handles debounced saving to LocalStorage and incremental sync to Firebase.
  */
 export const initPersistence = () => {
-    return useAppStore.subscribe((state) => {
+    return useAppStore.subscribe((state) => ({
+        records: state.records,
+        generalTasks: state.generalTasks,
+        bookmarks: state.bookmarks,
+        bookmarkCategories: state.bookmarkCategories,
+        user: state.user,
+        theme: state.theme,
+        patientTypes: state.patientTypes,
+        securityPin: state.securityPin,
+        autoLockMinutes: state.autoLockMinutes,
+        highlightPendingPatients: state.highlightPendingPatients,
+        compactStats: state.compactStats,
+        showBookmarkBar: state.showBookmarkBar,
+    }), (state) => {
         if (saveTimeout) clearTimeout(saveTimeout);
+        useAppStore.setState({ syncStatus: 'saving' });
 
         saveTimeout = setTimeout(async () => {
             // 1. LocalStorage Persistence
@@ -51,15 +66,15 @@ export const initPersistence = () => {
             }));
 
             // 2. Incremental Firebase Sync
-            if (state.user) {
-                const dirtyPatients = state.records.filter(patient => {
-                    const lastSync = lastSyncedHashes.get(patient.id);
-                    // Decide if it's dirty: never synced or updatedAt is newer
-                    return lastSync === undefined || (patient.updatedAt || 0) > lastSync;
-                });
+            try {
+                if (state.user) {
+                    const dirtyPatients = state.records.filter(patient => {
+                        const lastSync = lastSyncedHashes.get(patient.id);
+                        // Decide if it's dirty: never synced or updatedAt is newer
+                        return lastSync === undefined || (patient.updatedAt || 0) > lastSync;
+                    });
 
-                if (dirtyPatients.length > 0) {
-                    try {
+                    if (dirtyPatients.length > 0) {
                         console.log(`[Persistence] Syncing ${dirtyPatients.length} dirty patients to Firebase...`);
                         await syncPatientsToFirebase(dirtyPatients);
 
@@ -68,11 +83,13 @@ export const initPersistence = () => {
                             lastSyncedHashes.set(p.id, p.updatedAt || 0);
                         });
                         console.log(' [AutoSave] Sincronización incremental exitosa');
-                    } catch (error) {
-                        console.error('[Persistence] Error syncing dirty patients:', error);
                     }
                 }
+                useAppStore.setState({ syncStatus: 'synced', lastSyncAt: Date.now() });
+            } catch (error) {
+                console.error('[Persistence] Error syncing dirty patients:', error);
+                useAppStore.setState({ syncStatus: 'error' });
             }
         }, 500);
-    });
+    }, { equalityFn: shallow });
 };

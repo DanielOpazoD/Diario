@@ -1,12 +1,10 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, Suspense, lazy } from 'react';
 import { Trash2, ExternalLink } from 'lucide-react';
 import { AttachedFile } from '@shared/types';
 import {
   useUploadPatientFileFirebase,
   useDeletePatientFileFirebase
 } from '@features/files/hooks/usePatientFiles';
-import { AIAttachmentAssistant } from '@features/ai';
-import FilePreviewModal from './FilePreviewModal';
 import PasteImageConfirmModal from './PasteImageConfirmModal';
 
 // Import modular components
@@ -22,6 +20,9 @@ import {
   getFileIcon,
   getFileColor,
 } from './index';
+
+const AIAttachmentAssistant = lazy(() => import('@features/ai/AIAttachmentAssistant'));
+const FilePreviewModal = lazy(() => import('./FilePreviewModal'));
 
 interface FileAttachmentManagerProps {
   files: AttachedFile[];
@@ -434,19 +435,27 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
         />
       </div>
 
-      <AIAttachmentAssistant
-        isOpen={isAIPanelOpen}
-        onClose={() => setIsAIPanelOpen(false)}
-        files={files}
-        patientName={patientName}
-      />
+      {isAIPanelOpen && (
+        <Suspense fallback={null}>
+          <AIAttachmentAssistant
+            isOpen={isAIPanelOpen}
+            onClose={() => setIsAIPanelOpen(false)}
+            files={files}
+            patientName={patientName}
+          />
+        </Suspense>
+      )}
 
-      <FilePreviewModal
-        file={selectedFile}
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        onUpdate={handleFileUpdate}
-      />
+      {isPreviewOpen && (
+        <Suspense fallback={null}>
+          <FilePreviewModal
+            file={selectedFile}
+            isOpen={isPreviewOpen}
+            onClose={() => setIsPreviewOpen(false)}
+            onUpdate={handleFileUpdate}
+          />
+        </Suspense>
+      )}
 
       <PasteImageConfirmModal
         isOpen={!!pastedImage}
