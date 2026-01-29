@@ -9,7 +9,7 @@ import type { Bookmark, BookmarkCategory } from '@shared/types';
 describe('bookmarks domain', () => {
   beforeEach(() => {
     vi.spyOn(Date, 'now').mockReturnValue(1700000000000);
-    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('bookmark-uuid');
+    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('00000000-0000-0000-0000-000000000000');
   });
 
   afterEach(() => {

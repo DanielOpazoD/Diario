@@ -1,6 +1,4 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, CheckSquare, LogOut, Menu, Users, X } from 'lucide-react';
-import { DateNavigator } from '@features/daily';
 import { ViewMode, PatientRecord, User } from '@shared/types';
 import { BookmarksBar } from '@features/bookmarks';
 import MainSidebar from '@core/layouts/MainSidebar';

@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { format } from 'date-fns';
-import { PatientRecord, ViewMode } from '@shared/types';
+import { PatientFormData, PatientRecord, ViewMode } from '@shared/types';
 import { ModalSkeleton } from '@core/ui';
 
 const PatientModal = lazy(() => import('@core/patient').then(m => ({ default: m.PatientModal })));
@@ -19,8 +19,8 @@ interface AppModalsProps {
   isAppMenuOpen: boolean;
   onToast: (type: 'success' | 'error' | 'info', message: string) => void;
   onClosePatientModal: () => void;
-  onSavePatient: (patientData: Omit<PatientRecord, 'id' | 'createdAt'> | PatientRecord) => void;
-  onSaveMultiplePatients: (patientsData: Array<Omit<PatientRecord, 'id' | 'createdAt'>>) => void;
+  onSavePatient: (patientData: PatientFormData) => void;
+  onSaveMultiplePatients: (patientsData: PatientFormData[]) => void;
   onCloseDeleteConfirmation: () => void;
   onConfirmDelete: () => void;
   onCloseBookmarksModal: () => void;

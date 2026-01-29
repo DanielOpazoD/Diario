@@ -67,7 +67,8 @@ export interface PatientRecord {
  * Type for patient data being submitted from forms.
  * Omits `createdAt` which is set by the system when truly new.
  */
-export type PatientFormData = Omit<PatientRecord, 'createdAt'> & {
+export type PatientFormData = Omit<PatientRecord, 'id' | 'createdAt'> & {
+  id?: string;
   createdAt?: number;
 };
 

@@ -1,14 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { extractMultiplePatientsFromImage, extractPatientDataFromImage } from '@use-cases/ai';
 import { fileToBase64, downloadUrlAsBase64 } from '@services/storage';
-import { AttachedFile, PatientRecord, PatientType } from '@shared/types';
+import { AttachedFile, PatientFormData, PatientType } from '@shared/types';
 import { formatPatientName } from '@core/patient/utils/patientUtils';
 
 interface UsePatientDataExtractionParams {
   addToast: (type: 'success' | 'error' | 'info', msg: string) => void;
   selectedDate: string;
   onClose: () => void;
-  onSaveMultiple?: (patients: Array<Omit<PatientRecord, 'id' | 'createdAt'>>) => void;
+  onSaveMultiple?: (patients: PatientFormData[]) => void;
   setName: React.Dispatch<React.SetStateAction<string>>;
   setRut: React.Dispatch<React.SetStateAction<string>>;
   setBirthDate: React.Dispatch<React.SetStateAction<string>>;

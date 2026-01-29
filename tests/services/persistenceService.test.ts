@@ -54,7 +54,9 @@ describe('persistenceService', () => {
         vi.clearAllMocks();
 
         // Get the mocked subscribe function
-        const useAppStore = (await import('@core/stores/useAppStore')).default;
+        const useAppStore = (await import('@core/stores/useAppStore')).default as unknown as {
+            subscribe: ReturnType<typeof vi.fn>;
+        };
         mockSubscribe = useAppStore.subscribe;
     });
 

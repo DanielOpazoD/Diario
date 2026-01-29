@@ -16,7 +16,7 @@ interface PatientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (patient: PatientFormData) => void;
-  onSaveMultiple?: (patients: Array<Omit<PatientRecord, 'id' | 'createdAt'>>) => void;
+  onSaveMultiple?: (patients: PatientFormData[]) => void;
   addToast: (type: 'success' | 'error' | 'info', msg: string) => void;
   initialData?: PatientRecord | null;
   selectedDate: string;
@@ -172,8 +172,6 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
         />
 
         <PatientModalBody
-          initialData={initialData}
-          selectedDate={selectedDate}
           patientTypes={patientTypes}
           isEditingDemographics={isEditingDemographics}
           activeTab={activeTab}
@@ -182,7 +180,6 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
           birthDate={birthDate}
           gender={gender}
           typeId={typeId}
-          type={type}
           entryTime={entryTime}
           exitTime={exitTime}
           diagnosis={diagnosis}

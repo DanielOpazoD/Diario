@@ -1,15 +1,12 @@
 import React from 'react';
-import { AttachedFile, PatientRecord, PendingTask, PatientTypeConfig } from '@shared/types';
+import { AttachedFile, PendingTask, PatientRecord, PatientTypeConfig } from '@shared/types';
 import ClinicalNote from '@core/patient/components/ClinicalNote';
 import PatientForm from '@core/patient/components/PatientForm';
 import PatientAttachmentsSection from '@core/patient/components/PatientAttachmentsSection';
-import { calculateAge } from '@shared/utils/dateUtils';
 import { formatPatientName } from '@core/patient/utils/patientUtils';
 import { sanitizeClinicalNote, sanitizeDiagnosis, sanitizeRut } from '@shared/utils/sanitization';
 
 interface PatientModalBodyProps {
-  initialData?: PatientRecord | null;
-  selectedDate: string;
   patientTypes: PatientTypeConfig[];
   isEditingDemographics: boolean;
   activeTab: 'clinical' | 'files';
@@ -18,7 +15,6 @@ interface PatientModalBodyProps {
   birthDate: string;
   gender: string;
   typeId: string;
-  type: string;
   entryTime: string;
   exitTime: string;
   diagnosis: string;
@@ -117,8 +113,6 @@ export const buildPatientPayload = ({
 };
 
 const PatientModalBody: React.FC<PatientModalBodyProps> = ({
-  initialData,
-  selectedDate,
   patientTypes,
   isEditingDemographics,
   activeTab,
@@ -127,7 +121,6 @@ const PatientModalBody: React.FC<PatientModalBodyProps> = ({
   birthDate,
   gender,
   typeId,
-  type,
   entryTime,
   exitTime,
   diagnosis,

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePatientCrud } from '@core/patient';
+import type { PatientFormData } from '@shared/types';
 
 describe('usePatientCrud', () => {
     const mockAddPatient = vi.fn();
@@ -28,10 +29,22 @@ describe('usePatientCrud', () => {
         vi.clearAllMocks();
     });
 
+    const buildPatientFormData = (overrides: Partial<PatientFormData> = {}): PatientFormData => ({
+        name: 'PACIENTE BASE',
+        rut: '',
+        date: '2024-03-20',
+        type: 'Hospitalizado',
+        diagnosis: '',
+        clinicalNote: '',
+        pendingTasks: [],
+        attachedFiles: [],
+        ...overrides,
+    });
+
     it('handles saving a new patient', () => {
         const { result } = renderHook(() => usePatientCrud(baseParams));
 
-        const patientData = { name: 'PEDRO PICAPIEDRA', date: '2024-03-20', type: 'Hospitalizado' };
+        const patientData = buildPatientFormData({ name: 'PEDRO PICAPIEDRA' });
 
         act(() => {
             result.current.handleSavePatient(patientData);
@@ -50,7 +63,7 @@ describe('usePatientCrud', () => {
         const { result } = renderHook(() => usePatientCrud({ ...baseParams, editingPatient }));
 
         act(() => {
-            result.current.handleSavePatient({ name: 'new name' });
+            result.current.handleSavePatient(buildPatientFormData({ name: 'new name' }));
         });
 
         expect(mockUpdatePatient).toHaveBeenCalled();

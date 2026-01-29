@@ -8,7 +8,7 @@ describe('patient use-cases', () => {
 
   beforeEach(() => {
     nowSpy.mockReturnValue(1700000000000);
-    uuidSpy.mockReturnValue('patient-uuid');
+    uuidSpy.mockReturnValue('00000000-0000-0000-0000-000000000000');
   });
 
   afterEach(() => {
@@ -31,7 +31,7 @@ describe('patient use-cases', () => {
     const result = savePatient(payload, null);
 
     expect(result.isUpdate).toBe(false);
-    expect(result.patient.id).toBe('patient-uuid');
+    expect(result.patient.id).toBe('00000000-0000-0000-0000-000000000000');
     expect(result.message).toBe('Nuevo paciente registrado');
   });
 

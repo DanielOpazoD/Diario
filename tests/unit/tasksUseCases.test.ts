@@ -5,7 +5,7 @@ import type { PatientRecord } from '@shared/types';
 describe('tasks use-cases', () => {
   beforeEach(() => {
     vi.spyOn(Date, 'now').mockReturnValue(1700000000000);
-    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('task-uuid');
+    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('00000000-0000-0000-0000-000000000000');
   });
 
   afterEach(() => {

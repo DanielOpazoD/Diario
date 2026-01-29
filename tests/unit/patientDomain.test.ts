@@ -5,7 +5,7 @@ import type { PatientFormData, PatientRecord } from '@shared/types';
 describe('patient domain', () => {
   beforeEach(() => {
     vi.spyOn(Date, 'now').mockReturnValue(1700000000000);
-    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('patient-uuid');
+    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('00000000-0000-0000-0000-000000000000');
   });
 
   afterEach(() => {

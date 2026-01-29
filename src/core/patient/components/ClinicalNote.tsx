@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { CheckSquare, Mic, Sparkles, Paperclip, FileText } from 'lucide-react';
+import { Mic, Sparkles, Paperclip, FileText } from 'lucide-react';
 import { PendingTask } from '@shared/types';
 import PendingTasksPanel from '@core/patient/components/PendingTasksPanel';
 
