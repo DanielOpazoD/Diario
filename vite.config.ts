@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '');
 
   const googleClientId = env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
+  const isPwaDisabled = env.VITE_DISABLE_PWA === 'true' || env.DISABLE_PWA === 'true';
 
   return {
     test: {
@@ -22,6 +23,7 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['icon.svg', 'masked-icon.svg'],
+        disable: isPwaDisabled,
         manifest: {
           name: 'MediDiario AI',
           short_name: 'MediDiario',
@@ -39,6 +41,9 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.origin.includes('googleapis.com'),
@@ -55,7 +60,7 @@ export default defineConfig(({ mode }) => {
     },
     // Solo exponer variables VITE_ relacionadas con Google y Firebase para evitar que otras claves
     // (p. ej., API keys sensibles) queden incrustadas en el bundle de cliente.
-    envPrefix: ['VITE_GOOGLE_', 'VITE_FIREBASE_'],
+    envPrefix: ['VITE_GOOGLE_', 'VITE_FIREBASE_', 'VITE_DISABLE_PWA', 'VITE_APP_VERSION'],
     resolve: {
       alias: {
         '@core': path.resolve(__dirname, './src/core'),

@@ -112,6 +112,16 @@ export const loadBookmarkCategoriesFromLocal = (): BookmarkCategory[] => {
   return [];
 };
 
+export const clearAppStorage = () => {
+  Object.values(STORAGE_KEYS).forEach((key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.error('Error clearing storage key', key, e);
+    }
+  });
+};
+
 export const downloadDataAsJson = (backupData: BackupFileData) => {
   const dataStr = JSON.stringify(backupData, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });

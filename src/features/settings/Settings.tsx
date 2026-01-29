@@ -7,6 +7,7 @@ import AppearanceSettings from '@features/settings/AppearanceSettings';
 import ViewPreferencesSettings from '@features/settings/ViewPreferencesSettings';
 import SecuritySettings from '@features/settings/SecuritySettings';
 import PatientTypesSettings from '@features/settings/PatientTypesSettings';
+import StorageSettings from '@features/settings/StorageSettings';
 
 const Settings: React.FC = () => {
   const {
@@ -90,6 +91,8 @@ const Settings: React.FC = () => {
           onSetRecords={setRecords}
           addToast={addToast}
         />
+
+        <StorageSettings addToast={addToast} />
       </div>
     </div>
   );

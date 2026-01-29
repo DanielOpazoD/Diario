@@ -21,6 +21,7 @@ export const STORAGE_KEYS = {
 
     // System/Diagnostic
     DEBUG_MODE: 'medidiario_debug_enabled',
+    APP_VERSION: 'medidiario_app_version',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

@@ -12,6 +12,7 @@ import Login from '@core/components/Login';
 import MainLayout from '@core/layouts/MainLayout';
 import { Toast } from '@core/ui';
 import LockScreen from '@core/components/LockScreen';
+import UpdateBanner from '@core/components/UpdateBanner';
 import { AppViews, AppModals } from '@features/daily';
 import { useAppActions } from '@core/app/state/useAppActions';
 import { useAppState } from '@core/app/state/useAppState';
@@ -130,6 +131,7 @@ const AppShell: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">
+      <UpdateBanner />
       <Toast />
       <Suspense fallback={null}>
         <DebugConsole />
