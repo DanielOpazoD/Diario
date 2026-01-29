@@ -1,5 +1,6 @@
 import React from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 
 import AppearanceSettings from '@features/settings/AppearanceSettings';
@@ -8,23 +9,43 @@ import SecuritySettings from '@features/settings/SecuritySettings';
 import PatientTypesSettings from '@features/settings/PatientTypesSettings';
 
 const Settings: React.FC = () => {
-  const theme = useAppStore((state) => state.theme);
-  const toggleTheme = useAppStore((state) => state.toggleTheme);
-  const patientTypes = useAppStore((state) => state.patientTypes);
-  const addPatientType = useAppStore((state) => state.addPatientType);
-  const removePatientType = useAppStore((state) => state.removePatientType);
-  const setPatientTypes = useAppStore((state) => state.setPatientTypes);
-  const records = useAppStore((state) => state.records);
-  const setRecords = useAppStore((state) => state.setRecords);
-  const addToast = useAppStore((state) => state.addToast);
-  const securityPin = useAppStore((state) => state.securityPin);
-  const autoLockMinutes = useAppStore((state) => state.autoLockMinutes);
-  const setSecurityPin = useAppStore((state) => state.setSecurityPin);
-  const setAutoLockMinutes = useAppStore((state) => state.setAutoLockMinutes);
-  const highlightPendingPatients = useAppStore((state) => state.highlightPendingPatients);
-  const setHighlightPendingPatients = useAppStore((state) => state.setHighlightPendingPatients);
-  const compactStats = useAppStore((state) => state.compactStats);
-  const setCompactStats = useAppStore((state) => state.setCompactStats);
+  const {
+    theme,
+    toggleTheme,
+    patientTypes,
+    addPatientType,
+    removePatientType,
+    setPatientTypes,
+    records,
+    setRecords,
+    addToast,
+    securityPin,
+    autoLockMinutes,
+    setSecurityPin,
+    setAutoLockMinutes,
+    highlightPendingPatients,
+    setHighlightPendingPatients,
+    compactStats,
+    setCompactStats,
+  } = useAppStore(useShallow(state => ({
+    theme: state.theme,
+    toggleTheme: state.toggleTheme,
+    patientTypes: state.patientTypes,
+    addPatientType: state.addPatientType,
+    removePatientType: state.removePatientType,
+    setPatientTypes: state.setPatientTypes,
+    records: state.records,
+    setRecords: state.setRecords,
+    addToast: state.addToast,
+    securityPin: state.securityPin,
+    autoLockMinutes: state.autoLockMinutes,
+    setSecurityPin: state.setSecurityPin,
+    setAutoLockMinutes: state.setAutoLockMinutes,
+    highlightPendingPatients: state.highlightPendingPatients,
+    setHighlightPendingPatients: state.setHighlightPendingPatients,
+    compactStats: state.compactStats,
+    setCompactStats: state.setCompactStats,
+  })));
 
   return (
     <div className="max-w-4xl mx-auto pb-20 animate-fade-in pt-2">

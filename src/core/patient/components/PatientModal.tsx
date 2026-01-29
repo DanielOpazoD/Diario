@@ -1,17 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
-import { PatientRecord, PatientType, PendingTask, AttachedFile, PatientFormData } from '@shared/types';
+import React from 'react';
+import { PatientRecord, PatientFormData } from '@shared/types';
 import useAppStore from '@core/stores/useAppStore';
-import ClinicalNote from '@core/patient/components/ClinicalNote';
-import PatientForm from '@core/patient/components/PatientForm';
-import PatientAttachmentsSection from '@core/patient/components/PatientAttachmentsSection';
 import PatientModalHeader from '@core/patient/components/PatientModalHeader';
 import PatientModalFooter from '@core/patient/components/PatientModalFooter';
 import { formatPatientName, formatTitleCase } from '@core/patient/utils/patientUtils';
-import { sanitizeClinicalNote, sanitizeDiagnosis, sanitizeRut } from '@shared/utils/sanitization';
 import { usePatientVoiceAndAI } from '@core/patient';
 import { usePatientDataExtraction } from '@core/patient';
+import PatientModalBody, { buildPatientPayload } from '@core/patient/components/PatientModalBody';
 import { calculateAge } from '@shared/utils/dateUtils';
+import usePatientModalState from '@core/patient/hooks/usePatientModalState';
+import usePendingTasks from '@core/patient/hooks/usePendingTasks';
 
 interface PatientModalProps {
   isOpen: boolean;
@@ -26,26 +25,47 @@ interface PatientModalProps {
 
 const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, addToast, initialData, selectedDate, initialTab = 'clinical' }) => {
   const patientTypes = useAppStore(state => state.patientTypes);
-
-  const [name, setName] = useState('');
-  const [rut, setRut] = useState('');
-  const [patientId, setPatientId] = useState<string>('');
-  const [birthDate, setBirthDate] = useState('');
-  const [gender, setGender] = useState('');
   const defaultTypeId = patientTypes.find(t => t.id === 'policlinico')?.id || patientTypes[0]?.id || '';
-  const [type, setType] = useState<string>(PatientType.POLICLINICO);
-  const [typeId, setTypeId] = useState<string>(defaultTypeId);
-  const [entryTime, setEntryTime] = useState('');
-  const [exitTime, setExitTime] = useState('');
-  const [diagnosis, setDiagnosis] = useState('');
-  const [clinicalNote, setClinicalNote] = useState('');
-  const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
-  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-  const [driveFolderId, setDriveFolderId] = useState<string | null>(null);
 
-  // UI State
-  const [activeTab, setActiveTab] = useState<'clinical' | 'files'>('clinical');
-  const [isEditingDemographics, setIsEditingDemographics] = useState(false);
+  const {
+    name,
+    setName,
+    rut,
+    setRut,
+    patientId,
+    birthDate,
+    setBirthDate,
+    gender,
+    setGender,
+    type,
+    setType,
+    typeId,
+    setTypeId,
+    entryTime,
+    setEntryTime,
+    exitTime,
+    setExitTime,
+    diagnosis,
+    setDiagnosis,
+    clinicalNote,
+    setClinicalNote,
+    pendingTasks,
+    setPendingTasks,
+    attachedFiles,
+    setAttachedFiles,
+    driveFolderId,
+    setDriveFolderId,
+    activeTab,
+    setActiveTab,
+    isEditingDemographics,
+    setIsEditingDemographics,
+  } = usePatientModalState({
+    isOpen,
+    initialData,
+    initialTab,
+    defaultTypeId,
+    patientTypes,
+  });
 
   const {
     isAnalyzing,
@@ -85,49 +105,6 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
     setClinicalNote,
   });
 
-  // Reset form strictly when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        setPatientId(initialData.id);
-        setName(initialData.name);
-        setRut(initialData.rut);
-        setBirthDate(initialData.birthDate || '');
-        setGender(initialData.gender || '');
-        setType(initialData.type);
-        const resolvedTypeId = initialData.typeId
-          || patientTypes.find(t => t.label === initialData.type)?.id
-          || defaultTypeId;
-        setTypeId(resolvedTypeId);
-        setEntryTime(initialData.entryTime || '');
-        setExitTime(initialData.exitTime || '');
-        setDiagnosis(initialData.diagnosis || '');
-        setClinicalNote(initialData.clinicalNote || '');
-        setPendingTasks(initialData.pendingTasks || []);
-        setAttachedFiles(initialData.attachedFiles || []);
-        setDriveFolderId(initialData.driveFolderId || null);
-        setIsEditingDemographics(false);
-      } else {
-        setPatientId(crypto.randomUUID());
-        setName('');
-        setRut('');
-        setBirthDate('');
-        setGender('');
-        setType(PatientType.POLICLINICO);
-        setTypeId(defaultTypeId);
-        setEntryTime('');
-        setExitTime('');
-        setDiagnosis('');
-        setClinicalNote('');
-        setPendingTasks([]);
-        setAttachedFiles([]);
-        setDriveFolderId(null);
-        setIsEditingDemographics(true);
-      }
-      setActiveTab(initialTab);
-    }
-  }, [isOpen, initialData, initialTab]);
-
   const handleNameBlur = () => {
     if (name) {
       setName(formatPatientName(name));
@@ -140,39 +117,30 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
 
   const handleSave = () => {
     if (!name.trim()) return addToast('error', 'Nombre requerido');
-    const finalName = formatPatientName(name);
-    const selectedType = patientTypes.find(t => t.id === typeId);
-    const patientToSave: PatientFormData = {
-      ...(initialData || {}),
-      id: patientId,
-      name: finalName,
-      rut: sanitizeRut(rut),
+    const patientToSave: PatientFormData = buildPatientPayload({
+      initialData,
+      selectedDate,
+      patientTypes,
+      name,
+      rut,
       birthDate,
       gender,
-      type: selectedType?.label || type,
-      typeId: selectedType?.id || typeId,
-      entryTime: entryTime || undefined,
-      exitTime: exitTime || undefined,
-      diagnosis: sanitizeDiagnosis(diagnosis),
-      clinicalNote: sanitizeClinicalNote(clinicalNote),
+      type,
+      typeId,
+      entryTime,
+      exitTime,
+      diagnosis,
+      clinicalNote,
       pendingTasks,
       attachedFiles,
+      patientId,
       driveFolderId,
-      date: initialData ? initialData.date : selectedDate,
-      createdAt: initialData?.createdAt,
-    };
+    });
     onSave(patientToSave);
     onClose();
   };
 
-  const toggleTask = (id: string) => { setPendingTasks(tasks => tasks.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)); };
-  const deleteTask = (id: string) => { setPendingTasks(tasks => tasks.filter(t => t.id !== id)); };
-  const addTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-      setPendingTasks(prev => [...prev, { id: crypto.randomUUID(), text: e.currentTarget.value, isCompleted: false }]);
-      e.currentTarget.value = '';
-    }
-  };
+  const { toggleTask, deleteTask, addTask } = usePendingTasks({ setPendingTasks });
 
   const turnoTypeId = patientTypes.find(t => t.id === 'turno')?.id || 'turno';
   const isTurno = typeId === turnoTypeId;
@@ -203,73 +171,56 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
           onClose={onClose}
         />
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50/20 dark:bg-gray-900/10">
-          <div className="flex flex-col gap-0">
-            {isEditingDemographics && (
-              <div className="px-3 md:px-5 py-2 border-b border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 animate-fade-in shadow-inner">
-                <PatientForm
-                  name={name}
-                  rut={rut}
-                  birthDate={birthDate}
-                  gender={gender}
-                  typeId={typeId}
-                  patientTypes={patientTypes}
-                  isTurno={isTurno}
-                  entryTime={entryTime}
-                  exitTime={exitTime}
-                  onNameChange={setName}
-                  onNameBlur={handleNameBlur}
-                  onRutChange={setRut}
-                  onBirthDateChange={setBirthDate}
-                  onGenderChange={setGender}
-                  onSelectType={(typeIdValue, typeLabel) => {
-                    setType(typeLabel);
-                    setTypeId(typeIdValue);
-                  }}
-                  onEntryTimeChange={setEntryTime}
-                  onExitTimeChange={setExitTime}
-                  isExtractingFromFiles={isExtractingFromFiles}
-                  onExtractFromAttachments={handleExtractFromAttachments}
-                  superMinimalist={true}
-                />
-              </div>
-            )}
-
-            <div className="p-3 md:p-4">
-              <ClinicalNote
-                diagnosis={diagnosis}
-                clinicalNote={clinicalNote}
-                pendingTasks={pendingTasks}
-                isListening={isListening}
-                isAnalyzing={isAnalyzing}
-                activeTab={activeTab}
-                attachmentsCount={attachedFiles.length}
-                onDiagnosisChange={setDiagnosis}
-                onClinicalNoteChange={setClinicalNote}
-                onToggleListening={toggleListening}
-                onAnalyze={handleAIAnalysis}
-                onSummary={handleClinicalSummary}
-                isSummarizing={isSummarizing}
-                onToggleTask={toggleTask}
-                onDeleteTask={deleteTask}
-                onAddTask={addTask}
-                onChangeTab={setActiveTab}
-                attachmentsSection={(
-                  <PatientAttachmentsSection
-                    attachedFiles={attachedFiles}
-                    patientId={patientId}
-                    patientRut={rut}
-                    patientName={name}
-                    driveFolderId={driveFolderId}
-                    addToast={addToast}
-                    onFilesChange={setAttachedFiles}
-                    onDriveFolderIdChange={setDriveFolderId}
-                  />
-                )}
-              />
-            </div>
-          </div>
-        </div>
+        <PatientModalBody
+          initialData={initialData}
+          selectedDate={selectedDate}
+          patientTypes={patientTypes}
+          isEditingDemographics={isEditingDemographics}
+          activeTab={activeTab}
+          name={name}
+          rut={rut}
+          birthDate={birthDate}
+          gender={gender}
+          typeId={typeId}
+          type={type}
+          entryTime={entryTime}
+          exitTime={exitTime}
+          diagnosis={diagnosis}
+          clinicalNote={clinicalNote}
+          pendingTasks={pendingTasks}
+          attachedFiles={attachedFiles}
+          patientId={patientId}
+          driveFolderId={driveFolderId}
+          isTurno={isTurno}
+          isListening={isListening}
+          isAnalyzing={isAnalyzing}
+          isSummarizing={isSummarizing}
+          isExtractingFromFiles={isExtractingFromFiles}
+          onNameChange={setName}
+          onNameBlur={handleNameBlur}
+          onRutChange={setRut}
+          onBirthDateChange={setBirthDate}
+          onGenderChange={setGender}
+          onSelectType={(typeIdValue, typeLabel) => {
+            setType(typeLabel);
+            setTypeId(typeIdValue);
+          }}
+          onEntryTimeChange={setEntryTime}
+          onExitTimeChange={setExitTime}
+          onExtractFromAttachments={handleExtractFromAttachments}
+          onDiagnosisChange={setDiagnosis}
+          onClinicalNoteChange={setClinicalNote}
+          onToggleListening={toggleListening}
+          onAnalyze={handleAIAnalysis}
+          onSummary={handleClinicalSummary}
+          onToggleTask={toggleTask}
+          onDeleteTask={deleteTask}
+          onAddTask={addTask}
+          onChangeTab={setActiveTab}
+          onFilesChange={setAttachedFiles}
+          onDriveFolderIdChange={setDriveFolderId}
+          addToast={addToast}
+        />
 
         <PatientModalFooter onCancel={onClose} onSave={handleSave} />
       </div>

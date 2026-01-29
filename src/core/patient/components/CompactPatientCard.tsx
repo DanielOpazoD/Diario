@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { format, differenceInYears } from 'date-fns';
 import { CheckSquare, Square, ChevronDown, Clock, FileText, Trash2, Paperclip } from 'lucide-react';
 import { PatientRecord } from '@shared/types';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 
 export const parseLocalYMD = (dateStr: string) => {
@@ -35,9 +36,11 @@ interface CompactPatientCardProps {
 
 const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit, onDelete, selectionMode, selected, onToggleSelect }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const updatePatient = useAppStore(state => state.updatePatient);
-  const patientTypes = useAppStore(state => state.patientTypes);
-  const highlightPendingPatients = useAppStore(state => state.highlightPendingPatients);
+  const { updatePatient, patientTypes, highlightPendingPatients } = useAppStore(useShallow(state => ({
+    updatePatient: state.updatePatient,
+    patientTypes: state.patientTypes,
+    highlightPendingPatients: state.highlightPendingPatients,
+  })));
 
   const tasks = patient.pendingTasks || [];
   const pendingCount = tasks.filter(t => !t.isCompleted).length;

@@ -1,11 +1,14 @@
 import React, { useEffect } from 'react';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 import { ToastMessage } from '@shared/types';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 
 const Toast: React.FC = () => {
-  const toasts = useAppStore(state => state.toasts);
-  const removeToast = useAppStore(state => state.removeToast);
+  const { toasts, removeToast } = useAppStore(useShallow(state => ({
+    toasts: state.toasts,
+    removeToast: state.removeToast,
+  })));
 
   return (
     <div className="fixed bottom-4 right-4 z-[100] flex flex-col space-y-2 pointer-events-none">

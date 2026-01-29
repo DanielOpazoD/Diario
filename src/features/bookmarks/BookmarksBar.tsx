@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Bookmark as LucideBookmark, LayoutGrid, Plus } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import { BookmarkIcon } from '@core/ui';
 
@@ -8,7 +9,9 @@ interface BookmarksBarProps {
 }
 
 const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
-  const bookmarks = useAppStore((state) => state.bookmarks);
+  const { bookmarks } = useAppStore(useShallow(state => ({
+    bookmarks: state.bookmarks,
+  })));
 
   const [isAppsOpen, setIsAppsOpen] = useState(false);
   const appsDropdownRef = useRef<HTMLDivElement | null>(null);

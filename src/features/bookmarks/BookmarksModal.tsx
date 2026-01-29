@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BookmarkPlus, X } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import { Bookmark } from '@shared/types';
 import BookmarkForm, { BookmarkFormState } from '@features/bookmarks/components/BookmarkForm';
@@ -29,7 +30,15 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
     deleteBookmark,
     reorderBookmarks,
     addBookmarkCategory,
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    bookmarks: state.bookmarks,
+    bookmarkCategories: state.bookmarkCategories,
+    addBookmark: state.addBookmark,
+    updateBookmark: state.updateBookmark,
+    deleteBookmark: state.deleteBookmark,
+    reorderBookmarks: state.reorderBookmarks,
+    addBookmarkCategory: state.addBookmarkCategory,
+  })));
 
   const [form, setForm] = useState<BookmarkFormState>(defaultFormState);
   const [error, setError] = useState<string | null>(null);

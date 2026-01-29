@@ -1,7 +1,6 @@
-import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react';
 
 import { ViewMode } from '@shared/types';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { useLogger } from '@core/context/LogContext';
 import useAutoLock from '@core/hooks/useAutoLock';
 import useModalManager from '@shared/hooks/useModalManager';
@@ -16,8 +15,9 @@ import LockScreen from '@core/components/LockScreen';
 import { AppViews, AppModals } from '@features/daily';
 import { useAppActions } from '@core/app/state/useAppActions';
 import { useAppState } from '@core/app/state/useAppState';
-import { DEFAULT_ROUTE, VIEW_ROUTES, pathFromView, viewFromPath } from '@shared/routes';
+import { pathFromView, viewFromPath } from '@shared/routes';
 import { AIChatDrawer } from '@features/ai';
+import useRouteGuard from '@core/app/shell/useRouteGuard';
 
 const DebugConsole = lazy(() => import('@core/components/DebugConsole'));
 const AppShell: React.FC = () => {
@@ -41,18 +41,8 @@ const AppShell: React.FC = () => {
   } = useAppActions();
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const location = useLocation();
-  const navigate = useNavigate();
+  const { location, navigate } = useRouteGuard();
   const viewMode = useMemo<ViewMode>(() => viewFromPath(location.pathname), [location.pathname]);
-
-  useEffect(() => {
-    const normalizedPath = location.pathname.replace(/\/$/, '') || '/';
-    const knownRoutes = Object.values(VIEW_ROUTES).map(route => route.replace(/\/$/, '') || '/');
-
-    if (!knownRoutes.includes(normalizedPath)) {
-      navigate(DEFAULT_ROUTE, { replace: true });
-    }
-  }, [location.pathname, navigate]);
 
   const {
     isPatientModalOpen,

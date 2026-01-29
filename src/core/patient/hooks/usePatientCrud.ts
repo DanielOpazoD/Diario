@@ -1,19 +1,11 @@
 import { useCallback } from 'react';
-import { format } from 'date-fns';
-import { PatientRecord } from '@shared/types';
-
-const toTitleCase = (str: string) => {
-  if (!str) return '';
-  return str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-};
-
-const formatDateLabel = (dateStr: string) => {
-  try {
-    return format(new Date(dateStr + 'T00:00:00'), 'dd-MM-yyyy');
-  } catch (error) {
-    return dateStr;
-  }
-};
+import { PatientRecord, PatientFormData } from '@shared/types';
+import {
+  savePatient,
+  savePatientsBatch,
+  movePatientsToDate,
+  copyPatientsToDate,
+} from '@use-cases/patients';
 
 interface UsePatientCrudParams {
   records: PatientRecord[];
@@ -41,37 +33,25 @@ const usePatientCrud = ({
   addToast,
 }: UsePatientCrudParams) => {
   const handleSavePatient = useCallback(
-    (patientData: any) => {
-      const formattedData = {
-        ...patientData,
-        name: toTitleCase(patientData.name)
-      };
+    (patientData: PatientFormData) => {
+      const result = savePatient(patientData, editingPatient);
 
-      if (editingPatient) {
-        updatePatient({ ...formattedData, id: editingPatient.id, createdAt: editingPatient.createdAt });
-        addToast('success', 'Paciente actualizado');
+      if (result.isUpdate) {
+        updatePatient(result.patient);
       } else {
-        const newPatient: PatientRecord = { ...formattedData, id: crypto.randomUUID(), createdAt: Date.now() };
-        addPatient(newPatient);
-        addToast('success', 'Nuevo paciente registrado');
+        addPatient(result.patient);
       }
+      addToast('success', result.message);
       setEditingPatient(null);
     },
     [addPatient, addToast, editingPatient, setEditingPatient, updatePatient]
   );
 
   const handleSaveMultiplePatients = useCallback(
-    (patientsData: any[]) => {
-      patientsData.forEach(p => {
-        const newPatient: PatientRecord = {
-          ...p,
-          id: crypto.randomUUID(),
-          createdAt: Date.now(),
-          pendingTasks: p.pendingTasks || []
-        };
-        addPatient(newPatient);
-      });
-      addToast('success', `${patientsData.length} pacientes registrados`);
+    (patientsData: PatientFormData[]) => {
+      const newPatients = savePatientsBatch(patientsData);
+      newPatients.forEach(addPatient);
+      addToast('success', `${newPatients.length} pacientes registrados`);
     },
     [addPatient, addToast]
   );
@@ -86,50 +66,22 @@ const usePatientCrud = ({
 
   const handleMovePatientsToDate = useCallback(
     (patientIds: string[], targetDate: string) => {
-      if (!targetDate) {
-        addToast('error', 'Debes seleccionar una fecha destino.');
-        return;
+      const result = movePatientsToDate(records, patientIds, targetDate);
+      if (result.records) {
+        setRecords(result.records);
       }
-
-      const updatedRecords = records.map(record =>
-        patientIds.includes(record.id)
-          ? { ...record, date: targetDate, updatedAt: Date.now() }
-          : record
-      );
-
-      setRecords(updatedRecords);
-      addToast('success', `Pacientes movidos al ${formatDateLabel(targetDate)}.`);
+      addToast(result.level, result.message);
     },
     [addToast, records, setRecords]
   );
 
   const handleCopyPatientsToDate = useCallback(
     (patientIds: string[], targetDate: string) => {
-      if (!targetDate) {
-        addToast('error', 'Debes seleccionar una fecha destino.');
-        return;
+      const result = copyPatientsToDate(records, patientIds, targetDate);
+      if (result.records) {
+        setRecords(result.records);
       }
-
-      const selectedPatients = records.filter(record => patientIds.includes(record.id));
-
-      if (selectedPatients.length === 0) {
-        addToast('info', 'No hay pacientes para copiar.');
-        return;
-      }
-
-      const timestamp = Date.now();
-      const clonedPatients = selectedPatients.map((patient, index) => ({
-        ...patient,
-        id: crypto.randomUUID(),
-        date: targetDate,
-        createdAt: timestamp + index,
-        updatedAt: timestamp + index,
-        pendingTasks: patient.pendingTasks?.map(task => ({ ...task, id: crypto.randomUUID() })) || [],
-        attachedFiles: patient.attachedFiles?.map(file => ({ ...file, id: crypto.randomUUID() })) || [],
-      }));
-
-      setRecords([...records, ...clonedPatients]);
-      addToast('success', `${clonedPatients.length} pacientes copiados al ${formatDateLabel(targetDate)}.`);
+      addToast(result.level, result.message);
     },
     [addToast, records, setRecords]
   );

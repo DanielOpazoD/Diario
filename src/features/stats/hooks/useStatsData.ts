@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { addDays, eachDayOfInterval, endOfMonth, format, isSameDay, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import { PatientRecord, PatientTypeConfig } from '@shared/types';
 
@@ -55,9 +56,11 @@ const matchesTypeId = (record: PatientRecord, typeId: string, typeConfigById: Re
 };
 
 export const useStatsData = (currentDate: Date): StatsState => {
-  const records = useAppStore(state => state.records);
-  const patientTypes = useAppStore(state => state.patientTypes);
-  const compactStats = useAppStore(state => state.compactStats);
+  const { records, patientTypes, compactStats } = useAppStore(useShallow(state => ({
+    records: state.records,
+    patientTypes: state.patientTypes,
+    compactStats: state.compactStats,
+  })));
 
   const typeConfigByLabel = useMemo(() => {
     return patientTypes.reduce<Record<string, PatientTypeConfig>>((acc, type) => {

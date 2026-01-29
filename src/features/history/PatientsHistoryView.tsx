@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Search as SearchIcon, Users, Sparkles, X, Loader, Calendar, Filter } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import { usePatientHistory } from '@shared/hooks/usePatientHistory';
-import { searchPatientsSemantically } from '@services/geminiService';
+import { searchPatientsSemantically } from '@use-cases/ai';
 import HistoryTable from './components/HistoryTable';
 import { formatMonthName } from '@shared/utils/dateUtils';
 import { PatientRecord } from '@shared/types';
@@ -12,9 +13,11 @@ interface PatientsHistoryViewProps {
 }
 
 const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient }) => {
-  const patientTypes = useAppStore(state => state.patientTypes);
-  const records = useAppStore(state => state.records);
-  const addToast = useAppStore(state => state.addToast);
+  const { patientTypes, records, addToast } = useAppStore(useShallow(state => ({
+    patientTypes: state.patientTypes,
+    records: state.records,
+    addToast: state.addToast,
+  })));
 
   const {
     searchQuery, setSearchQuery,

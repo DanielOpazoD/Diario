@@ -1,5 +1,6 @@
 import { StateCreator } from 'zustand';
 import { Bookmark, BookmarkCategory } from '@shared/types';
+import { defaultBookmarkCategories, resolveBookmarkTitle } from '@domain/bookmarks';
 
 export interface BookmarksSlice {
   bookmarks: Bookmark[];
@@ -14,11 +15,6 @@ export interface BookmarksSlice {
   updateBookmarkCategory: (id: string, data: Partial<BookmarkCategory>) => void;
   deleteBookmarkCategory: (id: string) => void;
 }
-
-export const defaultBookmarkCategories: BookmarkCategory[] = [
-  { id: 'default', name: 'General', icon: 'Bookmark', color: 'blue' },
-  { id: 'apps', name: 'Aplicaciones', icon: 'Apps', color: 'indigo' },
-];
 
 export const createBookmarkSlice: StateCreator<BookmarksSlice> = (set) => ({
   bookmarks: [],
@@ -41,7 +37,7 @@ export const createBookmarkSlice: StateCreator<BookmarksSlice> = (set) => ({
         id: crypto.randomUUID(),
         createdAt: Date.now(),
         order: state.bookmarks.length,
-        title: data.title?.trim() || new URL(data.url).hostname,
+        title: resolveBookmarkTitle(data.title, data.url),
       };
       return { bookmarks: [...state.bookmarks, newBookmark] };
     }),
@@ -53,9 +49,10 @@ export const createBookmarkSlice: StateCreator<BookmarksSlice> = (set) => ({
           ? {
               ...bookmark,
               ...data,
-              title: data.title !== undefined
-                ? data.title.trim() || new URL((data.url ?? bookmark.url)).hostname
-                : bookmark.title,
+              title:
+                data.title !== undefined
+                  ? resolveBookmarkTitle(data.title, data.url ?? bookmark.url)
+                  : bookmark.title,
             }
           : bookmark
       ),

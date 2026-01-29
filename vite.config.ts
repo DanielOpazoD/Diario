@@ -60,6 +60,9 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@core': path.resolve(__dirname, './src/core'),
         '@features': path.resolve(__dirname, './src/features'),
+        '@domain': path.resolve(__dirname, './src/domain'),
+        '@use-cases': path.resolve(__dirname, './src/use-cases'),
+        '@data': path.resolve(__dirname, './src/data'),
         '@shared': path.resolve(__dirname, './src/shared'),
         '@services': path.resolve(__dirname, './src/services'),
         'react-router-dom': path.resolve(process.cwd(), 'vendor/react-router-dom'),

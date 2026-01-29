@@ -4,14 +4,15 @@ import { createPatientSlice, PatientSlice } from '@core/stores/slices/patientSli
 import { createTaskSlice, TaskSlice } from '@core/stores/slices/taskSlice';
 import { createUserSlice, UserSlice } from '@core/stores/slices/userSlice';
 import { createSettingsSlice, SettingsSlice, defaultPatientTypes } from '@core/stores/slices/settingsSlice';
-import { BookmarksSlice, createBookmarkSlice, defaultBookmarkCategories } from '@core/stores/slices/bookmarkSlice';
+import { BookmarksSlice, createBookmarkSlice } from '@core/stores/slices/bookmarkSlice';
 import { BookmarkCategory, SecuritySettings, ToastMessage } from '@shared/types';
+import { defaultBookmarkCategories, ensureDefaultCategories } from '@domain/bookmarks';
 import {
   loadRecordsFromLocal,
   loadGeneralTasksFromLocal,
   loadBookmarksFromLocal,
   loadBookmarkCategoriesFromLocal,
-} from '@services/storage';
+} from '@use-cases/storage';
 import { STORAGE_KEYS } from '@shared/constants/storageKeys';
 
 // UI Slice directly here for simplicity
@@ -42,18 +43,8 @@ const initialRecords = loadRecordsFromLocal();
 const initialTasks = loadGeneralTasksFromLocal();
 const initialBookmarks = loadBookmarksFromLocal();
 const initialBookmarkCategories = loadBookmarkCategoriesFromLocal();
-const ensureDefaultBookmarkCategories = (categories: BookmarkCategory[]) => {
-  const ids = new Set(categories.map((category) => category.id));
-  const merged = [...categories];
-
-  defaultBookmarkCategories.forEach((category) => {
-    if (!ids.has(category.id)) {
-      merged.push(category);
-    }
-  });
-
-  return merged;
-};
+const ensureDefaultBookmarkCategories = (categories: BookmarkCategory[]) =>
+  ensureDefaultCategories(categories);
 const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
 const storedTheme = localStorage.getItem(STORAGE_KEYS.THEME) as 'light' | 'dark';
 const storedSecurity = localStorage.getItem(STORAGE_KEYS.SECURITY);

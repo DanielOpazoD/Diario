@@ -28,14 +28,23 @@
       "@core/*": [
         "src/core/*"
       ],
+      "@domain/*": [
+        "src/domain/*"
+      ],
       "@features/*": [
         "src/features/*"
+      ],
+      "@data/*": [
+        "src/data/*"
       ],
       "@shared/*": [
         "src/shared/*"
       ],
       "@services/*": [
         "src/services/*"
+      ],
+      "@use-cases/*": [
+        "src/use-cases/*"
       ],
       "react-router-dom": [
         "./vendor/react-router-dom"

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { differenceInYears } from 'date-fns';
 import { CheckSquare, Square, ChevronDown, Trash2, Paperclip, Stethoscope, FileText } from 'lucide-react';
 import { PatientRecord } from '@shared/types';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import InlinePatientEditor from './InlinePatientEditor';
 import TaskStatusIndicator from '@core/components/TaskStatusIndicator';
@@ -44,8 +45,10 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
     const [isExpanded, setIsExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<'demographics' | 'clinical' | 'files' | 'tasks' | null>(null);
 
-    const updatePatient = useAppStore(state => state.updatePatient);
-    const patientTypes = useAppStore(state => state.patientTypes);
+    const { updatePatient, patientTypes } = useAppStore(useShallow(state => ({
+        updatePatient: state.updatePatient,
+        patientTypes: state.patientTypes,
+    })));
 
     const tasks = patient.pendingTasks || [];
     const pendingCount = tasks.filter(t => !t.isCompleted).length;

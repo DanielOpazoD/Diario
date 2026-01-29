@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
-import { analyzeClinicalNote, generateClinicalSummary } from '@services/geminiService';
+import { analyzeClinicalNote, generateClinicalSummary } from '@use-cases/ai';
 import { PendingTask } from '@shared/types';
 
 // Web Speech API types (not available in all TypeScript libs)

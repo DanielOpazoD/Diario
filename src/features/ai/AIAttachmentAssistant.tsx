@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Sparkles, Send, FileText, CheckCircle, Circle } from 'lucide-react';
 import { AttachedFile } from '@shared/types';
 import { downloadUrlAsBase64 } from '@services/storage';
-import { askAboutImages, FileContent } from '@services/geminiService';
+import { askAboutImages, FileContent } from '@use-cases/ai';
 
 interface AIAttachmentAssistantProps {
   isOpen: boolean;

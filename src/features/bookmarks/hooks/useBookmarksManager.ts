@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import { Bookmark, BookmarkCategory } from '@shared/types';
-import { defaultBookmarkCategories } from '@core/stores/slices/bookmarkSlice';
+import { buildBookmarksExport, parseBookmarksImport } from '@use-cases/bookmarks';
 
 export interface BookmarkFilters {
   searchTerm: string;
@@ -39,7 +40,20 @@ export const useBookmarksManager = (): BookmarkFilters => {
     showBookmarkBar,
     setShowBookmarkBar,
     addToast,
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    bookmarks: state.bookmarks,
+    bookmarkCategories: state.bookmarkCategories,
+    updateBookmark: state.updateBookmark,
+    deleteBookmark: state.deleteBookmark,
+    updateBookmarkCategory: state.updateBookmarkCategory,
+    deleteBookmarkCategory: state.deleteBookmarkCategory,
+    addBookmarkCategory: state.addBookmarkCategory,
+    setBookmarks: state.setBookmarks,
+    setBookmarkCategories: state.setBookmarkCategories,
+    showBookmarkBar: state.showBookmarkBar,
+    setShowBookmarkBar: state.setShowBookmarkBar,
+    addToast: state.addToast,
+  })));
 
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -86,35 +100,17 @@ export const useBookmarksManager = (): BookmarkFilters => {
   );
 
   const handleExport = useCallback(() => {
-    const payload = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      bookmarks,
-      categories: bookmarkCategories,
-    };
-
+    const { filename, payload } = buildBookmarksExport(bookmarks, bookmarkCategories);
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `medidiario_marcadores_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
 
     addToast('success', 'Marcadores exportados');
   }, [addToast, bookmarkCategories, bookmarks]);
-
-  const ensureDefaultCategory = useCallback((categories: BookmarkCategory[]) => {
-    const categoryMap = new Map(categories.map(category => [category.id, category]));
-
-    defaultBookmarkCategories.forEach(defaultCategory => {
-      if (!categoryMap.has(defaultCategory.id)) {
-        categoryMap.set(defaultCategory.id, defaultCategory);
-      }
-    });
-
-    return Array.from(categoryMap.values());
-  }, []);
 
   const handleImportFile = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,30 +119,9 @@ export const useBookmarksManager = (): BookmarkFilters => {
 
       try {
         const text = await file.text();
-        const parsed = JSON.parse(text);
-        const importedBookmarks = Array.isArray(parsed.bookmarks)
-          ? parsed.bookmarks
-          : Array.isArray(parsed)
-            ? parsed
-            : [];
-        const importedCategories = Array.isArray(parsed.categories) ? parsed.categories : bookmarkCategories;
-
-        const categoriesWithDefault = ensureDefaultCategory(importedCategories);
-        const categoryIds = new Set(categoriesWithDefault.map(category => category.id));
-
-        const sanitizedBookmarks = importedBookmarks.map((bookmark: Bookmark, index: number) => {
-          const normalizedCategoryId = bookmark.categoryId ?? 'default';
-          return {
-            ...bookmark,
-            id: bookmark.id || crypto.randomUUID(),
-            order: typeof bookmark.order === 'number' ? bookmark.order : index,
-            createdAt: typeof bookmark.createdAt === 'number' ? bookmark.createdAt : Date.now(),
-            categoryId: categoryIds.has(normalizedCategoryId) ? normalizedCategoryId : 'default',
-          };
-        });
-
-        setBookmarkCategories(categoriesWithDefault);
-        setBookmarks(sanitizedBookmarks);
+        const { bookmarks: imported, categories } = parseBookmarksImport(text, bookmarkCategories);
+        setBookmarkCategories(categories);
+        setBookmarks(imported);
         addToast('success', 'Marcadores importados correctamente');
       } catch (error) {
         console.error('Error al importar marcadores', error);
@@ -157,7 +132,7 @@ export const useBookmarksManager = (): BookmarkFilters => {
         }
       }
     },
-    [addToast, bookmarkCategories, ensureDefaultCategory, setBookmarkCategories, setBookmarks],
+    [addToast, bookmarkCategories, setBookmarkCategories, setBookmarks],
   );
 
   return {

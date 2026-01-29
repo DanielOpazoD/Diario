@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { askAboutImages, FileContent, validateEnvironment } from '@services/geminiService';
+import { askAboutImages, FileContent, validateEnvironment } from '@use-cases/ai';
 
 export interface ChatMessage {
     id: string;

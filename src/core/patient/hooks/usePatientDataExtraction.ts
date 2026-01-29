@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { extractMultiplePatientsFromImage, extractPatientDataFromImage } from '@services/geminiService';
+import { extractMultiplePatientsFromImage, extractPatientDataFromImage } from '@use-cases/ai';
 import { fileToBase64, downloadUrlAsBase64 } from '@services/storage';
 import { AttachedFile, PatientRecord, PatientType } from '@shared/types';
 import { formatPatientName } from '@core/patient/utils/patientUtils';

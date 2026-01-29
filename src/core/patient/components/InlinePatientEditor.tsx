@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Save, X, Square } from 'lucide-react';
-import { PatientRecord, PendingTask, AttachedFile } from '@shared/types';
+import { Save, X } from 'lucide-react';
+import { PatientRecord, AttachedFile } from '@shared/types';
 import { Button } from '@core/ui';
 import useAppStore from '@core/stores/useAppStore';
-import ClinicalNote from '@core/patient/components/ClinicalNote';
-import PatientForm from '@core/patient/components/PatientForm';
-import PatientAttachmentsSection from '@core/patient/components/PatientAttachmentsSection';
+import InlinePatientDemographics from '@core/patient/components/InlinePatientDemographics';
+import InlinePatientClinical from '@core/patient/components/InlinePatientClinical';
+import InlinePatientFiles from '@core/patient/components/InlinePatientFiles';
+import InlinePatientTasks from '@core/patient/components/InlinePatientTasks';
 import { formatPatientName } from '@core/patient/utils/patientUtils';
 import { sanitizeClinicalNote, sanitizeDiagnosis, sanitizeRut } from '@shared/utils/sanitization';
 import { usePatientVoiceAndAI } from '@core/patient';
 import { usePatientDataExtraction } from '@core/patient';
+import usePendingTasks from '@core/patient/hooks/usePendingTasks';
 
 interface InlinePatientEditorProps {
     patient: PatientRecord;
@@ -43,7 +45,7 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
 
     const [diagnosis, setDiagnosis] = useState(patient.diagnosis);
     const [clinicalNote, setClinicalNote] = useState(patient.clinicalNote);
-    const [pendingTasks, setPendingTasks] = useState<PendingTask[]>(patient.pendingTasks || []);
+    const [pendingTasks, setPendingTasks] = useState(patient.pendingTasks || []);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>(patient.attachedFiles || []);
     const [driveFolderId, setDriveFolderId] = useState<string | null>(patient.driveFolderId || null);
 
@@ -109,15 +111,7 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
         handleExtractFromAttachments(attachedFiles, { name, rut, birthDate, gender, diagnosis, clinicalNote });
     };
 
-    // Task Helpers
-    const toggleTask = (id: string) => { setPendingTasks(tasks => tasks.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)); };
-    const deleteTask = (id: string) => { setPendingTasks(tasks => tasks.filter(t => t.id !== id)); };
-    const addTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-            setPendingTasks(prev => [...prev, { id: crypto.randomUUID(), text: e.currentTarget.value, isCompleted: false }]);
-            e.currentTarget.value = '';
-        }
-    };
+    const { toggleTask, deleteTask, addTask } = usePendingTasks({ setPendingTasks });
 
     // Render Helpers
     const isTurno = typeId === (patientTypes.find(t => t.id === 'turno')?.id || 'turno');
@@ -132,114 +126,71 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
 
             <div className="w-full max-w-full overflow-hidden min-w-0">
                 {initialTab === 'demographics' && (
-                    <div className="w-full min-w-0 overflow-hidden">
-                        <PatientForm
-                            name={name}
-                            rut={rut}
-                            birthDate={birthDate}
-                            gender={gender}
-                            typeId={typeId}
-                            patientTypes={patientTypes}
-                            isTurno={isTurno}
-                            entryTime={entryTime}
-                            exitTime={exitTime}
-                            isExtractingFromFiles={isExtractingFromFiles}
-                            onExtractFromAttachments={handleExtractFromAttachmentsWrapper}
-                            onNameChange={setName}
-                            onNameBlur={() => setName(formatPatientName(name))}
-                            onRutChange={setRut}
-                            onBirthDateChange={setBirthDate}
-                            onGenderChange={setGender}
-                            onSelectType={(id: string, label: string) => { setTypeId(id); setType(label); }}
-                            onEntryTimeChange={setEntryTime}
-                            onExitTimeChange={setExitTime}
-                            onSave={handleSave}
-                            onClose={onClose}
-                            defaultExpanded={true}
-                            minimalist={true}
-                        />
-                    </div>
+                    <InlinePatientDemographics
+                        name={name}
+                        rut={rut}
+                        birthDate={birthDate}
+                        gender={gender}
+                        typeId={typeId}
+                        patientTypes={patientTypes}
+                        isTurno={isTurno}
+                        entryTime={entryTime}
+                        exitTime={exitTime}
+                        isExtractingFromFiles={isExtractingFromFiles}
+                        onExtractFromAttachments={handleExtractFromAttachmentsWrapper}
+                        onNameChange={setName}
+                        onNameBlur={() => setName(formatPatientName(name))}
+                        onRutChange={setRut}
+                        onBirthDateChange={setBirthDate}
+                        onGenderChange={setGender}
+                        onSelectType={(id: string, label: string) => { setTypeId(id); setType(label); }}
+                        onEntryTimeChange={setEntryTime}
+                        onExitTimeChange={setExitTime}
+                        onSave={handleSave}
+                        onClose={onClose}
+                    />
                 )}
 
                 {initialTab === 'clinical' && (
-                    <div className="w-full min-w-0 overflow-hidden">
-                        <ClinicalNote
-                            diagnosis={diagnosis}
-                            clinicalNote={clinicalNote}
-                            pendingTasks={pendingTasks}
-                            isListening={isListening}
-                            isAnalyzing={isAnalyzing}
-                            isSummarizing={isSummarizing}
-                            onDiagnosisChange={setDiagnosis}
-                            onClinicalNoteChange={setClinicalNote}
-                            onToggleListening={toggleListening}
-                            onAnalyze={handleAIAnalysis}
-                            onSummary={handleClinicalSummary}
-                            onToggleTask={toggleTask}
-                            onDeleteTask={deleteTask}
-                            onAddTask={addTask}
-                            activeTab="clinical"
-                            onChangeTab={() => { }}
-                            attachmentsCount={attachedFiles.length}
-                            minimal={true}
-                        />
-                    </div>
+                    <InlinePatientClinical
+                        diagnosis={diagnosis}
+                        clinicalNote={clinicalNote}
+                        pendingTasks={pendingTasks}
+                        isListening={isListening}
+                        isAnalyzing={isAnalyzing}
+                        isSummarizing={isSummarizing}
+                        attachmentsCount={attachedFiles.length}
+                        onDiagnosisChange={setDiagnosis}
+                        onClinicalNoteChange={setClinicalNote}
+                        onToggleListening={toggleListening}
+                        onAnalyze={handleAIAnalysis}
+                        onSummary={handleClinicalSummary}
+                        onToggleTask={toggleTask}
+                        onDeleteTask={deleteTask}
+                        onAddTask={addTask}
+                    />
                 )}
 
                 {initialTab === 'files' && (
-                    <div className="w-full min-w-0 overflow-hidden animate-fade-in">
-                        <PatientAttachmentsSection
-                            attachedFiles={attachedFiles}
-                            patientId={patient.id}
-                            patientRut={rut}
-                            patientName={name}
-                            driveFolderId={driveFolderId}
-                            addToast={addToast}
-                            onFilesChange={setAttachedFiles}
-                            onDriveFolderIdChange={setDriveFolderId}
-                            compact={true}
-                        />
-                    </div>
+                    <InlinePatientFiles
+                        attachedFiles={attachedFiles}
+                        patientId={patient.id}
+                        patientRut={rut}
+                        patientName={name}
+                        driveFolderId={driveFolderId}
+                        addToast={addToast}
+                        onFilesChange={setAttachedFiles}
+                        onDriveFolderIdChange={setDriveFolderId}
+                    />
                 )}
 
                 {initialTab === 'tasks' && (
-                    <div className="w-full min-w-0 overflow-hidden animate-fade-in space-y-2">
-                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2 max-h-[300px]">
-                            {pendingTasks.length === 0 && (
-                                <p className="text-xs text-amber-600/60 text-center py-4 italic">No hay tareas pendientes</p>
-                            )}
-                            {pendingTasks.map((task) => (
-                                <div
-                                    key={task.id}
-                                    className="flex items-center group bg-white dark:bg-gray-800 p-2 rounded-lg border border-amber-100 dark:border-amber-900/40 shadow-sm transition-all hover:border-amber-300"
-                                >
-                                    <button
-                                        onClick={() => toggleTask(task.id)}
-                                        className="mr-3 text-gray-400 hover:text-blue-500 transition-colors"
-                                    >
-                                        {task.isCompleted ? <Save className="w-4 h-4 text-green-500" /> : <Square className="w-4 h-4 text-gray-300" />}
-                                    </button>
-                                    <span className={`text-xs flex-1 font-medium ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
-                                        {task.text}
-                                    </span>
-                                    <button
-                                        onClick={() => deleteTask(task.id)}
-                                        className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100"
-                                    >
-                                        <X className="w-3.5 h-3.5" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="mt-3">
-                            <input
-                                type="text"
-                                placeholder="+ Nueva tarea..."
-                                onKeyDown={addTask}
-                                className="w-full px-3 py-2 text-xs bg-white dark:bg-gray-800 rounded-lg border border-amber-200/50 focus:border-amber-400 outline-none shadow-sm placeholder:text-gray-400"
-                            />
-                        </div>
-                    </div>
+                    <InlinePatientTasks
+                        pendingTasks={pendingTasks}
+                        onToggleTask={toggleTask}
+                        onDeleteTask={deleteTask}
+                        onAddTask={addTask}
+                    />
                 )}
             </div>
 

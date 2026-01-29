@@ -1,9 +1,9 @@
 
 import { useEffect, useRef } from 'react';
-import { subscribeToPatients } from '@services/firebaseService';
-import { subscribeToAuthChanges } from '@services/authService';
+import { subscribeToAuthChanges } from '@use-cases/auth';
 import { PatientRecord } from '@shared/types';
 import useAppStore from '@core/stores/useAppStore';
+import { subscribeToPatients } from '@use-cases/patientSync';
 
 const useFirebaseSync = () => {
     const setRecords = useAppStore((state) => state.setRecords);

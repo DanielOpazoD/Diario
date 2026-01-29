@@ -23,6 +23,18 @@ module.exports = {
                 pattern: 'src/core/app',
             },
             {
+                type: 'domain',
+                pattern: 'src/domain',
+            },
+            {
+                type: 'use-cases',
+                pattern: 'src/use-cases',
+            },
+            {
+                type: 'data',
+                pattern: 'src/data',
+            },
+            {
                 type: 'core',
                 pattern: 'src/core',
             },
@@ -55,8 +67,23 @@ module.exports = {
                 rules: [
                     {
                         from: 'shared',
-                        disallow: ['app', 'core', 'features', 'services'],
+                        disallow: ['app', 'core', 'features', 'services', 'domain', 'use-cases'],
                         message: 'Shared modules cannot import from upper layers',
+                    },
+                    {
+                        from: 'domain',
+                        disallow: ['app', 'core', 'features', 'services', 'use-cases'],
+                        message: 'Domain cannot import from UI or service layers',
+                    },
+                    {
+                        from: 'use-cases',
+                        disallow: ['app', 'core', 'features'],
+                        message: 'Use-cases cannot import from UI layers',
+                    },
+                    {
+                        from: 'data',
+                        disallow: ['app', 'core', 'features'],
+                        message: 'Data layer cannot import from UI layers',
                     },
                     {
                         from: 'services',
@@ -83,6 +110,18 @@ module.exports = {
             {
                 default: 'disallow',
                 rules: [
+                    {
+                        target: 'domain',
+                        allow: '**/*',
+                    },
+                    {
+                        target: 'use-cases',
+                        allow: '**/*',
+                    },
+                    {
+                        target: 'data',
+                        allow: '**/*',
+                    },
                     {
                         target: [['features', { 'featureName': '*' }]],
                         allow: 'index.ts',

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import useAppStore from '@core/stores/useAppStore';
-import { loginWithGoogle } from '@services/authService';
+import { loginWithGoogle } from '@use-cases/auth';
 
 const Login: React.FC = () => {
   // Store Actions

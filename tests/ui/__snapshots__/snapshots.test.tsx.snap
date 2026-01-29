@@ -113,7 +113,7 @@ exports[`UI Snapshots > renders BookmarkIcon correctly (favicon - fallback mode)
 exports[`UI Snapshots > renders Button correctly (ai) 1`] = `
 <DocumentFragment>
   <button
-    class="inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed px-3.5 py-1.5 text-sm bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-md border border-transparent "
+    class="inline-flex items-center justify-center rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-gray-950 disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-95 hover:-translate-y-0.5 px-4 py-2 text-[11px] bg-gradient-to-br from-brand-400 to-indigo-600 hover:from-brand-500 hover:to-indigo-700 text-white shadow-premium-lg hover:shadow-premium-xl border border-white/20 "
   >
     AI Magic
   </button>
@@ -124,7 +124,7 @@ exports[`UI Snapshots > renders Button correctly (loading) 1`] = `
 <DocumentFragment>
   <button
     aria-busy="true"
-    class="inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed px-3.5 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-500/20 "
+    class="inline-flex items-center justify-center rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-gray-950 disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-95 hover:-translate-y-0.5 px-4 py-2 text-[11px] bg-brand-500 hover:bg-brand-600 text-white shadow-premium hover:shadow-premium-lg border border-brand-400/20 "
     disabled=""
   >
     <svg
@@ -155,7 +155,7 @@ exports[`UI Snapshots > renders Button correctly (loading) 1`] = `
 exports[`UI Snapshots > renders Button correctly (primary) 1`] = `
 <DocumentFragment>
   <button
-    class="inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed px-3.5 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-500/20 "
+    class="inline-flex items-center justify-center rounded-xl font-black uppercase tracking-widest transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-gray-950 disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-95 hover:-translate-y-0.5 px-4 py-2 text-[11px] bg-brand-500 hover:bg-brand-600 text-white shadow-premium hover:shadow-premium-lg border border-brand-400/20 "
   >
     Click Me
   </button>

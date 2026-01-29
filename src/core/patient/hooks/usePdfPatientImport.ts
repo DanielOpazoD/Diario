@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { z } from 'zod';
-import { extractPatientDataFromImage } from '@services/geminiService';
+import { extractPatientDataFromImage } from '@use-cases/ai';
 import { fileToBase64 } from '@services/storage';
 import { uploadFileToFirebase } from '@services/firebaseStorageService';
 import { useAppActions } from '@core/app/state/useAppActions';

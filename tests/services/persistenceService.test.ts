@@ -21,26 +21,40 @@ vi.mock('@core/stores/useAppStore', () => ({
     },
 }));
 
-vi.mock('./storage', () => ({
+vi.mock('@services/storage', () => ({
     saveRecordsToLocal: vi.fn(),
     saveGeneralTasksToLocal: vi.fn(),
     saveBookmarksToLocal: vi.fn(),
     saveBookmarkCategoriesToLocal: vi.fn(),
 }));
 
-vi.mock('./firebaseService', () => ({
+vi.mock('@services/firebaseService', () => ({
     syncPatientsToFirebase: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe('persistenceService', () => {
     let mockSubscribe: ReturnType<typeof vi.fn>;
+    const baseState = {
+        records: [],
+        generalTasks: [],
+        bookmarks: [],
+        bookmarkCategories: [],
+        user: null,
+        theme: 'light',
+        patientTypes: [],
+        securityPin: null,
+        autoLockMinutes: 5,
+        highlightPendingPatients: true,
+        compactStats: false,
+        showBookmarkBar: true,
+    };
 
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.useFakeTimers();
         vi.clearAllMocks();
 
         // Get the mocked subscribe function
-        const useAppStore = require('@core/stores/useAppStore').default;
+        const useAppStore = (await import('@core/stores/useAppStore')).default;
         mockSubscribe = useAppStore.subscribe;
     });
 
@@ -67,9 +81,9 @@ describe('persistenceService', () => {
             const callback = mockSubscribe.mock.calls[0][0];
 
             // Trigger multiple state changes quickly
-            callback({ records: [{ id: '1' }] });
-            callback({ records: [{ id: '2' }] });
-            callback({ records: [{ id: '3' }] });
+            callback({ ...baseState, records: [{ id: '1' }] });
+            callback({ ...baseState, records: [{ id: '2' }] });
+            callback({ ...baseState, records: [{ id: '3' }] });
 
             // Before timeout, save should not be called
             expect(saveRecordsToLocal).not.toHaveBeenCalled();
@@ -82,13 +96,13 @@ describe('persistenceService', () => {
 
         it('should save user to localStorage when present', async () => {
             const { initPersistence } = await import('@services/persistenceService');
-            const localStorageSpy = vi.spyOn(Storage.prototype, 'setItem');
+            const localStorageSpy = vi.spyOn(window.localStorage, 'setItem');
 
             initPersistence();
             const callback = mockSubscribe.mock.calls[0][0];
 
             const testUser = { name: 'Test', email: 'test@test.com', avatar: 'url' };
-            callback({ user: testUser, records: [] });
+            callback({ ...baseState, user: testUser, records: [] });
 
             await vi.advanceTimersByTimeAsync(2000);
 
@@ -106,7 +120,7 @@ describe('persistenceService', () => {
             const callback = mockSubscribe.mock.calls[0][0];
 
             const testRecords = [{ id: '1', name: 'Patient 1' }];
-            callback({ records: testRecords });
+            callback({ ...baseState, records: testRecords, user: { name: 'Test', email: 'test@test.com', avatar: 'url' } });
 
             await vi.advanceTimersByTimeAsync(2000);
 
