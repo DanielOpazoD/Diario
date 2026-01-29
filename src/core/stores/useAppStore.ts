@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createPatientSlice, PatientSlice } from '@core/stores/slices/patientSlice';
 import { createTaskSlice, TaskSlice } from '@core/stores/slices/taskSlice';
 import { createUserSlice, UserSlice } from '@core/stores/slices/userSlice';
@@ -102,47 +102,49 @@ const getInitialPreferences = () => {
 const initialPreferences = getInitialPreferences();
 
 const useAppStore = create<AppStore>()(
-  devtools(
-    (set, get, api) => ({
-      ...createPatientSlice(set, get, api),
-      ...createTaskSlice(set, get, api),
-      ...createUserSlice(set, get, api),
-      ...createSettingsSlice(set, get, api),
-      ...createBookmarkSlice(set, get, api),
+  subscribeWithSelector(
+    devtools(
+      (set, get, api) => ({
+        ...createPatientSlice(set, get, api),
+        ...createTaskSlice(set, get, api),
+        ...createUserSlice(set, get, api),
+        ...createSettingsSlice(set, get, api),
+        ...createBookmarkSlice(set, get, api),
 
-      // UI Slice Implementation
-      toasts: [],
-      addToast: (type, message) => set((state) => ({
-        toasts: [...state.toasts, { id: crypto.randomUUID(), type, message }]
-      })),
-      removeToast: (id) => set((state) => ({
-        toasts: state.toasts.filter((t) => t.id !== id)
-      })),
-      syncStatus: 'idle',
-      lastSyncAt: null,
-      setSyncStatus: (status, timestamp) => set(() => ({
-        syncStatus: status,
-        lastSyncAt: typeof timestamp === 'number' ? timestamp : (status === 'synced' ? Date.now() : null),
-      })),
+        // UI Slice Implementation
+        toasts: [],
+        addToast: (type, message) => set((state) => ({
+          toasts: [...state.toasts, { id: crypto.randomUUID(), type, message }]
+        })),
+        removeToast: (id) => set((state) => ({
+          toasts: state.toasts.filter((t) => t.id !== id)
+        })),
+        syncStatus: 'idle',
+        lastSyncAt: null,
+        setSyncStatus: (status, timestamp) => set(() => ({
+          syncStatus: status,
+          lastSyncAt: typeof timestamp === 'number' ? timestamp : (status === 'synced' ? Date.now() : null),
+        })),
 
-      // Overwrite initial state with loaded data if available
-      records: initialRecords,
-      generalTasks: initialTasks,
-      bookmarks: initialBookmarks,
-      bookmarkCategories:
-        initialBookmarkCategories.length > 0
-          ? ensureDefaultBookmarkCategories(initialBookmarkCategories)
-          : defaultBookmarkCategories,
-      user: storedUser ? JSON.parse(storedUser) : null,
-      theme: storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-      patientTypes: getInitialPatientTypes(),
-      securityPin: initialSecurity.pin,
-      autoLockMinutes: initialSecurity.autoLockMinutes,
-      highlightPendingPatients: initialPreferences.highlightPendingPatients,
-      compactStats: initialPreferences.compactStats,
-      showBookmarkBar: initialPreferences.showBookmarkBar,
-    }),
-    { name: 'MediDiarioStore' }
+        // Overwrite initial state with loaded data if available
+        records: initialRecords,
+        generalTasks: initialTasks,
+        bookmarks: initialBookmarks,
+        bookmarkCategories:
+          initialBookmarkCategories.length > 0
+            ? ensureDefaultBookmarkCategories(initialBookmarkCategories)
+            : defaultBookmarkCategories,
+        user: storedUser ? JSON.parse(storedUser) : null,
+        theme: storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+        patientTypes: getInitialPatientTypes(),
+        securityPin: initialSecurity.pin,
+        autoLockMinutes: initialSecurity.autoLockMinutes,
+        highlightPendingPatients: initialPreferences.highlightPendingPatients,
+        compactStats: initialPreferences.compactStats,
+        showBookmarkBar: initialPreferences.showBookmarkBar,
+      }),
+      { name: 'MediDiarioStore' }
+    )
   )
 );
 

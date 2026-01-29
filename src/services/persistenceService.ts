@@ -20,8 +20,24 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null;
  * Initializes the persistence layer by subscribing to store changes.
  * Handles debounced saving to LocalStorage and incremental sync to Firebase.
  */
+type AppState = ReturnType<typeof useAppStore.getState>;
+type PersistedState = Pick<AppState,
+    | 'records'
+    | 'generalTasks'
+    | 'bookmarks'
+    | 'bookmarkCategories'
+    | 'user'
+    | 'theme'
+    | 'patientTypes'
+    | 'securityPin'
+    | 'autoLockMinutes'
+    | 'highlightPendingPatients'
+    | 'compactStats'
+    | 'showBookmarkBar'
+>;
+
 export const initPersistence = () => {
-    return useAppStore.subscribe((state) => ({
+    return useAppStore.subscribe((state): PersistedState => ({
         records: state.records,
         generalTasks: state.generalTasks,
         bookmarks: state.bookmarks,
@@ -34,7 +50,7 @@ export const initPersistence = () => {
         highlightPendingPatients: state.highlightPendingPatients,
         compactStats: state.compactStats,
         showBookmarkBar: state.showBookmarkBar,
-    }), (state) => {
+    }), (state: PersistedState) => {
         if (saveTimeout) clearTimeout(saveTimeout);
         useAppStore.setState({ syncStatus: 'saving' });
 
@@ -68,7 +84,7 @@ export const initPersistence = () => {
             // 2. Incremental Firebase Sync
             try {
                 if (state.user) {
-                    const dirtyPatients = state.records.filter(patient => {
+                    const dirtyPatients = state.records.filter((patient: AppState['records'][number]) => {
                         const lastSync = lastSyncedHashes.get(patient.id);
                         // Decide if it's dirty: never synced or updatedAt is newer
                         return lastSync === undefined || (patient.updatedAt || 0) > lastSync;
@@ -79,7 +95,7 @@ export const initPersistence = () => {
                         await syncPatientsToFirebase(dirtyPatients);
 
                         // Update tracking map upon success
-                        dirtyPatients.forEach(p => {
+                        dirtyPatients.forEach((p: AppState['records'][number]) => {
                             lastSyncedHashes.set(p.id, p.updatedAt || 0);
                         });
                         console.log(' [AutoSave] Sincronización incremental exitosa');
