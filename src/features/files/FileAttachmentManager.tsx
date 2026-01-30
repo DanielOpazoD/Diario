@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect, Suspense, lazy } from 'react';
-import { Trash2, ExternalLink } from 'lucide-react';
+import { Trash2, ExternalLink, Edit3 } from 'lucide-react';
 import { AttachedFile } from '@shared/types';
 import {
   useUploadPatientFileFirebase,
@@ -339,10 +339,29 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
                   {getFileIcon(file.mimeType)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-800 dark:text-gray-200 truncate">{displayFileName(file.name)}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="font-medium text-gray-800 dark:text-gray-200 truncate">
+                      {file.customTitle || displayFileName(file.name)}
+                    </p>
+                    {file.customTypeLabel && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 text-[9px] font-bold border border-gray-200 dark:border-gray-600">
+                        {file.customTypeLabel}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[10px] text-gray-500">{formatFileSize(file.size)}</p>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => {
+                      setSelectedFile(file);
+                      setIsPreviewOpen(true);
+                    }}
+                    className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                    title="Editar metadata"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
                   <a
                     href={file.driveUrl}
                     target="_blank"
@@ -363,6 +382,17 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
               </div>
             ))}
           </div>
+        )}
+
+        {isPreviewOpen && (
+          <Suspense fallback={null}>
+            <FilePreviewModal
+              file={selectedFile}
+              isOpen={isPreviewOpen}
+              onClose={() => setIsPreviewOpen(false)}
+              onUpdate={handleFileUpdate}
+            />
+          </Suspense>
         )}
       </div>
     );

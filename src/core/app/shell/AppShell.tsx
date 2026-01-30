@@ -68,6 +68,7 @@ const AppShell: React.FC = () => {
     setEditingPatient,
     setPatientToDelete,
     initialTab,
+    patientModalMode,
   } = useModalManager();
 
   const {
@@ -194,6 +195,7 @@ const AppShell: React.FC = () => {
         isAppMenuOpen={isAppMenuOpen}
         onCloseAppMenu={closeAppMenu}
         onNavigate={handleNavigation}
+        patientModalMode={patientModalMode}
       />
 
       <AIChatEntry />

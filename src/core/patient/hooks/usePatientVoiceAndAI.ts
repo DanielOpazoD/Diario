@@ -122,6 +122,7 @@ const usePatientVoiceAndAI = ({
         id: crypto.randomUUID(),
         text,
         isCompleted: false,
+        createdAt: Date.now(),
       }));
       setPendingTasks(prev => [...prev, ...newTasks]);
       addToast('success', 'Análisis IA completado');

@@ -51,6 +51,11 @@ const FileList: React.FC<FileListProps> = ({
                                     <Calendar className="w-2.5 h-2.5" /> {file.noteDate}
                                 </span>
                             )}
+                            {file.customTypeLabel && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 text-[10px] font-bold border border-gray-200 dark:border-gray-600">
+                                    {file.customTypeLabel}
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
                             <span>{formatFileSize(file.size)}</span>

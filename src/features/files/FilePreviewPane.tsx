@@ -63,6 +63,12 @@ const FilePreviewPane: React.FC<FilePreviewPaneProps> = ({ selectedFile, onOpenD
                         {selectedFile.customTitle || selectedFile.name}
                     </p>
 
+                    {selectedFile.customTypeLabel && (
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-300">
+                            {selectedFile.customTypeLabel}
+                        </div>
+                    )}
+
                     {selectedFile.noteDate && (
                         <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase">
                             <Calendar className="w-3 h-3" />

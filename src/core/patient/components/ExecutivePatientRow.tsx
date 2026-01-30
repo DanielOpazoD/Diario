@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { differenceInYears } from 'date-fns';
-import { CheckSquare, Square, ChevronDown, Trash2, Paperclip, Stethoscope, FileText } from 'lucide-react';
+import { CheckSquare, Square, Trash2, Paperclip, Stethoscope } from 'lucide-react';
 import { PatientRecord } from '@shared/types';
 import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
@@ -42,7 +42,6 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
     addToast,
     selectedDate
 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<'demographics' | 'clinical' | 'files' | 'tasks' | null>(null);
 
     const { updatePatient, patientTypes } = useAppStore(useShallow(state => ({
@@ -54,13 +53,21 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
     const pendingCount = tasks.filter(t => !t.isCompleted).length;
     const completedCount = tasks.filter(t => t.isCompleted).length;
     const attachmentsCount = patient.attachedFiles?.length || 0;
+    const isCompactRow = !patient.diagnosis && !patient.clinicalNote && tasks.length === 0 && attachmentsCount === 0;
 
     const typeConfig = patientTypes.find(t => t.label === patient.type);
     const coreColor = typeConfig ? typeConfig.colorClass.split('-')[1] || 'gray' : 'gray';
 
     const handleToggleTask = (taskId: string) => {
         const updatedTasks = tasks.map(t =>
-            t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t
+            t.id === taskId
+                ? {
+                    ...t,
+                    isCompleted: !t.isCompleted,
+                    completedAt: !t.isCompleted ? Date.now() : undefined,
+                    completionNote: !t.isCompleted ? t.completionNote : undefined,
+                }
+                : t
         );
         updatePatient({ ...patient, pendingTasks: updatedTasks });
     };
@@ -70,7 +77,6 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
             setActiveTab(null);
         } else {
             setActiveTab(tab);
-            setIsExpanded(true); // Ensure row is expanded to show editor
         }
     };
 
@@ -94,6 +100,7 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
 
     return (
         <div className={`group relative overflow-hidden transition-all duration-300 border-b border-gray-100/50 dark:border-gray-800/50 hover:bg-white/40 dark:hover:bg-brand-900/10 hover:shadow-premium-sm ${selectionMode && selected ? 'bg-brand-50/50 dark:bg-brand-900/20 ring-1 ring-brand-500/20' : ''}`}>
+            <div className="w-full max-w-full overflow-hidden">
             <div className="flex">
                 {/* Color Indicator Strip - Refined */}
                 <div className={`w-1 shrink-0 ${!patient.name ? 'bg-gray-300/50' : `bg-${coreColor}-500/80`} opacity-100 self-stretch rounded-r-pill my-2 ml-1 shadow-[0_0_10px_rgba(var(--brand-500-rgb),0.2)]`}></div>
@@ -103,11 +110,9 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                     onClick={() => {
                         if (activeTab) {
                             setActiveTab(null);
-                        } else {
-                            setIsExpanded(!isExpanded);
                         }
                     }}
-                    className="flex-1 flex items-center px-4 py-3 gap-3 cursor-pointer min-h-[60px] overflow-hidden"
+                    className={`flex-1 flex items-center px-4 gap-3 cursor-pointer overflow-hidden ${isCompactRow ? 'min-h-[48px] py-2' : 'min-h-[60px] py-3'}`}
                 >
                     {/* Selection Checkbox */}
                     {selectionMode && (
@@ -149,9 +154,18 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                                         <span className="text-sm text-gray-400 dark:text-gray-500 font-black tracking-tighter">
                                             {calculateAge(patient.birthDate)}
                                         </span>
-                                        <span className="font-mono text-[9px] text-gray-400 bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 px-2 py-0.5 rounded-pill uppercase font-black tracking-widest shadow-inner">
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigator.clipboard?.writeText(patient.rut || '');
+                                                addToast('success', 'RUT copiado');
+                                            }}
+                                            className="font-mono text-[9px] text-gray-400 bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 px-2 py-0.5 rounded-pill uppercase font-black tracking-widest shadow-inner hover:text-gray-600 hover:border-gray-300 transition-colors"
+                                            title="Copiar RUT"
+                                        >
                                             {patient.rut}
-                                        </span>
+                                        </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onDelete(patient.id); }}
                                             className="text-red-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all opacity-0 group-hover:opacity-100 active:scale-90"
@@ -186,10 +200,15 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); handleTabClick('files'); }}
-                                className={`p-2 rounded-xl transition-all duration-300 shadow-premium-sm ${activeTab === 'files' ? 'bg-indigo-500 text-white shadow-indigo-500/30' : attachmentsCount > 0 ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'}`}
+                                className={`relative p-2 rounded-xl transition-all duration-300 shadow-premium-sm ${activeTab === 'files' ? 'bg-indigo-500 text-white shadow-indigo-500/30' : attachmentsCount > 0 ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'}`}
                                 title="Archivos"
                             >
                                 <Paperclip className="w-4 h-4" />
+                                {attachmentsCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-indigo-500 text-white text-[9px] font-black leading-4 text-center shadow">
+                                        {attachmentsCount}
+                                    </span>
+                                )}
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); handleTabClick('tasks'); }}
@@ -204,69 +223,31 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
                             </button>
                         </div>
 
-                        <ChevronDown className={`w-4 h-4 text-gray-300 transition-transform duration-300 ml-1.5 ${isExpanded || activeTab ? 'rotate-180 text-brand-500' : ''}`} />
                     </div>
                 </div>
             </div>
 
             {/* Inline Editor Area */}
             {activeTab && (
-                <div className={`overflow-hidden w-full max-w-full ${activeTab === 'demographics' && !patient.name ? '' : 'border-t border-gray-100 dark:border-gray-800'}`}>
-                    <InlinePatientEditor
-                        patient={patient}
-                        initialTab={activeTab}
-                        onClose={() => setActiveTab(null)}
-                        onSave={handleSaveInline}
-                        onAutoSave={handleAutoSaveInline}
-                        addToast={addToast}
-                        selectedDate={selectedDate}
-                    />
-                </div>
-            )}
-
-            {/* Expanded Content (View Only) - Hide if Editor is Open */}
-            {isExpanded && !activeTab && (
-                <div className="px-5 pb-4 pl-8 border-l-[6px] border-transparent ml-0.5 animate-slide-down">
-
-                    {/* Tasks List */}
-                    {tasks.length > 0 && (
-                        <div className="mb-3 space-y-1 mt-2">
-                            <div className="text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center gap-1"><CheckSquare className="w-3 h-3" /> Tareas</div>
-                            {tasks.map(task => (
-                                <div
-                                    key={task.id}
-                                    onClick={() => handleToggleTask(task.id)}
-                                    className="flex items-center gap-2 cursor-pointer group py-0.5"
-                                >
-                                    {task.isCompleted
-                                        ? <CheckSquare className="w-4 h-4 text-green-500" />
-                                        : <Square className="w-4 h-4 text-gray-300 group-hover:text-blue-500" />}
-                                    <span className={`text-sm ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
-                                        {task.text}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Clinical Note Snippet */}
-                    {patient.clinicalNote && (
-                        <div className={`text-sm text-gray-600 dark:text-gray-300 pt-2 ${tasks.length > 0 ? 'border-t border-gray-100 dark:border-gray-800' : 'mt-1'}`}>
-                            <div className="flex gap-2">
-                                <FileText className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                                <span className="whitespace-pre-wrap leading-relaxed opacity-90">{patient.clinicalNote}</span>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Footer Info */}
-                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-800/50">
-                        <div className="text-xs text-gray-400">
-                            {patient.entryTime && <span>Ingreso: <span className="font-mono">{patient.entryTime}</span></span>}
+                <div className={`w-full max-w-full overflow-hidden ${activeTab === 'demographics' && !patient.name ? '' : 'border-t border-gray-100 dark:border-gray-800'}`}>
+                    <div className="flex">
+                        <div className="w-1 shrink-0 ml-1 my-2 opacity-0" aria-hidden="true" />
+                        <div className="flex-1 min-w-0">
+                            <InlinePatientEditor
+                                patient={patient}
+                                initialTab={activeTab}
+                                onClose={() => setActiveTab(null)}
+                                onSave={handleSaveInline}
+                                onAutoSave={handleAutoSaveInline}
+                                addToast={addToast}
+                                selectedDate={selectedDate}
+                            />
                         </div>
                     </div>
                 </div>
             )}
+
+            </div>
         </div>
     );
 };

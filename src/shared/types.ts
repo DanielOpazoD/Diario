@@ -17,6 +17,9 @@ export interface PendingTask {
   id: string;
   text: string;
   isCompleted: boolean;
+  createdAt?: number;
+  completedAt?: number;
+  completionNote?: string;
 }
 
 export interface GeneralTask {
@@ -38,6 +41,7 @@ export interface AttachedFile {
   tags?: string[];
   description?: string;
   customTitle?: string;
+  customTypeLabel?: string;
   noteDate?: string; // YYYY-MM-DD
   category?: 'lab' | 'imaging' | 'report' | 'prescription' | 'other';
   isStarred?: boolean;

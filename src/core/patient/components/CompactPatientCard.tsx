@@ -53,7 +53,14 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
 
   const handleToggleTask = (taskId: string) => {
     const updatedTasks = tasks.map(t =>
-      t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t
+      t.id === taskId
+        ? {
+            ...t,
+            isCompleted: !t.isCompleted,
+            completedAt: !t.isCompleted ? Date.now() : undefined,
+            completionNote: !t.isCompleted ? t.completionNote : undefined,
+          }
+        : t
     );
     updatePatient({ ...patient, pendingTasks: updatedTasks });
   };

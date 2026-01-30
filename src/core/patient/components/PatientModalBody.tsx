@@ -45,6 +45,7 @@ interface PatientModalBodyProps {
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onAddTask: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+  onUpdateTaskNote: (id: string, note: string) => void;
   onChangeTab: (tab: 'clinical' | 'files') => void;
   onFilesChange: (files: AttachedFile[]) => void;
   onDriveFolderIdChange: (folderId: string | null) => void;
@@ -156,6 +157,7 @@ const PatientModalBody: React.FC<PatientModalBodyProps> = ({
   onToggleTask,
   onDeleteTask,
   onAddTask,
+  onUpdateTaskNote,
   onChangeTab,
   onFilesChange,
   onDriveFolderIdChange,
@@ -208,6 +210,7 @@ const PatientModalBody: React.FC<PatientModalBodyProps> = ({
           onToggleTask={onToggleTask}
           onDeleteTask={onDeleteTask}
           onAddTask={onAddTask}
+          onUpdateTaskNote={onUpdateTaskNote}
           onChangeTab={onChangeTab}
           attachmentsSection={(
             <PatientAttachmentsSection

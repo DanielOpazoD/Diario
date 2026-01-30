@@ -23,7 +23,7 @@ interface AppViewsProps {
   records: PatientRecord[];
   patientTypes: PatientTypeConfig[];
   onAddPatient: () => void;
-  onEditPatient: (patient: PatientRecord, initialTab?: 'clinical' | 'files') => void;
+  onEditPatient: (patient: PatientRecord, initialTab?: 'clinical' | 'files', mode?: 'daily' | 'history') => void;
   onDeletePatient: (patientId: string) => void;
   onMovePatients: (patientIds: string[], targetDate: string) => void;
   onCopyPatients: (patientIds: string[], targetDate: string) => void;

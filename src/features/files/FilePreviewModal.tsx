@@ -20,15 +20,19 @@ const categoryLabels: Record<NonNullable<AttachedFile['category']>, string> = {
 
 const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClose, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [category, setCategory] = useState<AttachedFile['category']>('other');
+  const [customTypeLabel, setCustomTypeLabel] = useState('');
 
   useEffect(() => {
     if (file) {
+      setTitle(file.customTitle || file.name);
       setDescription(file.description || '');
       setTagsInput((file.tags || []).join(', '));
       setCategory(file.category || 'other');
+      setCustomTypeLabel(file.customTypeLabel || '');
       setIsEditing(false);
     }
   }, [file]);
@@ -78,9 +82,11 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
     onUpdate({
       ...file,
+      customTitle: title.trim() || file.name,
       description,
       category,
       tags: parsedTags,
+      customTypeLabel: customTypeLabel.trim() || undefined,
     });
     setIsEditing(false);
   };
@@ -99,7 +105,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
               <Star className={`w-5 h-5 ${file.isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
             </button>
             <div>
-              <h3 className="font-bold text-lg text-gray-900 dark:text-white">{file.name}</h3>
+              <h3 className="font-bold text-lg text-gray-900 dark:text-white">{file.customTitle || file.name}</h3>
               <p className="text-xs text-gray-500">
                 {format(file.uploadedAt, 'd MMM yyyy')} · {formatSize(file.size)}
               </p>
@@ -160,11 +166,13 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
             <span className="px-2 py-1 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
               Tipo: {file.mimeType}
             </span>
+            {(file.customTypeLabel || file.category) && (
+              <span className="px-2 py-1 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
+                Etiqueta: {file.customTypeLabel || categoryLabels[file.category || 'other']}
+              </span>
+            )}
             <span className="px-2 py-1 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
               Subido: {format(file.uploadedAt, 'd MMM, HH:mm')}
-            </span>
-            <span className="px-2 py-1 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
-              {file.driveUrl.replace(/^https?:\/\//, '')}
             </span>
           </div>
 
@@ -186,6 +194,15 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           {isEditing && (
             <div className="grid md:grid-cols-3 gap-4">
               <div className="md:col-span-2 space-y-3">
+                <div>
+                  <label className="text-xs font-bold mb-1 block">Nombre visible</label>
+                  <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full p-2 rounded-lg border text-sm bg-white dark:bg-gray-900"
+                    placeholder={file.name}
+                  />
+                </div>
                 <div>
                   <label className="text-xs font-bold mb-1 block">Descripción</label>
                   <textarea
@@ -219,6 +236,15 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
                       </option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold mb-1 block">Etiqueta personalizada</label>
+                  <input
+                    value={customTypeLabel}
+                    onChange={(e) => setCustomTypeLabel(e.target.value)}
+                    className="w-full p-2 rounded-lg border text-sm bg-white dark:bg-gray-900"
+                    placeholder="ej: Ecografía, Interconsulta"
+                  />
                 </div>
                 <button
                   onClick={handleSave}

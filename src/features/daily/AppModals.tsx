@@ -4,6 +4,7 @@ import { PatientCreateInput, PatientRecord, PatientUpdateInput, ViewMode } from 
 import { ModalSkeleton } from '@core/ui';
 
 const PatientModal = lazy(() => import('@core/patient/components/PatientModal'));
+const PatientHistoryModal = lazy(() => import('@core/patient/components/PatientHistoryModal'));
 const ConfirmationModal = lazy(() => import('@core/ui').then(m => ({ default: m.ConfirmationModal })));
 const BookmarksModal = lazy(() => import('@features/bookmarks/BookmarksModal'));
 const AppMenuModal = lazy(() => import('./AppMenuModal'));
@@ -17,6 +18,7 @@ interface AppModalsProps {
   isBookmarksModalOpen: boolean;
   editingBookmarkId: string | null;
   isAppMenuOpen: boolean;
+  patientModalMode?: 'daily' | 'history';
   onToast: (type: 'success' | 'error' | 'info', message: string) => void;
   onClosePatientModal: () => void;
   onSavePatient: (patientData: PatientCreateInput | PatientUpdateInput) => void;
@@ -48,21 +50,32 @@ const AppModals: React.FC<AppModalsProps> = ({
   onNavigate,
   isAppMenuOpen,
   initialTab,
+  patientModalMode = 'daily',
 }) => (
   <>
     {isPatientModalOpen && (
       <Suspense fallback={<ModalSkeleton />}>
-        <PatientModal
-          isOpen={isPatientModalOpen}
-          onClose={onClosePatientModal}
-          onSave={onSavePatient}
-          onAutoSave={onAutoSavePatient}
-          onSaveMultiple={onSaveMultiplePatients}
-          addToast={onToast}
-          initialData={editingPatient}
-          selectedDate={format(currentDate, 'yyyy-MM-dd')}
-          initialTab={initialTab}
-        />
+        {patientModalMode === 'history' ? (
+          <PatientHistoryModal
+            isOpen={isPatientModalOpen}
+            onClose={onClosePatientModal}
+            record={editingPatient}
+            initialTab={initialTab}
+          />
+        ) : (
+          <PatientModal
+            isOpen={isPatientModalOpen}
+            onClose={onClosePatientModal}
+            onSave={onSavePatient}
+            onAutoSave={onAutoSavePatient}
+            onSaveMultiple={onSaveMultiplePatients}
+            addToast={onToast}
+            initialData={editingPatient}
+            selectedDate={format(currentDate, 'yyyy-MM-dd')}
+            initialTab={initialTab}
+            mode={patientModalMode}
+          />
+        )}
       </Suspense>
     )}
 

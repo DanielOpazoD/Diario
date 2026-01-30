@@ -7,7 +7,7 @@ import TaskStatusIndicator from '@core/components/TaskStatusIndicator';
 interface HistoryTableProps {
     visits: PatientRecord[];
     getTypeClass: (type: string, typeId?: string) => string;
-    onViewDetails: (record: PatientRecord) => void;
+    onViewDetails: (record: PatientRecord, tab?: 'clinical' | 'files') => void;
     currentPage: number;
     totalPages: number;
     onPageChange: (page: number) => void;
@@ -79,28 +79,31 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
                                     <td className="px-4 py-2.5">
                                         <div className="flex items-center justify-center gap-1.5">
                                             <button
-                                                onClick={() => onViewDetails(record)}
+                                                onClick={() => onViewDetails(record, 'clinical')}
                                                 className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/40 transition-all"
                                                 title="Ver atención"
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
-                                            <div
+                                            <button
                                                 className="relative group/tooltip"
                                                 title={`Tareas: ${pendingCount} pendientes, ${completedCount} completadas`}
+                                                onClick={() => onViewDetails(record, 'clinical')}
                                             >
                                                 <TaskStatusIndicator
                                                     pendingCount={pendingCount}
                                                     completedCount={completedCount}
                                                     iconClassName="w-4 h-4"
                                                 />
-                                            </div>
+                                            </button>
 
-                                            {record.attachedFiles.length > 0 && (
-                                                <div title={`${record.attachedFiles.length} archivos`}>
-                                                    <Paperclip className="w-4 h-4 text-blue-500 opacity-60 group-hover:opacity-100" />
-                                                </div>
-                                            )}
+                                            <button
+                                                title={`${record.attachedFiles.length} archivos`}
+                                                onClick={() => onViewDetails(record, 'files')}
+                                                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/40 transition-all"
+                                            >
+                                                <Paperclip className={`w-4 h-4 ${record.attachedFiles.length > 0 ? 'text-blue-500' : 'text-gray-300'}`} />
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

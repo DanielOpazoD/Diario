@@ -18,6 +18,7 @@ interface ClinicalNoteProps {
   onToggleTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onAddTask: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onUpdateTaskNote: (taskId: string, note: string) => void;
   activeTab: 'clinical' | 'files';
   onChangeTab: (tab: 'clinical' | 'files') => void;
   attachmentsCount: number;
@@ -40,6 +41,7 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
   onToggleTask,
   onDeleteTask,
   onAddTask,
+  onUpdateTaskNote,
   activeTab,
   onChangeTab,
   attachmentsCount,
@@ -170,6 +172,7 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
             onToggleTask={onToggleTask}
             onDeleteTask={onDeleteTask}
             onAddTask={onAddTask}
+            onUpdateTaskNote={onUpdateTaskNote}
             minimal={minimal}
           />
         </div>

@@ -91,14 +91,14 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
 
   return (
     <div className="flex flex-col w-full max-w-lg mx-auto relative group">
-      <div className="flex items-center justify-between mb-1 px-2 pt-1 relative z-20">
+      <div className="flex items-center justify-between mb-0 px-1 pt-0.5 relative z-20">
         <button onClick={() => onSelectDate(addDays(currentDate, -1))} className="p-2 rounded-full hover:bg-gray-200/50 dark:hover:bg-gray-700/50 text-gray-400 transition-colors active:scale-95"><ChevronLeft className="w-4 h-4" /></button>
 
         <div className="flex items-center gap-2">
-          <button onClick={() => { setPickerDate(currentDate); setShowPicker(!showPicker); }} className="group/btn relative px-4 py-1.5 rounded-xl bg-white/50 dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all">
-            <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200 capitalize flex items-center gap-2">
+          <button onClick={() => { setPickerDate(currentDate); setShowPicker(!showPicker); }} className="group/btn relative px-2.5 py-0.5 rounded-lg bg-white dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-200 dark:border-gray-700 transition-all">
+            <h2 className="text-[12px] font-bold text-gray-800 dark:text-gray-200 capitalize flex items-center gap-2">
               {format(currentDate, 'MMMM yyyy', { locale: es })}
-              <Calendar className={`w-3.5 h-3.5 text-blue-500 transition-transform duration-300 ${showPicker ? 'rotate-180' : ''}`} />
+              <Calendar className={`w-3 h-3 text-blue-500 transition-transform duration-300 ${showPicker ? 'rotate-180' : ''}`} />
             </h2>
           </button>
           {!isSameDay(currentDate, new Date()) && (
@@ -140,7 +140,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
       <div
         ref={scrollRef}
         onWheel={handleWheel}
-        className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory py-2 w-full select-none relative z-0 outline-none focus:outline-none px-0"
+        className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full select-none relative z-0 outline-none focus:outline-none px-0"
       >
         {days.map((date, index) => {
           const isSelected = isSameDay(date, currentDate);
@@ -149,21 +149,21 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
 
           // Distinctive color for Today when not selected
           const baseClasses = isSelected
-            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105 z-10 h-14 border-blue-600'
+            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105 z-10 h-11 border-blue-600'
             : isTodayDate
-              ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200 border-amber-200 dark:border-amber-800/50 h-12'
-              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 h-12 border-gray-100 dark:border-gray-700/50';
+              ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200 border-amber-200 dark:border-amber-800/50 h-10'
+              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 h-10 border-gray-100 dark:border-gray-700/50';
 
           return (
             <div
               key={date.toISOString()}
               ref={index === 5 ? itemRef : null}
               onClick={() => onSelectDate(date)}
-              className={`snap-center shrink-0 w-[52px] mx-[2px] flex flex-col items-center justify-center cursor-pointer transition-all duration-300 rounded-xl relative border ${baseClasses}`}
+              className={`snap-center shrink-0 w-[46px] mx-[1px] flex flex-col items-center justify-center cursor-pointer transition-all duration-300 rounded-xl relative border ${baseClasses}`}
             >
-              <span className={`text-[9px] font-bold uppercase tracking-wider ${isSelected ? 'text-blue-100' : isTodayDate ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>{format(date, 'EEE', { locale: es }).replace('.', '')}</span>
-              <span className={`text-base font-bold leading-none ${isSelected ? 'text-white' : isTodayDate ? 'text-amber-900 dark:text-amber-100' : 'text-gray-800 dark:text-gray-200'}`}>{format(date, 'd')}</span>
-              <div className="flex gap-0.5 mt-1 h-1 items-end">
+              <span className={`text-[8px] font-bold uppercase tracking-wider ${isSelected ? 'text-blue-100' : isTodayDate ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>{format(date, 'EEE', { locale: es }).replace('.', '')}</span>
+              <span className={`text-[13px] font-bold leading-none ${isSelected ? 'text-white' : isTodayDate ? 'text-amber-900 dark:text-amber-100' : 'text-gray-800 dark:text-gray-200'}`}>{format(date, 'd')}</span>
+              <div className="flex gap-0.5 mt-0.5 h-1 items-end">
                 {hasHosp && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-red-500'}`}></div>}
                 {hasPoli && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-blue-200' : 'bg-blue-500'}`}></div>}
                 {hasTurno && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-purple-200' : 'bg-purple-500'}`}></div>}

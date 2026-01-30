@@ -9,18 +9,28 @@ const useModalManager = () => {
   const [isBookmarksModalOpen, setIsBookmarksModalOpen] = useState(false);
   const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(null);
   const [isAppMenuOpen, setIsAppMenuOpen] = useState(false);
+  const [patientModalMode, setPatientModalMode] = useState<'daily' | 'history'>('daily');
 
-  const openNewPatientModal = useCallback(() => setIsPatientModalOpen(true), []);
+  const openNewPatientModal = useCallback(() => {
+    setPatientModalMode('daily');
+    setIsPatientModalOpen(true);
+  }, []);
 
-  const openEditPatientModal = useCallback((patient: PatientRecord, tab?: 'clinical' | 'files') => {
+  const openEditPatientModal = useCallback((
+    patient: PatientRecord,
+    tab?: 'clinical' | 'files',
+    mode: 'daily' | 'history' = 'daily',
+  ) => {
     setEditingPatient(patient);
     setInitialTab(tab);
+    setPatientModalMode(mode);
     setIsPatientModalOpen(true);
   }, []);
 
   const closePatientModal = useCallback(() => {
     setEditingPatient(null);
     setInitialTab(undefined);
+    setPatientModalMode('daily');
     setIsPatientModalOpen(false);
   }, []);
 
@@ -62,6 +72,7 @@ const useModalManager = () => {
     setEditingPatient,
     setPatientToDelete,
     initialTab,
+    patientModalMode,
   } as const;
 };
 

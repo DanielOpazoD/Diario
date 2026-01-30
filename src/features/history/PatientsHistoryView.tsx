@@ -9,7 +9,7 @@ import { formatMonthName } from '@shared/utils/dateUtils';
 import { PatientRecord } from '@shared/types';
 
 interface PatientsHistoryViewProps {
-  onEditPatient: (patient: PatientRecord, initialTab?: 'clinical' | 'files') => void;
+  onEditPatient: (patient: PatientRecord, initialTab?: 'clinical' | 'files', mode?: 'daily' | 'history') => void;
 }
 
 const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient }) => {
@@ -81,7 +81,6 @@ const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient
           </div>
           <div>
             <h2 className="text-2xl font-black text-gray-900 dark:text-white leading-tight">Explorador de Pacientes</h2>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Master History View</p>
           </div>
         </div>
       </div>
@@ -180,18 +179,18 @@ const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient
         </div>
 
         {/* Side Filters (Type) */}
-        <div className="w-full lg:w-64">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm h-full flex flex-col justify-end">
-            <div className="flex items-center gap-2 mb-3">
-              <Filter className="w-4 h-4 text-blue-600" />
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tipo de Atención</label>
+        <div className="w-full lg:w-56">
+          <div className="bg-transparent p-0 rounded-xl border border-transparent shadow-none h-full flex flex-col justify-start">
+            <div className="flex items-center gap-2 mb-2">
+              <Filter className="w-3.5 h-3.5 text-blue-600" />
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tipo de Atención</label>
             </div>
             <select
               value={typeFilter}
               onChange={e => setTypeFilter(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 focus:border-blue-500 outline-none text-sm font-medium"
+              className="w-full px-2.5 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 focus:border-blue-500 outline-none text-[11px] font-medium"
             >
-              <option value="all">TODAS LAS CATEGORÍAS</option>
+              <option value="all">TODAS</option>
               {patientTypes.map(type => (
                 <option key={type.id} value={type.id}>{type.label.toUpperCase()}</option>
               ))}
@@ -205,7 +204,7 @@ const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient
         <HistoryTable
           visits={filteredVisits}
           getTypeClass={getTypeClass}
-          onViewDetails={(record) => onEditPatient(record)}
+          onViewDetails={(record, tab) => onEditPatient(record, tab, 'history')}
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}

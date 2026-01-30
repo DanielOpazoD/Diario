@@ -17,6 +17,9 @@ export const PendingTaskSchema = z.object({
     id: z.string(),
     text: z.string().min(1, "El texto de la tarea es obligatorio"),
     isCompleted: z.boolean(),
+    createdAt: z.number().optional(),
+    completedAt: z.number().optional(),
+    completionNote: z.string().optional(),
 });
 
 export const GeneralTaskSchema = z.object({
@@ -62,7 +65,10 @@ export const PatientRecordSchema = z.object({
         return val.map(t => ({
             id: t?.id || crypto.randomUUID(),
             text: t?.text || '',
-            isCompleted: !!t?.isCompleted
+            isCompleted: !!t?.isCompleted,
+            createdAt: t?.createdAt,
+            completedAt: t?.completedAt,
+            completionNote: t?.completionNote,
         }));
     }),
     attachedFiles: z.array(z.any()).nullish().transform(val => {

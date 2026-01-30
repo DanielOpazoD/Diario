@@ -1,5 +1,6 @@
-import React, { useId, useState } from 'react';
-import { Clock, Users, Save, ChevronUp, Sparkles, UserCog } from 'lucide-react';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Clock, Users, Save, ChevronUp, Sparkles, UserCog, X } from 'lucide-react';
 import { PatientTypeConfig } from '@shared/types';
 import { Button } from '@core/ui';
 
@@ -67,8 +68,51 @@ const PatientForm: React.FC<PatientFormProps> = ({
   const exitTimeId = useId();
 
   const [isExpanded, setIsExpanded] = useState(defaultExpanded || !name || name.trim() === '');
+  const [isTypeMenuOpen, setIsTypeMenuOpen] = useState(false);
+  const [menuDirection, setMenuDirection] = useState<'down' | 'up'>('down');
+  const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+  const typeMenuRef = useRef<HTMLDivElement>(null);
 
   const selectedType = patientTypes.find(t => t.id === typeId);
+
+  useEffect(() => {
+    if (!isTypeMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!typeMenuRef.current?.contains(event.target as Node)) {
+        setIsTypeMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isTypeMenuOpen]);
+
+  useEffect(() => {
+    if (!isTypeMenuOpen || !typeMenuRef.current) return;
+    const updateMenuPosition = () => {
+      if (!typeMenuRef.current) return;
+      const rect = typeMenuRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const direction = spaceBelow < 220 && spaceAbove > spaceBelow ? 'up' : 'down';
+      setMenuDirection(direction);
+      const top = direction === 'up' ? rect.top - 8 - 220 : rect.bottom + 6;
+      const menuWidth = Math.max(160, Math.min(220, rect.width));
+      const maxLeft = window.innerWidth - menuWidth - 8;
+      const left = Math.max(8, Math.min(rect.left, maxLeft));
+      setMenuStyle({ top, left, width: menuWidth });
+    };
+    updateMenuPosition();
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+    };
+  }, [isTypeMenuOpen]);
 
   // --- Collapsed / Summary View ---
   if (!isExpanded && !compact && !minimalist && !superMinimalist && name) {
@@ -111,6 +155,8 @@ const PatientForm: React.FC<PatientFormProps> = ({
   }
 
   // --- Expanded / Full Form View ---
+  const inlineLayout = compact || minimalist || superMinimalist;
+
   const cardClasses = superMinimalist
     ? "space-y-1.5"
     : minimalist
@@ -159,8 +205,8 @@ const PatientForm: React.FC<PatientFormProps> = ({
         )}
 
         <div className={compact || minimalist || superMinimalist ? "space-y-1.5" : "space-y-3"}>
-          <div className={superMinimalist ? "flex flex-nowrap items-end gap-1.5" : compact || minimalist ? "flex flex-wrap gap-2" : "grid grid-cols-1 md:grid-cols-4 gap-3"}>
-            <div className={superMinimalist ? "flex-[3] min-w-0" : compact || minimalist ? "flex-1 min-w-[200px]" : "md:col-span-2"}>
+        <div className={superMinimalist ? "flex flex-nowrap items-end gap-1.5" : inlineLayout ? "flex flex-wrap items-end gap-2" : "flex flex-wrap items-end gap-2.5"}>
+            <div className={superMinimalist ? "flex-[3] min-w-0" : inlineLayout ? "flex-[2.1] basis-0 min-w-0 max-w-[220px]" : "flex-[3] min-w-[240px]"}>
               <label htmlFor={nameId} className={`${superMinimalist ? 'text-[8px]' : compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase tracking-wider ml-1`}>
                 Nombre Completo
               </label>
@@ -170,10 +216,10 @@ const PatientForm: React.FC<PatientFormProps> = ({
                 onChange={(e) => onNameChange(e.target.value)}
                 onBlur={onNameBlur}
                 placeholder="Nombre Apellido"
-                className={`w-full px-2.5 ${superMinimalist ? 'py-1 text-[11px]' : compact || minimalist ? 'py-1.5 text-xs' : 'py-2 text-sm'} rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
+                className={`w-full px-2 ${superMinimalist ? 'py-1 text-[11px]' : compact || minimalist ? 'py-1 text-[11px]' : 'py-1.5 text-[12px]'} rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
               />
             </div>
-            <div className={superMinimalist ? "flex-[1.5] min-w-0" : compact || minimalist ? "flex-1 min-w-[120px]" : "md:col-span-1"}>
+            <div className={superMinimalist ? "flex-[1.2] min-w-0" : inlineLayout ? "flex-[1.2] basis-0 min-w-0" : "flex-[1.5] min-w-[140px]"}>
               <label htmlFor={rutId} className={`${superMinimalist ? 'text-[8px]' : compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase tracking-wider ml-1`}>
                 RUT
               </label>
@@ -182,10 +228,10 @@ const PatientForm: React.FC<PatientFormProps> = ({
                 value={rut}
                 onChange={(e) => onRutChange(e.target.value)}
                 placeholder="12.345.678-9"
-                className={`w-full px-2.5 ${superMinimalist ? 'py-1 text-[11px]' : compact || minimalist ? 'py-1.5 text-xs' : 'py-2 text-sm'} rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
+                className={`w-full px-2 ${superMinimalist ? 'py-1 text-[11px]' : compact || minimalist ? 'py-1 text-[11px]' : 'py-1.5 text-[12px]'} rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
               />
             </div>
-            <div className={superMinimalist ? "flex-[1.5] min-w-0 flex gap-1.5" : compact || minimalist ? "flex gap-2 min-w-[140px]" : "md:col-span-1 flex gap-2"}>
+            <div className={superMinimalist ? "flex-[1.5] min-w-0 flex gap-1.5" : inlineLayout ? "flex-[1.5] basis-0 min-w-0 flex gap-2" : "flex-[1.5] min-w-[160px] flex gap-2"}>
               <div className="flex-[2] min-w-0">
                 <label htmlFor={birthDateId} className={`${superMinimalist ? 'text-[8px]' : compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase tracking-wider ml-1 truncate`}>
                   Nacim.
@@ -195,7 +241,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
                   id={birthDateId}
                   value={birthDate}
                   onChange={(e) => onBirthDateChange(e.target.value)}
-                  className={`w-full px-1.5 ${superMinimalist ? 'py-1 text-[10px]' : compact || minimalist ? 'py-1.5 text-[11px]' : 'py-2 text-xs'} rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
+                  className={`w-full px-1.5 ${superMinimalist ? 'py-1 text-[10px]' : compact || minimalist ? 'py-1 text-[11px]' : 'py-1.5 text-[12px]'} rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
                 />
               </div>
               <div className="flex-1 min-w-0">
@@ -206,7 +252,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
                   id={genderId}
                   value={gender}
                   onChange={(e) => onGenderChange(e.target.value)}
-                  className={`w-full px-1 ${superMinimalist ? 'py-1 text-[10px]' : compact || minimalist ? 'py-1.5 text-[11px]' : 'py-2 text-xs'} rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white appearance-none text-center`}
+                  className={`w-full px-1 ${superMinimalist ? 'py-1 text-[10px]' : compact || minimalist ? 'py-1 text-[11px]' : 'py-1.5 text-[12px]'} rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white appearance-none text-center`}
                 >
                   <option value="">-</option>
                   <option value="Masculino">M</option>
@@ -215,43 +261,110 @@ const PatientForm: React.FC<PatientFormProps> = ({
                 </select>
               </div>
             </div>
+            {inlineLayout && (
+              <div className={superMinimalist ? "flex-[1.2] min-w-0" : "flex-[1.2] basis-0 min-w-0"}>
+                <div ref={typeMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsTypeMenuOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-100"
+                    aria-haspopup="listbox"
+                    aria-expanded={isTypeMenuOpen}
+                  >
+                    <span>{selectedType?.label || 'Tipo atención'}</span>
+                    <span className={`text-[10px] transition-transform ${isTypeMenuOpen ? 'rotate-180' : ''}`}>▾</span>
+                  </button>
+
+                  {isTypeMenuOpen && typeof document !== 'undefined' && createPortal(
+                    <div
+                      className="fixed z-[120] max-h-44 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg p-0.5 animate-fade-in"
+                      style={{ top: menuStyle.top, left: menuStyle.left, width: menuStyle.width }}
+                    >
+                      {patientTypes.map((patientType) => (
+                        <button
+                          key={patientType.id}
+                          type="button"
+                          onClick={() => {
+                            onSelectType(patientType.id, patientType.label);
+                            setIsTypeMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-colors ${typeId === patientType.id
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/60'
+                            }`}
+                        >
+                          <span>{patientType.label}</span>
+                        </button>
+                      ))}
+                    </div>,
+                    document.body
+                  )}
+                </div>
+              </div>
+            )}
+
+            {inlineLayout && onSave && (
+              <div className="flex items-center">
+                <Button size="sm" onClick={onSave} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm h-6 w-6 !p-0">
+                  <Save className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
+      {!inlineLayout && (
       <div className={typeClasses}>
-        {!compact && !minimalist && !superMinimalist && (
-          <h3 className="text-[9px] font-black uppercase text-blue-600/60 mb-1 flex items-center gap-1.5 tracking-[0.2em] ml-1">
-            <Clock className="w-3.5 h-3.5" /> Selección de Atención
-          </h3>
-        )}
-        <div className={compact || minimalist || superMinimalist ? "space-y-1.5" : "space-y-3"}>
+        {!compact && !minimalist && !superMinimalist && null}
+          <div className={compact || minimalist || superMinimalist ? "space-y-1.5" : "space-y-2"}>
           <div className="flex flex-wrap items-center gap-2">
-            {!compact && (minimalist || superMinimalist) && (
-              <span className={`${superMinimalist ? 'text-[7px]' : 'text-[8px]'} font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mr-1`}>Atención:</span>
-            )}
-            <div className="flex flex-wrap gap-1 flex-1">
-              {patientTypes.map((patientType) => (
+            {!compact && (minimalist || superMinimalist) && null}
+            <div className="flex-[1.5] min-w-[180px]">
+              <div ref={typeMenuRef} className="relative">
                 <button
-                  key={patientType.id}
-                  onClick={() => onSelectType(patientType.id, patientType.label)}
                   type="button"
-                  aria-pressed={typeId === patientType.id}
-                  className={`${superMinimalist ? 'text-[8px] py-1 px-2.5' : 'text-[9px] py-1.5 px-3'} whitespace-nowrap font-black rounded-lg border transition-all flex-1 md:flex-none justify-center uppercase tracking-tight ${typeId === patientType.id
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/10'
-                    : 'bg-white dark:bg-gray-800/10 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-700/50 hover:border-blue-300'
-                    }`}
+                  onClick={() => setIsTypeMenuOpen((prev) => !prev)}
+                  className="w-full max-w-[220px] flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-100"
+                  aria-haspopup="listbox"
+                  aria-expanded={isTypeMenuOpen}
                 >
-                  {patientType.label}
+                  <span>{selectedType?.label || 'Tipo de atención'}</span>
+                  <span className={`text-[10px] transition-transform ${isTypeMenuOpen ? 'rotate-180' : ''}`}>▾</span>
                 </button>
-              ))}
+
+                {isTypeMenuOpen && typeof document !== 'undefined' && createPortal(
+                  <div
+                    className="fixed z-[120] max-h-44 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg p-0.5 animate-fade-in"
+                    style={{ top: menuStyle.top, left: menuStyle.left, width: menuStyle.width }}
+                  >
+                    {patientTypes.map((patientType) => (
+                      <button
+                        key={patientType.id}
+                        type="button"
+                        onClick={() => {
+                          onSelectType(patientType.id, patientType.label);
+                          setIsTypeMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-colors ${typeId === patientType.id
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/60'
+                          }`}
+                      >
+                        <span>{patientType.label}</span>
+                      </button>
+                    ))}
+                  </div>,
+                  document.body
+                )}
+              </div>
             </div>
 
             {(compact || minimalist || superMinimalist) && onSave && (
               <div className="flex gap-1 ml-auto">
-                <Button variant="ghost" size="sm" onClick={onClose} className={`${superMinimalist ? 'text-[8px] h-6 px-1.5' : 'text-[9px] h-7 px-2'} font-bold`}>CANCELAR</Button>
-                <Button size="sm" onClick={onSave} className={`bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-black ${superMinimalist ? 'text-[8px] h-6 px-2.5' : 'text-[9px] h-7 px-3'}`}>
-                  <Save className={`${superMinimalist ? 'w-3 h-3' : 'w-3.5 h-3.5'} mr-1`} /> GUARDAR
+                <Button variant="ghost" size="sm" onClick={onClose} className={`${superMinimalist ? 'text-[7px] h-5 px-1.5' : 'text-[8px] h-6 px-2'} font-bold`}>CANCELAR</Button>
+                <Button size="sm" onClick={onSave} className={`bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-black ${superMinimalist ? 'text-[7px] h-5 px-2' : 'text-[8px] h-6 px-2.5'}`}>
+                  <Save className={`${superMinimalist ? 'w-2.5 h-2.5' : 'w-3 h-3'} mr-1`} /> GUARDAR
                 </Button>
               </div>
             )}
@@ -293,6 +406,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
           )}
         </div>
       </div>
+      )}
     </div>
   );
 };

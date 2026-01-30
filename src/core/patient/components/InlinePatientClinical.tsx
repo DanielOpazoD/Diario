@@ -18,6 +18,7 @@ interface InlinePatientClinicalProps {
   onToggleTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onAddTask: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onUpdateTaskNote: (taskId: string, note: string) => void;
 }
 
 const InlinePatientClinical: React.FC<InlinePatientClinicalProps> = ({
@@ -36,6 +37,7 @@ const InlinePatientClinical: React.FC<InlinePatientClinicalProps> = ({
   onToggleTask,
   onDeleteTask,
   onAddTask,
+  onUpdateTaskNote,
 }) => (
   <div className="w-full min-w-0 overflow-hidden">
     <ClinicalNote
@@ -53,6 +55,7 @@ const InlinePatientClinical: React.FC<InlinePatientClinicalProps> = ({
       onToggleTask={onToggleTask}
       onDeleteTask={onDeleteTask}
       onAddTask={onAddTask}
+      onUpdateTaskNote={onUpdateTaskNote}
       activeTab="clinical"
       onChangeTab={() => {}}
       attachmentsCount={attachmentsCount}

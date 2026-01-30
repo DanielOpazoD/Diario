@@ -21,10 +21,10 @@ const MainTopBar: React.FC<MainTopBarProps> = ({
   onOpenSidebar,
 }) => (
   <div
-    className="sticky top-0 z-30 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl shadow-sm border-b border-gray-200/60 dark:border-gray-800/60"
+    className="sticky top-0 z-30 bg-white/85 dark:bg-gray-950/85 backdrop-blur-xl shadow-sm border-b border-gray-200/60 dark:border-gray-800/60"
   >
-    <header className="shrink-0 transition-all glass pt-2 pb-2 md:pt-4 md:pb-3">
-      <div className="max-w-5xl mx-auto w-full px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0">
+    <header className="shrink-0 transition-all glass pt-1 pb-1 md:pt-2 md:pb-1.5">
+      <div className="max-w-5xl mx-auto w-full px-3 md:px-5 flex flex-col md:flex-row items-center justify-between gap-1.5 md:gap-0">
         <div className="flex items-center w-full md:w-auto justify-between md:justify-start">
           <div className="flex items-center">
             <button

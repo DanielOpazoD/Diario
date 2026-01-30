@@ -124,20 +124,20 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
         handleExtractFromAttachments(attachedFiles, { name, rut, birthDate, gender, diagnosis, clinicalNote });
     };
 
-    const { toggleTask, deleteTask, addTask } = usePendingTasks({ setPendingTasks });
+    const { toggleTask, deleteTask, addTask, updateTaskNote } = usePendingTasks({ setPendingTasks });
 
     // Render Helpers
     const isTurno = typeId === (patientTypes.find(t => t.id === 'turno')?.id || 'turno');
 
     return (
-        <div className={`bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-inner px-4 ${initialTab === 'demographics' ? 'py-0' : 'py-1'} animate-slide-down overflow-hidden w-full max-w-full min-w-0`}>
+        <div className={`bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-inner px-4 ${initialTab === 'demographics' ? 'py-0 overflow-hidden' : 'py-1 overflow-hidden'} animate-slide-down w-full max-w-full min-w-0`}>
             <div className={`flex justify-end items-center ${initialTab === 'demographics' ? 'h-0 opacity-0 overflow-hidden' : ''}`}>
                 <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
                     <X className="w-3.5 h-3.5 text-gray-400" />
                 </button>
             </div>
 
-            <div className="w-full max-w-full overflow-hidden min-w-0">
+            <div className="w-full max-w-full min-w-0 overflow-hidden">
                 {initialTab === 'demographics' && (
                     <InlinePatientDemographics
                         name={name}
@@ -181,6 +181,7 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
                         onToggleTask={toggleTask}
                         onDeleteTask={deleteTask}
                         onAddTask={addTask}
+                        onUpdateTaskNote={updateTaskNote}
                     />
                 )}
 
@@ -203,6 +204,7 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
                         onToggleTask={toggleTask}
                         onDeleteTask={deleteTask}
                         onAddTask={addTask}
+                        onUpdateTaskNote={updateTaskNote}
                     />
                 )}
             </div>

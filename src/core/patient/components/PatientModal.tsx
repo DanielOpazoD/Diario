@@ -22,9 +22,21 @@ interface PatientModalProps {
   initialData?: PatientRecord | null;
   selectedDate: string;
   initialTab?: 'clinical' | 'files';
+  mode?: 'daily' | 'history';
 }
 
-const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, onAutoSave, onSaveMultiple, addToast, initialData, selectedDate, initialTab = 'clinical' }) => {
+const PatientModal: React.FC<PatientModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  onAutoSave,
+  onSaveMultiple,
+  addToast,
+  initialData,
+  selectedDate,
+  initialTab = 'clinical',
+  mode = 'daily',
+}) => {
   const patientTypes = useAppStore(state => state.patientTypes);
   const defaultTypeId = patientTypes.find(t => t.id === 'policlinico')?.id || patientTypes[0]?.id || '';
 
@@ -117,6 +129,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
   };
 
   const autoSaveInitialized = React.useRef(false);
+  const lastAutoSaveRef = React.useRef<string | null>(null);
   const handleAutoSave = () => {
     if (!name.trim()) return;
     const patientToSave = buildPatientPayload({
@@ -140,6 +153,64 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
     });
     onAutoSave(patientToSave);
   };
+
+  const getAutoSaveFingerprint = React.useCallback(() => {
+    const payload = buildPatientPayload({
+      initialData,
+      selectedDate,
+      patientTypes,
+      name,
+      rut,
+      birthDate,
+      gender,
+      type,
+      typeId,
+      entryTime,
+      exitTime,
+      diagnosis,
+      clinicalNote,
+      pendingTasks,
+      attachedFiles,
+      patientId,
+      driveFolderId,
+    }) as PatientCreateInput | PatientUpdateInput;
+
+    return JSON.stringify({
+      id: 'id' in payload ? payload.id : patientId,
+      name: payload.name,
+      rut: payload.rut,
+      birthDate: payload.birthDate,
+      gender: payload.gender,
+      type: payload.type,
+      typeId: payload.typeId,
+      entryTime: payload.entryTime ?? null,
+      exitTime: payload.exitTime ?? null,
+      diagnosis: payload.diagnosis,
+      clinicalNote: payload.clinicalNote,
+      pendingTasks: payload.pendingTasks,
+      attachedFiles: payload.attachedFiles,
+      driveFolderId: payload.driveFolderId ?? null,
+      date: payload.date,
+    });
+  }, [
+    initialData,
+    selectedDate,
+    patientTypes,
+    name,
+    rut,
+    birthDate,
+    gender,
+    type,
+    typeId,
+    entryTime,
+    exitTime,
+    diagnosis,
+    clinicalNote,
+    pendingTasks,
+    attachedFiles,
+    patientId,
+    driveFolderId,
+  ]);
 
   const handleSave = () => {
     if (!name.trim()) return addToast('error', 'Nombre requerido');
@@ -167,12 +238,16 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
   };
 
   React.useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || mode === 'history') return;
     if (!autoSaveInitialized.current) {
       autoSaveInitialized.current = true;
+      lastAutoSaveRef.current = getAutoSaveFingerprint();
       return;
     }
+    const nextFingerprint = getAutoSaveFingerprint();
+    if (lastAutoSaveRef.current === nextFingerprint) return;
     const timeout = setTimeout(() => {
+      lastAutoSaveRef.current = nextFingerprint;
       handleAutoSave();
     }, 600);
     return () => clearTimeout(timeout);
@@ -191,15 +266,17 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
     attachedFiles,
     driveFolderId,
     isOpen,
+    getAutoSaveFingerprint,
   ]);
 
   React.useEffect(() => {
     if (!isOpen) {
       autoSaveInitialized.current = false;
+      lastAutoSaveRef.current = null;
     }
   }, [isOpen]);
 
-  const { toggleTask, deleteTask, addTask } = usePendingTasks({ setPendingTasks });
+  const { toggleTask, deleteTask, addTask, updateTaskNote } = usePendingTasks({ setPendingTasks });
 
   const turnoTypeId = patientTypes.find(t => t.id === 'turno')?.id || 'turno';
   const isTurno = typeId === turnoTypeId;
@@ -272,6 +349,7 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, onSave, on
           onToggleTask={toggleTask}
           onDeleteTask={deleteTask}
           onAddTask={addTask}
+          onUpdateTaskNote={updateTaskNote}
           onChangeTab={setActiveTab}
           onFilesChange={setAttachedFiles}
           onDriveFolderIdChange={setDriveFolderId}

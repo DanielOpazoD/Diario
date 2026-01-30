@@ -15,6 +15,21 @@ import { syncPatientsToFirebase } from './firebaseService';
  */
 const lastSyncedHashes = new Map<string, number>();
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+let isSyncStatusUpdate = false;
+
+const updateSyncStatus = (status: 'idle' | 'saving' | 'synced' | 'error', timestamp?: number | null) => {
+    const { syncStatus, lastSyncAt, setSyncStatus } = useAppStore.getState();
+    const nextLastSyncAt = typeof timestamp === 'number' ? timestamp : (status === 'synced' ? Date.now() : null);
+
+    if (syncStatus === status && lastSyncAt === nextLastSyncAt) return;
+    if (isSyncStatusUpdate) return;
+
+    isSyncStatusUpdate = true;
+    queueMicrotask(() => {
+        setSyncStatus(status, nextLastSyncAt);
+        isSyncStatusUpdate = false;
+    });
+};
 
 /**
  * Initializes the persistence layer by subscribing to store changes.
@@ -52,7 +67,7 @@ export const initPersistence = () => {
         showBookmarkBar: state.showBookmarkBar,
     }), (state: PersistedState) => {
         if (saveTimeout) clearTimeout(saveTimeout);
-        useAppStore.setState({ syncStatus: 'saving' });
+        updateSyncStatus('saving');
 
         saveTimeout = setTimeout(async () => {
             // 1. LocalStorage Persistence
@@ -101,10 +116,10 @@ export const initPersistence = () => {
                         console.log(' [AutoSave] Sincronización incremental exitosa');
                     }
                 }
-                useAppStore.setState({ syncStatus: 'synced', lastSyncAt: Date.now() });
+                updateSyncStatus('synced', Date.now());
             } catch (error) {
                 console.error('[Persistence] Error syncing dirty patients:', error);
-                useAppStore.setState({ syncStatus: 'error' });
+                updateSyncStatus('error');
             }
         }, 500);
     }, { equalityFn: shallow });

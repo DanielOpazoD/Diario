@@ -39,7 +39,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         <h3 className="text-[11px] font-black uppercase tracking-[0.2em] opacity-80">{title}</h3>
         <span className="ml-auto px-2 py-0.5 rounded-pill text-[9px] font-black bg-black/5 dark:bg-white/5 tracking-tighter shadow-inner">{tasks.length}</span>
       </div>
-      <div className={`divide-y divide-gray-100/30 dark:divide-gray-800/30 ${maxHeightClass} overflow-y-auto custom-scrollbar`}>
+      <div className={`divide-y divide-gray-100/30 dark:divide-gray-800/30 ${maxHeightClass} min-h-[160px] overflow-y-auto custom-scrollbar`}>
         {tasks.map(task => (
           <div key={task.id} className="group relative transition-all duration-300 hover:bg-white/40 dark:hover:bg-brand-900/10">
             <div className="flex items-center px-4 py-2.5 gap-3">
