@@ -55,6 +55,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [showStarredOnly, setShowStarredOnly] = useState(false);
   const [pastedImage, setPastedImage] = useState<Blob | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { mutateAsync: uploadToFirebase } = useUploadPatientFileFirebase({
     patientRut,
@@ -67,9 +68,13 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     let isPasting = false;
 
     const handleGlobalPaste = async (e: ClipboardEvent) => {
-      // Solo actuar si estamos en la interfaz de archivos y no escribiendo en un input/textarea
       const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+      const container = containerRef.current;
+      const isInsideContainer = !!container && container.contains(target);
+      const isHoveringContainer = !!container && container.matches(':hover');
+
+      // Solo actuar si el usuario está en el panel de archivos (hover o foco dentro)
+      if (!isInsideContainer && !isHoveringContainer) return;
       if (isPasting) return;
 
       const items = e.clipboardData?.items;
@@ -307,7 +312,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   // Compact mode render
   if (compact) {
     return (
-      <div className="flex flex-col space-y-2 animate-fade-in">
+    <div ref={containerRef} className="flex flex-col space-y-2 animate-fade-in">
         {fileInput}
         <FileDropzone
           isDragging={isDragging}
@@ -400,7 +405,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
   // Full mode render
   return (
-    <div className="flex flex-col h-full animate-fade-in space-y-4">
+    <div ref={containerRef} className="flex flex-col h-full animate-fade-in space-y-4">
       {fileInput}
 
       <FileManagerHeader
