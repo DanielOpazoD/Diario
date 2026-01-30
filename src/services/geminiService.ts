@@ -94,6 +94,20 @@ export const extractMultiplePatientsFromImage = async (
   }
 };
 
+export const extractPatientDataFromText = async (
+  extractedText: string
+): Promise<ExtractedPatientData | null> => {
+  try {
+    return await callGemini<ExtractedPatientData | null>({
+      action: "extractPatientFromText",
+      extractedText,
+    });
+  } catch (error: any) {
+    emitStructuredLog("error", "Gemini", "Text extraction failed", { error: String(error) });
+    throw error;
+  }
+};
+
 export interface FileContent {
   inlineData: {
     mimeType: string;

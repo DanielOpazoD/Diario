@@ -8,6 +8,7 @@ export interface AIPort {
     base64Image: string,
     mimeType: string
   ) => Promise<ExtractedPatientData | null>;
+  extractPatientDataFromText: (extractedText: string) => Promise<ExtractedPatientData | null>;
   extractMultiplePatientsFromImage: (
     base64Image: string,
     mimeType: string

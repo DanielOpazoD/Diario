@@ -5,6 +5,7 @@ type GeminiAction =
   | 'status'
   | 'analyzeNote'
   | 'extractPatient'
+  | 'extractPatientFromText'
   | 'extractPatientList'
   | 'askAboutImages';
 
@@ -12,6 +13,7 @@ type GeminiRequest =
   | { action: 'status' }
   | { action: 'analyzeNote'; noteText: string }
   | { action: 'extractPatient'; base64Image: string; mimeType: string }
+  | { action: 'extractPatientFromText'; extractedText: string }
   | { action: 'extractPatientList'; base64Image: string; mimeType: string }
   | { action: 'askAboutImages'; prompt: string; images: any[] };
 
@@ -120,6 +122,32 @@ const handler: Handler = async (event) => {
                     '- clinicalNote: Content from "INDICACIONES MÉDICAS / PLAN DE TTO", "PLAN", "EVOLUCIÓN", or "Comentario". CRITICAL: DO NOT include the headers (like "INDICACIONES MÉDICAS / PLAN DE TTO:") in the value.',
                 },
                 { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } },
+              ],
+            },
+          ],
+          generationConfig: { responseMimeType: 'application/json', responseSchema: patientExtractionSchema },
+        });
+
+        return { statusCode: 200, body: JSON.stringify({ result: JSON.parse(result.response.text()) }) };
+      }
+
+      case 'extractPatientFromText': {
+        const result = await model.generateContent({
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text:
+                    'Extrae datos de paciente desde texto clínico (español). Devuelve solo el JSON válido.\n' +
+                    '- name: "Nombre Apellido" en Title Case.\n' +
+                    '- rut: RUT completo si está.\n' +
+                    '- birthDate: YYYY-MM-DD.\n' +
+                    '- gender: Masculino/Femenino/Otro.\n' +
+                    '- diagnosis: SOLO "HIPOTESIS DIAGNÓSTICA" si existe.\n' +
+                    '- clinicalNote: "INDICACIONES MÉDICAS / PLAN DE TTO", "PLAN", "EVOLUCIÓN" o "Comentario" sin encabezados.',
+                },
+                { text: payload.extractedText },
               ],
             },
           ],

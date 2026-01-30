@@ -209,3 +209,11 @@ export const downloadUrlAsBase64 = async (url: string): Promise<string> => {
     reader.readAsDataURL(blob);
   });
 };
+
+export const downloadUrlAsArrayBuffer = async (url: string): Promise<ArrayBuffer> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Failed to download file content');
+  }
+  return response.arrayBuffer();
+};

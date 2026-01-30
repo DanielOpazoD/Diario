@@ -1,6 +1,7 @@
 import {
   analyzeClinicalNote,
   askAboutImages,
+  extractPatientDataFromText,
   extractMultiplePatientsFromImage,
   extractPatientDataFromImage,
   generateClinicalSummary,
@@ -13,6 +14,7 @@ export const geminiAdapter: AIPort = {
   validateEnvironment,
   analyzeClinicalNote,
   extractPatientDataFromImage,
+  extractPatientDataFromText,
   extractMultiplePatientsFromImage,
   askAboutImages,
   generateClinicalSummary,

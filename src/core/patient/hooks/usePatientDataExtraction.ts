@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { extractMultiplePatientsFromImage, extractPatientDataFromImage } from '@use-cases/ai';
-import { fileToBase64, downloadUrlAsBase64 } from '@services/storage';
+import { extractMultiplePatientsFromImage, extractPatientDataFromImage, extractPatientDataFromText } from '@use-cases/ai';
+import { fileToBase64, downloadUrlAsBase64, downloadUrlAsArrayBuffer } from '@services/storage';
+import { extractTextFromPdf } from '@services/pdfText';
+import { extractPatientDataFromText as extractPatientDataFromTextLocal, normalizeExtractedPatientData } from '@core/patient/utils/patientTextExtraction';
 import { AttachedFile, PatientCreateInput, PatientType } from '@shared/types';
 import { formatPatientName } from '@core/patient/utils/patientUtils';
 
@@ -36,23 +38,56 @@ const usePatientDataExtraction = ({
   const [isScanningMulti, setIsScanningMulti] = useState(false);
   const [isExtractingFromFiles, setIsExtractingFromFiles] = useState(false);
 
+  const applyExtractedData = (extractedData: any) => {
+    if (!extractedData) return;
+    const normalized = normalizeExtractedPatientData(extractedData);
+    if (normalized.name) setName(formatPatientName(normalized.name));
+    if (normalized.rut) setRut(normalized.rut);
+    if (normalized.birthDate) setBirthDate(normalized.birthDate);
+    if (normalized.gender) setGender(normalized.gender);
+    if (normalized.diagnosis) setDiagnosis(normalized.diagnosis);
+    if (normalized.clinicalNote) setClinicalNote(normalized.clinicalNote);
+  };
+
+  const mergeExtracted = (base: any, incoming: any) => ({
+    ...base,
+    name: base.name || incoming?.name || '',
+    rut: base.rut || incoming?.rut || '',
+    birthDate: base.birthDate || incoming?.birthDate || '',
+    gender: base.gender || incoming?.gender || '',
+    diagnosis: base.diagnosis || incoming?.diagnosis || '',
+    clinicalNote: base.clinicalNote || incoming?.clinicalNote || '',
+  });
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsScanning(true);
     try {
-      const base64 = await fileToBase64(file);
-      const extractedData = await extractPatientDataFromImage(base64, file.type);
+      if (file.type === 'application/pdf') {
+        const buffer = await file.arrayBuffer();
+        const text = await extractTextFromPdf(buffer);
+        const localExtracted = extractPatientDataFromTextLocal(text);
+        let finalExtracted = localExtracted;
 
-      if (extractedData) {
-        if (extractedData.name) setName(formatPatientName(extractedData.name));
-        if (extractedData.rut) setRut(extractedData.rut);
-        if (extractedData.birthDate) setBirthDate(extractedData.birthDate);
-        if (extractedData.gender) setGender(extractedData.gender);
-        if (extractedData.diagnosis) setDiagnosis(extractedData.diagnosis);
-        if (extractedData.clinicalNote) setClinicalNote(extractedData.clinicalNote);
-        addToast('success', 'Datos extraídos');
+        const isMissingCore =
+          !localExtracted.name || !localExtracted.rut || !localExtracted.birthDate || !localExtracted.gender;
+
+        if (isMissingCore) {
+          const aiExtracted = await extractPatientDataFromText(text);
+          finalExtracted = mergeExtracted(localExtracted, normalizeExtractedPatientData(aiExtracted || {}));
+        }
+
+        applyExtractedData(finalExtracted);
+        addToast('success', 'Datos extraídos desde PDF');
+      } else {
+        const base64 = await fileToBase64(file);
+        const extractedData = await extractPatientDataFromImage(base64, file.type);
+        if (extractedData) {
+          applyExtractedData(extractedData);
+          addToast('success', 'Datos extraídos');
+        }
       }
     } catch (error: any) {
       addToast('error', 'Error procesando imagen');
@@ -85,8 +120,20 @@ const usePatientDataExtraction = ({
       for (const file of supportedFiles) {
         try {
           if (!file.driveUrl) continue;
-          const base64 = await downloadUrlAsBase64(file.driveUrl);
-          const extractedData = await extractPatientDataFromImage(base64, file.mimeType);
+          let extractedData: any = null;
+
+          if (file.mimeType === 'application/pdf') {
+            const buffer = await downloadUrlAsArrayBuffer(file.driveUrl);
+            const text = await extractTextFromPdf(buffer);
+            const localExtracted = extractPatientDataFromTextLocal(text);
+            const isMissingCore =
+              !localExtracted.name || !localExtracted.rut || !localExtracted.birthDate || !localExtracted.gender;
+            const aiExtracted = isMissingCore ? await extractPatientDataFromText(text) : null;
+            extractedData = mergeExtracted(localExtracted, normalizeExtractedPatientData(aiExtracted || {}));
+          } else {
+            const base64 = await downloadUrlAsBase64(file.driveUrl);
+            extractedData = await extractPatientDataFromImage(base64, file.mimeType);
+          }
 
           if (extractedData) {
             if (extractedData.name && extractedData.name !== currentFields.name) {

@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
-import { extractPatientDataFromImage } from '@use-cases/ai';
+import { extractPatientDataFromImage, extractPatientDataFromText } from '@use-cases/ai';
 import { fileToBase64 } from '@services/storage';
+import { extractTextFromPdf } from '@services/pdfText';
+import { extractPatientDataFromText as extractPatientDataFromTextLocal, normalizeExtractedPatientData } from '@core/patient/utils/patientTextExtraction';
 import { uploadFileToFirebase } from '@services/firebaseStorageService';
 import { useAppActions } from '@core/app/state/useAppActions';
 import { PatientRecord, PatientType } from '@shared/types';
@@ -32,11 +34,23 @@ export const usePdfPatientImport = (currentDate: Date) => {
 
         for (const file of pdfFiles) {
             try {
-                // 1. Convertir a Base64 para Gemini
-                const base64 = await fileToBase64(file);
+                let extractedData: any = null;
 
-                // 2. Extraer datos con Gemini
-                const extractedData: any = await extractPatientDataFromImage(base64, file.type);
+                if (file.type === 'application/pdf') {
+                    const buffer = await file.arrayBuffer();
+                    const text = await extractTextFromPdf(buffer);
+                    const localExtracted = extractPatientDataFromTextLocal(text);
+                    const isMissingCore =
+                        !localExtracted.name || !localExtracted.rut || !localExtracted.birthDate || !localExtracted.gender;
+                    const aiExtracted = isMissingCore ? await extractPatientDataFromText(text) : null;
+                    extractedData = {
+                        ...localExtracted,
+                        ...normalizeExtractedPatientData(aiExtracted || {}),
+                    };
+                } else {
+                    const base64 = await fileToBase64(file);
+                    extractedData = normalizeExtractedPatientData(await extractPatientDataFromImage(base64, file.type) || {});
+                }
 
                 // Zod Validation for Extracted Data
                 const { z } = await import('zod');
