@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Clock, Users, Save, ChevronUp, Sparkles, UserCog, X } from 'lucide-react';
+import { Clock, Users, Save, ChevronUp, Sparkles, UserCog } from 'lucide-react';
 import { PatientTypeConfig } from '@shared/types';
 import { Button } from '@core/ui';
 
@@ -69,7 +69,6 @@ const PatientForm: React.FC<PatientFormProps> = ({
 
   const [isExpanded, setIsExpanded] = useState(defaultExpanded || !name || name.trim() === '');
   const [isTypeMenuOpen, setIsTypeMenuOpen] = useState(false);
-  const [menuDirection, setMenuDirection] = useState<'down' | 'up'>('down');
   const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; width: number }>({
     top: 0,
     left: 0,
@@ -98,7 +97,6 @@ const PatientForm: React.FC<PatientFormProps> = ({
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
       const direction = spaceBelow < 220 && spaceAbove > spaceBelow ? 'up' : 'down';
-      setMenuDirection(direction);
       const top = direction === 'up' ? rect.top - 8 - 220 : rect.bottom + 6;
       const menuWidth = Math.max(160, Math.min(220, rect.width));
       const maxLeft = window.innerWidth - menuWidth - 8;
