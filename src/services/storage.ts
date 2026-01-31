@@ -194,6 +194,14 @@ export const fileToBase64 = (file: File): Promise<string> => {
 
 const isFirebaseStorageUrl = (url: string) => url.includes('firebasestorage.googleapis.com');
 
+const fetchViaProxy = async (url: string) => {
+  const response = await fetch(`/.netlify/functions/storage-proxy?url=${encodeURIComponent(url)}`);
+  if (!response.ok) {
+    throw new Error('Failed to download file content');
+  }
+  return await response.json() as { base64: string; mimeType: string };
+};
+
 export const downloadUrlAsBase64 = async (url: string): Promise<string> => {
   let blob: Blob;
   if (isFirebaseStorageUrl(url)) {
@@ -201,11 +209,10 @@ export const downloadUrlAsBase64 = async (url: string): Promise<string> => {
       const { downloadFileBlobFromFirebaseUrl } = await import('./firebaseStorageService');
       blob = await downloadFileBlobFromFirebaseUrl(url);
     } catch (error) {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to download file content');
-      }
-      blob = await response.blob();
+      const proxyPayload = await fetchViaProxy(url);
+      const binary = atob(proxyPayload.base64);
+      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+      blob = new Blob([bytes], { type: proxyPayload.mimeType });
     }
   } else {
     const response = await fetch(url);
@@ -233,11 +240,10 @@ export const downloadUrlAsArrayBuffer = async (url: string): Promise<ArrayBuffer
       const blob = await downloadFileBlobFromFirebaseUrl(url);
       return blob.arrayBuffer();
     } catch (error) {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to download file content');
-      }
-      return response.arrayBuffer();
+      const proxyPayload = await fetchViaProxy(url);
+      const binary = atob(proxyPayload.base64);
+      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+      return bytes.buffer;
     }
   }
 
