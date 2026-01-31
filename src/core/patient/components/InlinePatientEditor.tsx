@@ -124,6 +124,15 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
         handleExtractFromAttachments(attachedFiles, { name, rut, birthDate, gender, diagnosis, clinicalNote });
     };
 
+    const handleExtractFromAttachment = (attachmentId: string) => {
+        const target = attachedFiles.find(file => file.id === attachmentId);
+        if (!target) {
+            addToast('info', 'No se encontró el adjunto seleccionado.');
+            return;
+        }
+        handleExtractFromAttachments([target], { name, rut, birthDate, gender, diagnosis, clinicalNote });
+    };
+
     const { toggleTask, deleteTask, addTask, updateTaskNote } = usePendingTasks({ setPendingTasks });
 
     // Render Helpers
@@ -151,6 +160,8 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
                         exitTime={exitTime}
                         isExtractingFromFiles={isExtractingFromFiles}
                         onExtractFromAttachments={handleExtractFromAttachmentsWrapper}
+                        attachedFiles={attachedFiles}
+                        onExtractFromAttachment={handleExtractFromAttachment}
                         onNameChange={setName}
                         onNameBlur={() => setName(formatPatientName(name))}
                         onRutChange={setRut}

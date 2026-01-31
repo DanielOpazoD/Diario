@@ -1,6 +1,6 @@
 import React from 'react';
 import PatientForm from '@core/patient/components/PatientForm';
-import { PatientTypeConfig } from '@shared/types';
+import { AttachedFile, PatientTypeConfig } from '@shared/types';
 
 interface InlinePatientDemographicsProps {
   name: string;
@@ -14,6 +14,8 @@ interface InlinePatientDemographicsProps {
   exitTime: string;
   isExtractingFromFiles: boolean;
   onExtractFromAttachments: () => void;
+  attachedFiles?: AttachedFile[];
+  onExtractFromAttachment?: (attachmentId: string) => void;
   onNameChange: (value: string) => void;
   onNameBlur: () => void;
   onRutChange: (value: string) => void;
@@ -38,6 +40,8 @@ const InlinePatientDemographics: React.FC<InlinePatientDemographicsProps> = ({
   exitTime,
   isExtractingFromFiles,
   onExtractFromAttachments,
+  attachedFiles,
+  onExtractFromAttachment,
   onNameChange,
   onNameBlur,
   onRutChange,
@@ -62,6 +66,8 @@ const InlinePatientDemographics: React.FC<InlinePatientDemographicsProps> = ({
       exitTime={exitTime}
       isExtractingFromFiles={isExtractingFromFiles}
       onExtractFromAttachments={onExtractFromAttachments}
+      attachedFiles={attachedFiles}
+      onExtractFromAttachment={onExtractFromAttachment}
       onNameChange={onNameChange}
       onNameBlur={onNameBlur}
       onRutChange={onRutChange}

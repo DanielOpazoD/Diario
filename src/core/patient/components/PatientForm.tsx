@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Clock, Users, Save, ChevronUp, Sparkles, UserCog } from 'lucide-react';
-import { PatientTypeConfig } from '@shared/types';
+import { AttachedFile, PatientTypeConfig } from '@shared/types';
 import { formatBirthDateDisplay, normalizeBirthDateInput } from '@shared/utils/dateUtils';
 import { Button } from '@core/ui';
 
@@ -26,6 +26,8 @@ interface PatientFormProps {
   compact?: boolean;
   onSave?: () => void;
   onClose?: () => void;
+  attachedFiles?: AttachedFile[];
+  onExtractFromAttachment?: (attachmentId: string) => void;
   // Extraction props
   isExtractingFromFiles?: boolean;
   onExtractFromAttachments?: () => void;
@@ -55,6 +57,8 @@ const PatientForm: React.FC<PatientFormProps> = ({
   compact = false,
   onSave,
   onClose,
+  attachedFiles = [],
+  onExtractFromAttachment,
   isExtractingFromFiles = false,
   onExtractFromAttachments,
   defaultExpanded = false,
@@ -75,6 +79,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
     left: 0,
     width: 0,
   });
+  const [selectedAttachmentId, setSelectedAttachmentId] = useState<string>(attachedFiles[0]?.id || '');
   const typeMenuRef = useRef<HTMLDivElement>(null);
 
   const selectedType = patientTypes.find(t => t.id === typeId);
@@ -112,6 +117,16 @@ const PatientForm: React.FC<PatientFormProps> = ({
       window.removeEventListener('scroll', updateMenuPosition, true);
     };
   }, [isTypeMenuOpen]);
+
+  useEffect(() => {
+    if (!attachedFiles.length) {
+      setSelectedAttachmentId('');
+      return;
+    }
+    if (!attachedFiles.find(file => file.id === selectedAttachmentId)) {
+      setSelectedAttachmentId(attachedFiles[0].id);
+    }
+  }, [attachedFiles, selectedAttachmentId]);
 
   // --- Collapsed / Summary View ---
   if (!isExpanded && !compact && !minimalist && !superMinimalist && name) {
@@ -200,6 +215,44 @@ const PatientForm: React.FC<PatientFormProps> = ({
                 </button>
               )}
             </div>
+          </div>
+        )}
+
+        {(onExtractFromAttachments || (onExtractFromAttachment && attachedFiles.length > 0)) && (
+          <div className={`flex flex-wrap items-center gap-2 ${superMinimalist ? 'mt-1' : 'mt-2'}`}>
+            {onExtractFromAttachments && (
+              <button
+                onClick={onExtractFromAttachments}
+                disabled={isExtractingFromFiles}
+                className={`${superMinimalist ? 'text-[9px] px-2 py-0.5' : 'text-[10px] px-2.5 py-1'} inline-flex items-center gap-1 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 font-black hover:bg-blue-100 transition-all disabled:opacity-50 uppercase tracking-tighter`}
+              >
+                <Sparkles className={`w-3 h-3 ${isExtractingFromFiles ? 'animate-spin' : ''}`} />
+                {isExtractingFromFiles ? 'LECTURA...' : 'IA SCAN'}
+              </button>
+            )}
+            {onExtractFromAttachment && attachedFiles.length > 0 && (
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedAttachmentId}
+                  onChange={(e) => setSelectedAttachmentId(e.target.value)}
+                  className={`${superMinimalist ? 'text-[9px] py-0.5' : 'text-[10px] py-1'} px-2 min-w-[160px] max-w-[240px] truncate rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600`}
+                >
+                  {attachedFiles.map(file => (
+                    <option key={file.id} value={file.id}>
+                      {file.customTitle || file.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => selectedAttachmentId && onExtractFromAttachment(selectedAttachmentId)}
+                  disabled={!selectedAttachmentId || isExtractingFromFiles}
+                  className={`${superMinimalist ? 'text-[9px] px-2 py-0.5' : 'text-[10px] px-2.5 py-1'} inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 font-black hover:bg-gray-100 transition-all disabled:opacity-50 uppercase tracking-tighter`}
+                >
+                  <Sparkles className={`w-3 h-3 ${isExtractingFromFiles ? 'animate-spin' : ''}`} />
+                  {isExtractingFromFiles ? 'LEYENDO...' : 'ACTUALIZAR'}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
