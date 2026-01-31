@@ -205,15 +205,10 @@ const fetchViaProxy = async (url: string) => {
 export const downloadUrlAsBase64 = async (url: string): Promise<string> => {
   let blob: Blob;
   if (isFirebaseStorageUrl(url)) {
-    try {
-      const { downloadFileBlobFromFirebaseUrl } = await import('./firebaseStorageService');
-      blob = await downloadFileBlobFromFirebaseUrl(url);
-    } catch (error) {
-      const proxyPayload = await fetchViaProxy(url);
-      const binary = atob(proxyPayload.base64);
-      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-      blob = new Blob([bytes], { type: proxyPayload.mimeType });
-    }
+    const proxyPayload = await fetchViaProxy(url);
+    const binary = atob(proxyPayload.base64);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    blob = new Blob([bytes], { type: proxyPayload.mimeType });
   } else {
     const response = await fetch(url);
     if (!response.ok) {
@@ -235,16 +230,10 @@ export const downloadUrlAsBase64 = async (url: string): Promise<string> => {
 
 export const downloadUrlAsArrayBuffer = async (url: string): Promise<ArrayBuffer> => {
   if (isFirebaseStorageUrl(url)) {
-    try {
-      const { downloadFileBlobFromFirebaseUrl } = await import('./firebaseStorageService');
-      const blob = await downloadFileBlobFromFirebaseUrl(url);
-      return blob.arrayBuffer();
-    } catch (error) {
-      const proxyPayload = await fetchViaProxy(url);
-      const binary = atob(proxyPayload.base64);
-      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-      return bytes.buffer;
-    }
+    const proxyPayload = await fetchViaProxy(url);
+    const binary = atob(proxyPayload.base64);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return bytes.buffer;
   }
 
   const response = await fetch(url);
