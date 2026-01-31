@@ -42,7 +42,14 @@ export const usePdfPatientImport = (currentDate: Date) => {
                     const localExtracted = extractPatientDataFromTextLocal(text);
                     const isMissingCore =
                         !localExtracted.name || !localExtracted.rut || !localExtracted.birthDate || !localExtracted.gender;
-                    const aiExtracted = isMissingCore ? await extractPatientDataFromText(text) : null;
+                    let aiExtracted: any = null;
+                    if (isMissingCore) {
+                        try {
+                            aiExtracted = await extractPatientDataFromText(text);
+                        } catch (error) {
+                            addToast('info', 'IA no disponible. Usando solo extracción local del PDF.');
+                        }
+                    }
                     extractedData = {
                         ...localExtracted,
                         ...normalizeExtractedPatientData(aiExtracted || {}),

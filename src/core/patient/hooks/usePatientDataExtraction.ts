@@ -75,8 +75,12 @@ const usePatientDataExtraction = ({
           !localExtracted.name || !localExtracted.rut || !localExtracted.birthDate || !localExtracted.gender;
 
         if (isMissingCore) {
-          const aiExtracted = await extractPatientDataFromText(text);
-          finalExtracted = mergeExtracted(localExtracted, normalizeExtractedPatientData(aiExtracted || {}));
+          try {
+            const aiExtracted = await extractPatientDataFromText(text);
+            finalExtracted = mergeExtracted(localExtracted, normalizeExtractedPatientData(aiExtracted || {}));
+          } catch (error) {
+            addToast('info', 'IA no disponible. Usando solo extracción local del PDF.');
+          }
         }
 
         applyExtractedData(finalExtracted);
@@ -128,7 +132,14 @@ const usePatientDataExtraction = ({
             const localExtracted = extractPatientDataFromTextLocal(text);
             const isMissingCore =
               !localExtracted.name || !localExtracted.rut || !localExtracted.birthDate || !localExtracted.gender;
-            const aiExtracted = isMissingCore ? await extractPatientDataFromText(text) : null;
+            let aiExtracted: any = null;
+            if (isMissingCore) {
+              try {
+                aiExtracted = await extractPatientDataFromText(text);
+              } catch (error) {
+                addToast('info', 'IA no disponible. Usando solo extracción local del PDF.');
+              }
+            }
             extractedData = mergeExtracted(localExtracted, normalizeExtractedPatientData(aiExtracted || {}));
           } else {
             const base64 = await downloadUrlAsBase64(file.driveUrl);
