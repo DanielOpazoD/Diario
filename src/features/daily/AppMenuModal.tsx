@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Settings, Bookmark, BarChart2 } from 'lucide-react';
+import { X, Settings, Bookmark, BarChart2, FileText } from 'lucide-react';
 import { ViewMode } from '@shared/types';
 
 interface AppMenuModalProps {
@@ -23,6 +23,13 @@ const AppMenuModal: React.FC<AppMenuModalProps> = ({ isOpen, onClose, onNavigate
             icon: Settings,
             description: 'Ajustes de la aplicación',
             color: 'bg-blue-100 text-blue-600',
+        },
+        {
+            id: 'reports',
+            label: 'Informes clínicos',
+            icon: FileText,
+            description: 'Epicrisis e informes médicos',
+            color: 'bg-amber-100 text-amber-600',
         },
         {
             id: 'bookmarks',

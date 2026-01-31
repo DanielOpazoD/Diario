@@ -1,9 +1,5 @@
 import { PatientCreateInput, PatientRecord, PatientUpdateInput } from '@shared/types';
-
-export const normalizePatientName = (name: string): string => {
-  if (!name) return '';
-  return name.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
-};
+import { normalizePatientName } from './rules';
 
 export const buildNewPatient = (data: PatientCreateInput): PatientRecord => {
   const maybeId = (data as PatientRecord).id;

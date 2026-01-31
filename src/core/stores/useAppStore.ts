@@ -3,9 +3,12 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createPatientSlice, PatientSlice } from '@core/stores/slices/patientSlice';
 import { createTaskSlice, TaskSlice } from '@core/stores/slices/taskSlice';
 import { createUserSlice, UserSlice } from '@core/stores/slices/userSlice';
-import { createSettingsSlice, SettingsSlice, defaultPatientTypes } from '@core/stores/slices/settingsSlice';
+import { createPatientTypesSlice, PatientTypesSlice, defaultPatientTypes } from '@core/stores/slices/patientTypesSlice';
+import { createSecuritySlice, SecuritySlice } from '@core/stores/slices/securitySlice';
+import { createPreferencesSlice, PreferencesSlice } from '@core/stores/slices/preferencesSlice';
 import { BookmarksSlice, createBookmarkSlice } from '@core/stores/slices/bookmarkSlice';
-import { BookmarkCategory, SecuritySettings, ToastMessage } from '@shared/types';
+import { BookmarkCategory, SecuritySettings } from '@shared/types';
+import { createUiSlice, UiSlice } from '@core/stores/slices/uiSlice';
 import { defaultBookmarkCategories, ensureDefaultCategories } from '@domain/bookmarks';
 import {
   loadRecordsFromLocal,
@@ -15,17 +18,7 @@ import {
 } from '@use-cases/storage';
 import { STORAGE_KEYS } from '@shared/constants/storageKeys';
 
-// UI Slice directly here for simplicity
-interface UiSlice {
-  toasts: ToastMessage[];
-  addToast: (type: 'success' | 'error' | 'info', message: string) => void;
-  removeToast: (id: string) => void;
-  syncStatus: 'idle' | 'saving' | 'synced' | 'error';
-  lastSyncAt: number | null;
-  setSyncStatus: (status: 'idle' | 'saving' | 'synced' | 'error', timestamp?: number | null) => void;
-}
-
-type AppStore = PatientSlice & TaskSlice & UserSlice & SettingsSlice & BookmarksSlice & UiSlice;
+type AppStore = PatientSlice & TaskSlice & UserSlice & PatientTypesSlice & SecuritySlice & PreferencesSlice & BookmarksSlice & UiSlice;
 
 // Helper to safely parse types and avoid "null" string issues
 const getInitialPatientTypes = () => {
@@ -108,23 +101,12 @@ const useAppStore = create<AppStore>()(
         ...createPatientSlice(set, get, api),
         ...createTaskSlice(set, get, api),
         ...createUserSlice(set, get, api),
-        ...createSettingsSlice(set, get, api),
+        ...createPatientTypesSlice(set, get, api),
+        ...createSecuritySlice(set, get, api),
+        ...createPreferencesSlice(set, get, api),
         ...createBookmarkSlice(set, get, api),
 
-        // UI Slice Implementation
-        toasts: [],
-        addToast: (type, message) => set((state) => ({
-          toasts: [...state.toasts, { id: crypto.randomUUID(), type, message }]
-        })),
-        removeToast: (id) => set((state) => ({
-          toasts: state.toasts.filter((t) => t.id !== id)
-        })),
-        syncStatus: 'idle',
-        lastSyncAt: null,
-        setSyncStatus: (status, timestamp) => set(() => ({
-          syncStatus: status,
-          lastSyncAt: typeof timestamp === 'number' ? timestamp : (status === 'synced' ? Date.now() : null),
-        })),
+        ...createUiSlice(set, get, api),
 
         // Overwrite initial state with loaded data if available
         records: initialRecords,

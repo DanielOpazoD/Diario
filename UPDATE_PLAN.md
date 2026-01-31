@@ -13,6 +13,6 @@ Este proyecto se migrará en tres etapas secuenciales. Cada fase debe completars
 
 3. **Hooks tipados para lógica de vistas**
    - [x] Mover filtros y cálculos diarios a hooks (`usePatientFilter`, `useDailyMetrics`, `useDailyRange`) eliminando usos de `any`.
-   - [ ] Replicar el enfoque en otras vistas (historial, marcadores, estadísticas) para homogenizar el tipado y la reutilización.
+   - [x] Replicar el enfoque en otras vistas (historial, buscador, marcadores, estadísticas) para homogenizar el tipado y la reutilización.
 
 > Nota: Las casillas pendientes señalan tareas de seguimiento si se requieren iteraciones adicionales.

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { copyPatientsToDate, movePatientsToDate, savePatient } from '@use-cases/patients';
+import { savePatient } from '@use-cases/patient/save';
+import { movePatientsToDate } from '@use-cases/patient/move';
+import { copyPatientsToDate } from '@use-cases/patient/copy';
 import type { PatientCreateInput, PatientRecord } from '@shared/types';
 
 describe('patient use-cases', () => {

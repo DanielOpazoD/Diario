@@ -46,6 +46,7 @@ export default defineConfig(({ mode }) => {
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
+          mode: 'development',
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.origin.includes('googleapis.com'),

@@ -1,11 +1,10 @@
 import { useCallback } from 'react';
 import { PatientRecord, PatientCreateInput, PatientUpdateInput } from '@shared/types';
-import {
-  savePatient,
-  savePatientsBatch,
-  movePatientsToDate,
-  copyPatientsToDate,
-} from '@use-cases/patients';
+import { savePatientRecord } from '@use-cases/patient/save';
+import { createPatientsBatch } from '@use-cases/patient/batch';
+import { movePatients } from '@use-cases/patient/move';
+import { copyPatients } from '@use-cases/patient/copy';
+import { deletePatientWithSync } from '@use-cases/patient/delete';
 
 interface UsePatientCrudParams {
   records: PatientRecord[];
@@ -36,7 +35,7 @@ const usePatientCrud = ({
     (patientData: PatientCreateInput | PatientUpdateInput) => {
       const patientId = (patientData as PatientRecord).id;
       const existing = editingPatient || records.find((record) => record.id === patientId) || null;
-      const result = savePatient(patientData, existing);
+      const result = savePatientRecord(patientData, existing);
 
       if (result.isUpdate) {
         updatePatient(result.patient);
@@ -53,7 +52,7 @@ const usePatientCrud = ({
     (patientData: PatientCreateInput | PatientUpdateInput) => {
       const patientId = (patientData as PatientRecord).id;
       const existing = editingPatient || records.find((record) => record.id === patientId) || null;
-      const result = savePatient(patientData, existing);
+      const result = savePatientRecord(patientData, existing);
 
       if (result.isUpdate) {
         updatePatient(result.patient);
@@ -66,7 +65,7 @@ const usePatientCrud = ({
 
   const handleSaveMultiplePatients = useCallback(
     (patientsData: PatientCreateInput[]) => {
-      const newPatients = savePatientsBatch(patientsData);
+      const newPatients = createPatientsBatch(patientsData);
       newPatients.forEach(addPatient);
       addToast('success', `${newPatients.length} pacientes registrados`);
     },
@@ -76,6 +75,7 @@ const usePatientCrud = ({
   const confirmDeletePatient = useCallback(() => {
     if (patientToDelete) {
       deletePatient(patientToDelete);
+      deletePatientWithSync(patientToDelete).catch(() => undefined);
       addToast('info', 'Registro eliminado');
       setPatientToDelete(null);
     }
@@ -83,7 +83,7 @@ const usePatientCrud = ({
 
   const handleMovePatientsToDate = useCallback(
     (patientIds: string[], targetDate: string) => {
-      const result = movePatientsToDate(records, patientIds, targetDate);
+      const result = movePatients(records, patientIds, targetDate);
       if (result.records) {
         setRecords(result.records);
       }
@@ -94,7 +94,7 @@ const usePatientCrud = ({
 
   const handleCopyPatientsToDate = useCallback(
     (patientIds: string[], targetDate: string) => {
-      const result = copyPatientsToDate(records, patientIds, targetDate);
+      const result = copyPatients(records, patientIds, targetDate);
       if (result.records) {
         setRecords(result.records);
       }

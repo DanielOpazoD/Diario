@@ -17,6 +17,7 @@ const PatientsHistoryView = lazy(() => import('@features/history/PatientsHistory
 const BookmarksView = lazy(() => import('@features/bookmarks/BookmarksView'));
 const TaskDashboard = lazy(() => import('@features/daily/TaskDashboard'));
 const Settings = lazy(() => import('@features/settings/Settings'));
+const MedicalReportView = lazy(() => import('@features/reports/MedicalReportView'));
 
 interface AppViewsProps {
   currentDate: Date;
@@ -100,6 +101,14 @@ const AppViews: React.FC<AppViewsProps> = ({
         element={(
           <Suspense fallback={<SettingsSkeleton />}>
             <Settings />
+          </Suspense>
+        )}
+      />
+      <Route
+        path={VIEW_ROUTES.reports}
+        element={(
+          <Suspense fallback={<ViewSkeleton />}>
+            <MedicalReportView />
           </Suspense>
         )}
       />

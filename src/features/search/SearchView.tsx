@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { Search } from 'lucide-react';
 import { Button } from '@core/ui';
 import { PatientRecord } from '@shared/types';
+import { usePatientSearch } from '@shared/hooks/usePatientSearch';
 
 interface SearchViewProps {
   records: PatientRecord[];
@@ -9,19 +10,7 @@ interface SearchViewProps {
 }
 
 const SearchView: React.FC<SearchViewProps> = ({ records, onEditPatient }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredRecords = useMemo(() => {
-    if (!searchQuery) return [] as PatientRecord[];
-    const lower = searchQuery.toLowerCase();
-    return records
-      .filter(r =>
-        r.name.toLowerCase().includes(lower) ||
-        r.rut.includes(lower) ||
-        r.diagnosis.toLowerCase().includes(lower)
-      )
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [records, searchQuery]);
+  const { searchQuery, setSearchQuery, filteredRecords } = usePatientSearch(records);
 
   return (
     <div className="max-w-4xl mx-auto pb-20 animate-fade-in">

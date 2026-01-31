@@ -38,6 +38,7 @@ const MainTopBar: React.FC<MainTopBarProps> = ({
                 {viewMode === 'stats' && 'Estadí­sticas'}
                 {viewMode === 'bookmarks' && 'Marcadores'}
                 {viewMode === 'settings' && 'Ajustes'}
+                {viewMode === 'reports' && 'Informes Clínicos'}
               </h2>
             )}
           </div>

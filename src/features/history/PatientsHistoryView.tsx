@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Search as SearchIcon, Users, Sparkles, X, Loader, Calendar, Filter } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import { usePatientHistory } from '@shared/hooks/usePatientHistory';
-import { searchPatientsSemantically } from '@use-cases/ai';
 import HistoryTable from './components/HistoryTable';
 import { formatMonthName } from '@shared/utils/dateUtils';
 import { PatientRecord } from '@shared/types';
+import { useSemanticPatientSearch } from './hooks/useSemanticPatientSearch';
 
 interface PatientsHistoryViewProps {
   onEditPatient: (patient: PatientRecord, initialTab?: 'clinical' | 'files', mode?: 'daily' | 'history') => void;
@@ -31,41 +31,21 @@ const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient
     getTypeClass
   } = usePatientHistory(records, patientTypes);
 
-  const [isSemanticSearch, setIsSemanticSearch] = useState(false);
-  const [semanticQuery, setSemanticQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [semanticResults, setSemanticResults] = useState<string[] | null>(null);
-
-  const handleSemanticSearch = async () => {
-    if (!semanticQuery.trim()) {
-      setSemanticResults(null);
-      return;
-    }
-    setIsSearching(true);
-    try {
-      const patientDataForAI = records.map(p => ({
-        id: p.id,
-        context: `${p.name} ${p.diagnosis} ${p.clinicalNote} ${p.pendingTasks.map(t => t.text).join(', ')}`
-      }));
-      const resultIds = await searchPatientsSemantically(semanticQuery, patientDataForAI);
-      setSemanticResults(resultIds);
-      if (resultIds.length === 0) {
-        addToast('info', 'No se encontraron pacientes para esta consulta.');
-      } else {
-        addToast('success', `Se encontraron ${resultIds.length} pacientes.`);
-      }
-    } catch (error: any) {
-      addToast('error', `Error en búsqueda IA: ${error.message}`);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const clearSemanticSearch = () => {
-    setSemanticQuery('');
-    setSemanticResults(null);
-    setIsSemanticSearch(false);
-  };
+  const {
+    isSemanticSearch,
+    setIsSemanticSearch,
+    semanticQuery,
+    setSemanticQuery,
+    isSearching,
+    semanticResults,
+    handleSemanticSearch,
+    clearSemanticSearch,
+  } = useSemanticPatientSearch({
+    records,
+    onInfo: (message) => addToast('info', message),
+    onSuccess: (message) => addToast('success', message),
+    onError: (message) => addToast('error', message),
+  });
 
   const filteredVisits = semanticResults
     ? paginatedVisits.filter(v => semanticResults.includes(v.id))

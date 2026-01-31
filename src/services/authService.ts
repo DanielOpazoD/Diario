@@ -1,5 +1,5 @@
 
-import { getFirebaseAuth } from './firebaseConfig';
+import { getAuthInstance } from './firebase/auth';
 import type { User } from '@shared/types';
 
 const ALLOWED_EMAILS = [
@@ -20,7 +20,7 @@ const loadUserSchema = async () => {
 };
 
 export const loginWithGoogle = async (): Promise<User> => {
-    const auth = await getFirebaseAuth();
+    const auth = await getAuthInstance();
     if (!auth) throw new AuthError("Servicio de autenticación no disponible");
 
     try {
@@ -61,7 +61,7 @@ export const loginWithGoogle = async (): Promise<User> => {
 
 export const loginAsGuest = async (): Promise<User> => {
     try {
-        const auth = await getFirebaseAuth();
+        const auth = await getAuthInstance();
         if (auth) {
             const { signInAnonymously } = await import("firebase/auth");
             await signInAnonymously(auth);
@@ -86,7 +86,7 @@ export const loginAsGuest = async (): Promise<User> => {
 };
 
 export const logout = async () => {
-    const auth = await getFirebaseAuth();
+    const auth = await getAuthInstance();
     if (auth) {
         const { signOut } = await import("firebase/auth");
         await signOut(auth);
@@ -98,7 +98,7 @@ export const subscribeToAuthChanges = (callback: (user: User | null) => void) =>
     let isActive = true;
 
     (async () => {
-        const auth = await getFirebaseAuth();
+        const auth = await getAuthInstance();
         if (!auth || !isActive) return;
         const { onAuthStateChanged } = await import("firebase/auth");
         unsub = onAuthStateChanged(auth, (firebaseUser) => {

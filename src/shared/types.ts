@@ -99,7 +99,7 @@ export interface User {
   avatar: string;
 }
 
-export type ViewMode = 'daily' | 'stats' | 'settings' | 'tasks' | 'bookmarks' | 'history';
+export type ViewMode = 'daily' | 'stats' | 'settings' | 'tasks' | 'bookmarks' | 'history' | 'reports';
 
 export interface ToastMessage {
   id: string;

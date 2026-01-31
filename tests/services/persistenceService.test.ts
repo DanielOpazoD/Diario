@@ -17,6 +17,9 @@ vi.mock('@core/stores/useAppStore', () => ({
             highlightPendingPatients: true,
             compactStats: false,
             showBookmarkBar: true,
+            syncStatus: 'idle',
+            lastSyncAt: null,
+            setSyncStatus: vi.fn(),
         })),
     },
 }));
@@ -72,6 +75,7 @@ describe('persistenceService', () => {
 
             expect(mockSubscribe).toHaveBeenCalledOnce();
             expect(typeof mockSubscribe.mock.calls[0][0]).toBe('function');
+            expect(typeof mockSubscribe.mock.calls[0][1]).toBe('function');
         });
 
         it('should debounce save operations', async () => {
@@ -80,7 +84,7 @@ describe('persistenceService', () => {
 
             // Initialize and get the subscription callback
             initPersistence();
-            const callback = mockSubscribe.mock.calls[0][0];
+            const callback = mockSubscribe.mock.calls[0][1];
 
             // Trigger multiple state changes quickly
             callback({ ...baseState, records: [{ id: '1' }] });
@@ -101,7 +105,7 @@ describe('persistenceService', () => {
             const localStorageSpy = vi.spyOn(window.localStorage, 'setItem');
 
             initPersistence();
-            const callback = mockSubscribe.mock.calls[0][0];
+            const callback = mockSubscribe.mock.calls[0][1];
 
             const testUser = { name: 'Test', email: 'test@test.com', avatar: 'url' };
             callback({ ...baseState, user: testUser, records: [] });
@@ -119,7 +123,7 @@ describe('persistenceService', () => {
             const { syncPatientsToFirebase } = await import('@services/firebaseService');
 
             initPersistence();
-            const callback = mockSubscribe.mock.calls[0][0];
+            const callback = mockSubscribe.mock.calls[0][1];
 
             const testRecords = [{ id: '1', name: 'Patient 1' }];
             callback({ ...baseState, records: testRecords, user: { name: 'Test', email: 'test@test.com', avatar: 'url' } });

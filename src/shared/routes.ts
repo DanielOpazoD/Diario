@@ -6,6 +6,7 @@ export const VIEW_ROUTES: Record<ViewMode, string> = {
   tasks: '/tareas',
   bookmarks: '/marcadores',
   history: '/historial',
+  reports: '/informes',
   settings: '/configuracion',
 };
 

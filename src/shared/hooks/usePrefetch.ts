@@ -8,6 +8,7 @@ const prefetchModules = {
   history: () => import('@features/history/PatientsHistoryView'),
   bookmarks: () => import('@features/bookmarks/BookmarksView'),
   tasks: () => import('@features/daily/TaskDashboard'),
+  reports: () => import('@features/reports/MedicalReportView'),
   settings: () => import('@features/settings/Settings'),
   patientModal: () => import('@core/patient/components/PatientModal'),
   bookmarksModal: () => import('@features/bookmarks/BookmarksModal'),
@@ -115,6 +116,7 @@ export function prefetchAdjacentViews(currentView: ViewMode) {
     tasks: ['daily', 'bookmarks'],
     bookmarks: ['daily', 'tasks'],
     settings: ['daily'],
+    reports: ['daily', 'history'],
   };
 
   const viewsToPrefetch = adjacentViews[currentView] || [];

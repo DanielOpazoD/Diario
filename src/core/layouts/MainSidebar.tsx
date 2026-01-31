@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar as CalendarIcon, CheckSquare, LogOut, Users, X } from 'lucide-react';
+import { Calendar as CalendarIcon, CheckSquare, FileText, LogOut, Users, X } from 'lucide-react';
 import { ViewMode, User } from '@shared/types';
 
 interface MainSidebarProps {
@@ -66,6 +66,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
           { id: 'daily', label: 'Agenda Diaria', icon: CalendarIcon },
           { id: 'tasks', label: 'Mis Tareas', icon: CheckSquare },
           { id: 'history', label: 'Historial de Pacientes', icon: Users },
+          { id: 'reports', label: 'Informes Clínicos', icon: FileText },
         ].map((item) => (
           <button
             key={item.id}
