@@ -192,12 +192,28 @@ export const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
+const isFirebaseStorageUrl = (url: string) => url.includes('firebasestorage.googleapis.com');
+
 export const downloadUrlAsBase64 = async (url: string): Promise<string> => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error('Failed to download file content');
+  let blob: Blob;
+  if (isFirebaseStorageUrl(url)) {
+    try {
+      const { downloadFileBlobFromFirebaseUrl } = await import('./firebaseStorageService');
+      blob = await downloadFileBlobFromFirebaseUrl(url);
+    } catch (error) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to download file content');
+      }
+      blob = await response.blob();
+    }
+  } else {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to download file content');
+    }
+    blob = await response.blob();
   }
-  const blob = await response.blob();
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -211,6 +227,20 @@ export const downloadUrlAsBase64 = async (url: string): Promise<string> => {
 };
 
 export const downloadUrlAsArrayBuffer = async (url: string): Promise<ArrayBuffer> => {
+  if (isFirebaseStorageUrl(url)) {
+    try {
+      const { downloadFileBlobFromFirebaseUrl } = await import('./firebaseStorageService');
+      const blob = await downloadFileBlobFromFirebaseUrl(url);
+      return blob.arrayBuffer();
+    } catch (error) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to download file content');
+      }
+      return response.arrayBuffer();
+    }
+  }
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to download file content');

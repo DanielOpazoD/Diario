@@ -51,3 +51,12 @@ export const deleteFileFromFirebase = async (patientId: string, fileName: string
         emitStructuredLog("error", "FirebaseStorage", "Error deleting file", { error });
     }
 };
+
+export const downloadFileBlobFromFirebaseUrl = async (url: string): Promise<Blob> => {
+    const storage = await getFirebaseStorage();
+    if (!storage) throw new Error("Firebase not configured");
+    const { ref, getBlob } = await import("firebase/storage");
+
+    const storageRef = ref(storage, url);
+    return await getBlob(storageRef);
+};
