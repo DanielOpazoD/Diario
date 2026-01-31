@@ -3,7 +3,7 @@ import { X, Calendar, FileText, ClipboardList, Save } from 'lucide-react';
 import useAppStore from '@core/stores/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import type { AttachedFile, PatientRecord, PendingTask } from '@shared/types';
-import { calculateAge, formatToDisplayDate } from '@shared/utils/dateUtils';
+import { calculateAge, formatBirthDateDisplay, formatToDisplayDate } from '@shared/utils/dateUtils';
 import InlinePatientTasks from '@core/patient/components/InlinePatientTasks';
 import PatientAttachmentsSection from '@core/patient/components/PatientAttachmentsSection';
 import usePendingTasks from '@core/patient/hooks/usePendingTasks';
@@ -126,7 +126,7 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ isOpen, onClo
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] uppercase tracking-widest text-gray-400">Nacimiento</span>
-              <span className="font-bold text-gray-800 dark:text-gray-100">{record.birthDate || '—'}</span>
+              <span className="font-bold text-gray-800 dark:text-gray-100">{formatBirthDateDisplay(record.birthDate) || '—'}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] uppercase tracking-widest text-gray-400">Género</span>

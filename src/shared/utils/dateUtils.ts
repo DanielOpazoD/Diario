@@ -1,31 +1,74 @@
 import { differenceInYears, parseISO } from 'date-fns';
 
+export const parseBirthDate = (birthDate?: string): Date | null => {
+    if (!birthDate || !birthDate.trim()) return null;
+    const value = birthDate.trim();
+
+    const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoMatch) {
+        const [, year, month, day] = isoMatch;
+        const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const dmyMatch = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (dmyMatch) {
+        const [, day, month, year] = dmyMatch;
+        const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const dmySlashMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (dmySlashMatch) {
+        const [, day, month, year] = dmySlashMatch;
+        const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+export const formatBirthDateDisplay = (birthDate?: string): string => {
+    if (!birthDate || !birthDate.trim()) return '';
+    const parsed = parseBirthDate(birthDate);
+    if (!parsed) return birthDate;
+    const day = String(parsed.getDate()).padStart(2, '0');
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const year = parsed.getFullYear();
+    return `${day}-${month}-${year}`;
+};
+
+export const normalizeBirthDateInput = (value: string): string => {
+    if (!value) return '';
+    const trimmed = value.trim();
+    const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoMatch) {
+        const [, year, month, day] = isoMatch;
+        return `${day}-${month}-${year}`;
+    }
+    const dmyMatch = trimmed.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+    if (dmyMatch) {
+        const [, day, month, yearRaw] = dmyMatch;
+        let year = yearRaw;
+        if (year.length === 2) {
+            const yearNum = Number(year);
+            year = yearNum < 30 ? `20${year}` : `19${year}`;
+        }
+        return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+    }
+    return trimmed;
+};
+
 /**
  * Calculates age based on a birth date string (YYYY-MM-DD)
  */
 export const calculateAge = (birthDate?: string): string => {
-    if (!birthDate || !birthDate.trim()) return 'N/A';
-
-    try {
-        let dateToParse = birthDate.trim();
-        // Handle DD-MM-YYYY format if Gemini returns it despite prompt
-        if (dateToParse.includes('-') && dateToParse.split('-')[0].length === 2) {
-            const [d, m, y] = dateToParse.split('-');
-            dateToParse = `${y}-${m}-${d}`;
-        }
-
-        const birth = parseISO(dateToParse);
-        if (isNaN(birth.getTime())) return 'N/A';
-
-        const age = differenceInYears(new Date(), birth);
-
-        // Sanity check: If age is negative or > 120, something is likely wrong with the extraction
-        if (age < 0 || age > 120) return 'N/A';
-
-        return `${age} a`;
-    } catch (error) {
-        return 'N/A';
-    }
+    const parsed = parseBirthDate(birthDate);
+    if (!parsed) return 'N/A';
+    const age = differenceInYears(new Date(), parsed);
+    if (age < 0 || age > 120) return 'N/A';
+    return `${age} a`;
 };
 
 /**

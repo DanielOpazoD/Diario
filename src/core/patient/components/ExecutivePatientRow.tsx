@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { differenceInYears } from 'date-fns';
+import { parseBirthDate } from '@shared/utils/dateUtils';
 import { CheckSquare, Square, Trash2, Paperclip, Stethoscope } from 'lucide-react';
 import { PatientRecord } from '@shared/types';
 import { useShallow } from 'zustand/react/shallow';
@@ -10,13 +11,10 @@ import TaskStatusIndicator from '@core/components/TaskStatusIndicator';
 const calculateAge = (birthDateStr?: string) => {
     if (!birthDateStr) return '';
     try {
-        const parts = birthDateStr.split('-');
-        if (parts.length === 3) {
-            const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            const age = differenceInYears(new Date(), date);
-            return Number.isNaN(age) ? '' : `${age}a`;
-        }
-        return '';
+        const parsed = parseBirthDate(birthDateStr);
+        if (!parsed) return '';
+        const age = differenceInYears(new Date(), parsed);
+        return Number.isNaN(age) ? '' : `${age}a`;
     } catch (e) {
         return '';
     }

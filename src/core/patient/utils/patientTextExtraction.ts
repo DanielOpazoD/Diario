@@ -23,7 +23,7 @@ const normalizeBirthDate = (value?: string): string => {
   const isoMatch = raw.match(/\b(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})\b/);
   if (isoMatch) {
     const [, year, month, day] = isoMatch;
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
   }
 
   const dmyMatch = raw.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})\b/);
@@ -34,7 +34,7 @@ const normalizeBirthDate = (value?: string): string => {
       const yearNum = Number(year);
       year = yearNum < 30 ? `20${year}` : `19${year}`;
     }
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
   }
 
   return '';

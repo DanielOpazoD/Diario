@@ -2,6 +2,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Clock, Users, Save, ChevronUp, Sparkles, UserCog } from 'lucide-react';
 import { PatientTypeConfig } from '@shared/types';
+import { formatBirthDateDisplay, normalizeBirthDateInput } from '@shared/utils/dateUtils';
 import { Button } from '@core/ui';
 
 interface PatientFormProps {
@@ -235,10 +236,13 @@ const PatientForm: React.FC<PatientFormProps> = ({
                   Nacim.
                 </label>
                 <input
-                  type="date"
+                  type="text"
                   id={birthDateId}
-                  value={birthDate}
+                  value={formatBirthDateDisplay(birthDate)}
                   onChange={(e) => onBirthDateChange(e.target.value)}
+                  onBlur={(e) => onBirthDateChange(normalizeBirthDateInput(e.target.value))}
+                  placeholder="dd-mm-aaaa"
+                  inputMode="numeric"
                   className={`w-full px-1.5 ${superMinimalist ? 'py-1 text-[10px]' : compact || minimalist ? 'py-1 text-[11px]' : 'py-1.5 text-[12px]'} rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
                 />
               </div>

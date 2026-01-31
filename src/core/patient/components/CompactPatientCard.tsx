@@ -4,20 +4,14 @@ import { CheckSquare, Square, ChevronDown, Clock, FileText, Trash2, Paperclip } 
 import { PatientRecord } from '@shared/types';
 import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
-
-export const parseLocalYMD = (dateStr: string) => {
-  if (!dateStr) return new Date();
-  const parts = dateStr.split('-');
-  if (parts.length === 3) {
-    return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-  }
-  return new Date(dateStr);
-};
+import { parseBirthDate } from '@shared/utils/dateUtils';
 
 export const calculateAge = (birthDateStr?: string) => {
   if (!birthDateStr) return '';
   try {
-    const age = differenceInYears(new Date(), parseLocalYMD(birthDateStr));
+    const parsed = parseBirthDate(birthDateStr);
+    if (!parsed) return '';
+    const age = differenceInYears(new Date(), parsed);
     if (Number.isNaN(age)) return '';
     return `${age} años`;
   } catch (e) {
@@ -149,7 +143,11 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
           <div className="mt-3 flex flex-wrap justify-between items-start gap-3">
             <div className="flex flex-wrap gap-2 text-[11px] text-gray-500 uppercase tracking-wide font-medium">
               <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-control border border-gray-100 dark:border-gray-600 shadow-soft">RUT: {patient.rut}</span>
-              {patient.birthDate && <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-control border border-gray-100 dark:border-gray-600 shadow-soft">{ageDisplay || format(parseLocalYMD(patient.birthDate), 'yyyy')}</span>}
+              {patient.birthDate && (
+                <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-control border border-gray-100 dark:border-gray-600 shadow-soft">
+                  {ageDisplay || (parseBirthDate(patient.birthDate) ? format(parseBirthDate(patient.birthDate) as Date, 'yyyy') : '')}
+                </span>
+              )}
               {patient.exitTime && <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-control border border-gray-100 dark:border-gray-600 shadow-soft">Salida: {patient.exitTime}</span>}
             </div>
             <div className="flex gap-2 ml-auto w-full sm:w-auto justify-end">
