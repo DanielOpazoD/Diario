@@ -46,4 +46,4 @@ const PatientAttachmentsSection: React.FC<PatientAttachmentsSectionProps> = ({
   );
 };
 
-export default PatientAttachmentsSection;
+export default React.memo(PatientAttachmentsSection);

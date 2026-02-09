@@ -1,11 +1,48 @@
 
 import { getAuthInstance } from './firebase/auth';
+import { emitStructuredLog } from './logger';
 import type { User } from '@shared/types';
+import { UserSchema } from '@shared/schemas';
 
-const ALLOWED_EMAILS = [
+const DEFAULT_ALLOWED_EMAILS = new Set([
     "d.opazo.damiani@gmail.com",
     "daniel.opazo@hospitalhangaroa.cl"
-];
+].map((email) => email.toLowerCase().trim()));
+
+const normalizeEmail = (email: string) => email.toLowerCase().trim();
+
+const parseAllowedEmailsFromEnv = (): Set<string> => {
+    const raw = import.meta.env.VITE_ALLOWED_LOGIN_EMAILS;
+    if (typeof raw !== 'string' || raw.trim().length === 0) {
+        return new Set();
+    }
+    return new Set(
+        raw
+            .split(',')
+            .map((email) => normalizeEmail(email))
+            .filter((email) => email.length > 0)
+    );
+};
+
+const resolveAllowedEmails = (): { enforce: boolean; emails: Set<string> } => {
+    const envAllowed = parseAllowedEmailsFromEnv();
+    if (envAllowed.size > 0) {
+        return { enforce: true, emails: envAllowed };
+    }
+    // Local development should not be blocked by hardcoded allowlists.
+    if (import.meta.env.DEV) {
+        return { enforce: false, emails: new Set() };
+    }
+    return { enforce: true, emails: DEFAULT_ALLOWED_EMAILS };
+};
+
+const ALLOWED_EMAIL_POLICY = resolveAllowedEmails();
+
+const DEFAULT_GUEST_USER: User = {
+    name: "Dr. Usuario Local",
+    email: "local@medidiario.app",
+    avatar: "https://ui-avatars.com/api/?name=Dr+Local&background=0D8ABC&color=fff"
+};
 
 export class AuthError extends Error {
     constructor(message: string, public code?: string) {
@@ -13,11 +50,6 @@ export class AuthError extends Error {
         this.name = 'AuthError';
     }
 }
-
-const loadUserSchema = async () => {
-    const { UserSchema } = await import('@shared/schemas');
-    return UserSchema;
-};
 
 export const loginWithGoogle = async (): Promise<User> => {
     const auth = await getAuthInstance();
@@ -28,9 +60,9 @@ export const loginWithGoogle = async (): Promise<User> => {
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
-        const email = user.email || "";
+        const email = normalizeEmail(user.email || "");
 
-        if (!ALLOWED_EMAILS.includes(email.toLowerCase())) {
+        if (ALLOWED_EMAIL_POLICY.enforce && !ALLOWED_EMAIL_POLICY.emails.has(email)) {
             await signOut(auth);
             throw new AuthError("Este correo no está autorizado para acceder a la aplicación.", "auth/unauthorized-email");
         }
@@ -42,16 +74,21 @@ export const loginWithGoogle = async (): Promise<User> => {
         };
 
         // Validate with Zod (Optional but good practice)
-        const UserSchema = await loadUserSchema();
         return UserSchema.parse(appUser);
 
     } catch (error: any) {
-        console.error("Auth Service Error:", error);
+        emitStructuredLog('error', 'Auth', 'Auth Service Error', { error });
         if (error instanceof AuthError) throw error;
 
         let message = "Error desconocido al iniciar sesión";
         if (error.code === 'auth/popup-closed-by-user') {
             message = "Inicio de sesión cancelado por el usuario";
+        } else if (error.code === 'auth/popup-blocked') {
+            message = "El navegador bloqueó la ventana emergente. Permite popups para continuar.";
+        } else if (error.code === 'auth/unauthorized-domain') {
+            message = "Dominio no autorizado en Firebase Auth. Agrega localhost en dominios autorizados.";
+        } else if (error.code === 'auth/network-request-failed') {
+            message = "Error de red al iniciar sesión. Revisa tu conexión e intenta nuevamente.";
         } else if (error.message) {
             message = error.message;
         }
@@ -67,21 +104,10 @@ export const loginAsGuest = async (): Promise<User> => {
             await signInAnonymously(auth);
         }
 
-        const guestUser = {
-            name: "Dr. Usuario Local",
-            email: "local@medidiario.app",
-            avatar: "https://ui-avatars.com/api/?name=Dr+Local&background=0D8ABC&color=fff"
-        };
-
-        const UserSchema = await loadUserSchema();
-        return UserSchema.parse(guestUser);
+        return UserSchema.parse(DEFAULT_GUEST_USER);
     } catch (error: any) {
-        console.error("Guest Logic Error:", error);
-        return {
-            name: "Dr. Usuario Local",
-            email: "local@medidiario.app",
-            avatar: "https://ui-avatars.com/api/?name=Dr+Local&background=0D8ABC&color=fff"
-        };
+        emitStructuredLog('error', 'Auth', 'Guest Logic Error', { error });
+        return DEFAULT_GUEST_USER;
     }
 };
 

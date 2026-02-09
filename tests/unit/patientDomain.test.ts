@@ -34,7 +34,10 @@ describe('patient domain', () => {
 
     expect(result.id).toBeTruthy();
     expect(result.createdAt).toBe(1700000000000);
+    expect(result.updatedAt).toBe(1700000000000);
     expect(result.name).toBe('Maria Lopez');
+    expect(result.rut).toBe('');
+    expect(result.date).toBe('2024-01-02');
     expect(result.pendingTasks).toEqual([]);
     expect(result.attachedFiles).toEqual([]);
   });
@@ -58,6 +61,31 @@ describe('patient domain', () => {
 
     expect(result.id).toBe('p1');
     expect(result.createdAt).toBe(123);
+    expect(result.updatedAt).toBe(1700000000000);
     expect(result.name).toBe('Nuevo Nombre');
+  });
+
+  it('normalizes invalid dates and trims text fields', () => {
+    const payload: PatientCreateInput = {
+      name: '  maria  ',
+      rut: '  1-9  ',
+      birthDate: '',
+      gender: '',
+      date: 'bad-date',
+      type: '  ',
+      diagnosis: '  dx  ',
+      clinicalNote: '  note  ',
+      pendingTasks: [],
+      attachedFiles: [],
+    };
+
+    const result = buildNewPatient(payload);
+
+    expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(result.date).not.toBe('bad-date');
+    expect(result.type).toBe('Policlínico');
+    expect(result.rut).toBe('1-9');
+    expect(result.diagnosis).toBe('dx');
+    expect(result.clinicalNote).toBe('note');
   });
 });

@@ -5,6 +5,56 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { Buffer } from 'buffer';
 import { visualizer } from 'rollup-plugin-visualizer';
 
+const localStorageProxyPlugin = () => ({
+  name: 'local-storage-proxy',
+  configureServer(server: any) {
+    const handler = async (req: any, res: any) => {
+      if ((req.method || 'GET').toUpperCase() !== 'GET') {
+        res.statusCode = 405;
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ error: 'Method not allowed' }));
+        return;
+      }
+
+      try {
+        const requestUrl = new URL(req.url || '', 'http://localhost');
+        const targetUrl = requestUrl.searchParams.get('url');
+        if (!targetUrl) {
+          res.statusCode = 400;
+          res.setHeader('content-type', 'application/json');
+          res.end(JSON.stringify({ error: 'Missing url' }));
+          return;
+        }
+
+        const upstream = await fetch(targetUrl);
+        if (!upstream.ok) {
+          res.statusCode = upstream.status;
+          res.setHeader('content-type', 'application/json');
+          res.end(JSON.stringify({ error: `Failed to fetch file (${upstream.status})` }));
+          return;
+        }
+
+        const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+        const arrayBuffer = await upstream.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+        res.statusCode = 200;
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ mimeType: contentType, base64 }));
+      } catch (error: any) {
+        res.statusCode = 500;
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ error: error?.message || 'Proxy error' }));
+      }
+    };
+
+    // Local-only endpoint that never touches Netlify proxy.
+    server.middlewares.use('/__local/storage-proxy', handler);
+    // Keep Netlify-compatible route for parity with production path.
+    server.middlewares.use('/.netlify/functions/storage-proxy', handler);
+  },
+});
+
 export default defineConfig(({ mode }) => {
   // Carga variables desde archivos .env locales
   const env = loadEnv(mode, (process as any).cwd(), '');
@@ -21,6 +71,7 @@ export default defineConfig(({ mode }) => {
       include: ['**/*.test.{ts,tsx}'],
     },
     plugins: [
+      localStorageProxyPlugin(),
       react(),
       VitePWA({
         registerType: 'autoUpdate',
@@ -87,6 +138,9 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: true,
+      headers: {
+        'Cache-Control': 'no-store',
+      },
       proxy: {
         '/.netlify/functions': {
           target: 'http://localhost:8888',

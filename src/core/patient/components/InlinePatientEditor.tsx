@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Save, X } from 'lucide-react';
 import { PatientRecord, AttachedFile } from '@shared/types';
 import { Button } from '@core/ui';
@@ -7,8 +7,9 @@ import InlinePatientDemographics from '@core/patient/components/InlinePatientDem
 import InlinePatientClinical from '@core/patient/components/InlinePatientClinical';
 import InlinePatientFiles from '@core/patient/components/InlinePatientFiles';
 import InlinePatientTasks from '@core/patient/components/InlinePatientTasks';
-import { formatPatientName } from '@core/patient/utils/patientUtils';
-import { sanitizeClinicalNote, sanitizeDiagnosis, sanitizeRut } from '@shared/utils/sanitization';
+import { sanitizePatientName } from '@use-cases/patient/sanitizeFields';
+import { isPatientNameValid } from '@use-cases/patient/validation';
+import { buildInlineUpdatedPatient } from '@use-cases/patient/buildInlineUpdate';
 import { usePatientVoiceAndAI } from '@core/patient';
 import { usePatientDataExtraction } from '@core/patient';
 import usePendingTasks from '@core/patient/hooks/usePendingTasks';
@@ -42,7 +43,10 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
     const [entryTime, setEntryTime] = useState(patient.entryTime || '');
     const [exitTime, setExitTime] = useState(patient.exitTime || '');
     const [type, setType] = useState(patient.type);
-    const defaultTypeId = patientTypes.find(t => t.id === 'policlinico')?.id || patientTypes[0]?.id || '';
+    const defaultTypeId = useMemo(
+        () => patientTypes.find(t => t.id === 'policlinico')?.id || patientTypes[0]?.id || '',
+        [patientTypes]
+    );
     const [typeId, setTypeId] = useState(patient.typeId || patientTypes.find(t => t.label === patient.type)?.id || defaultTypeId);
 
     const [diagnosis, setDiagnosis] = useState(patient.diagnosis);
@@ -83,60 +87,120 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
         setClinicalNote,
     });
 
-    const buildUpdatedPatient = () => {
-        const finalName = formatPatientName(name);
-        const selectedType = patientTypes.find(t => t.id === typeId);
-
-        return {
-            ...patient,
-            name: finalName,
-            rut: sanitizeRut(rut),
+    const buildUpdatedPatient = useCallback(() => {
+        return buildInlineUpdatedPatient({
+            patient,
+            patientTypes,
+            name,
+            rut,
             birthDate,
             gender,
-            type: selectedType?.label || type,
-            typeId: selectedType?.id || typeId,
-            entryTime: entryTime || undefined,
-            exitTime: exitTime || undefined,
-            diagnosis: sanitizeDiagnosis(diagnosis),
-            clinicalNote: sanitizeClinicalNote(clinicalNote),
+            type,
+            typeId,
+            entryTime,
+            exitTime,
+            diagnosis,
+            clinicalNote,
             pendingTasks,
             attachedFiles,
-            driveFolderId
-        };
-    };
+            driveFolderId,
+        });
+    }, [
+        attachedFiles,
+        birthDate,
+        clinicalNote,
+        diagnosis,
+        driveFolderId,
+        entryTime,
+        exitTime,
+        gender,
+        name,
+        patient,
+        patientTypes,
+        pendingTasks,
+        rut,
+        type,
+        typeId,
+    ]);
 
-    const handleSave = () => {
-        if (!name.trim()) return addToast('error', 'Nombre requerido');
+    const handleSave = useCallback(() => {
+        if (!isPatientNameValid(name)) return addToast('error', 'Nombre requerido');
         onSave(buildUpdatedPatient());
-    };
+    }, [addToast, buildUpdatedPatient, name, onSave]);
 
     const autoSaveInitialized = useRef(false);
+    const lastAutoSaveRef = useRef<string | null>(null);
+    const getAutoSaveFingerprint = useCallback(() => {
+        return JSON.stringify({
+            id: patient.id,
+            name,
+            rut,
+            birthDate,
+            gender,
+            type,
+            typeId,
+            entryTime,
+            exitTime,
+            diagnosis,
+            clinicalNote,
+            pendingTasks,
+            attachedFiles,
+            driveFolderId,
+        });
+    }, [
+        attachedFiles,
+        birthDate,
+        clinicalNote,
+        diagnosis,
+        driveFolderId,
+        entryTime,
+        exitTime,
+        gender,
+        name,
+        patient.id,
+        pendingTasks,
+        rut,
+        type,
+        typeId,
+    ]);
     useEffect(() => {
         if (!onAutoSave) return;
         if (!autoSaveInitialized.current) {
             autoSaveInitialized.current = true;
+            lastAutoSaveRef.current = getAutoSaveFingerprint();
             return;
         }
+        const nextFingerprint = getAutoSaveFingerprint();
+        if (lastAutoSaveRef.current === nextFingerprint) return;
+        lastAutoSaveRef.current = nextFingerprint;
         onAutoSave(buildUpdatedPatient());
-    }, [pendingTasks, attachedFiles, driveFolderId, onAutoSave]);
+    }, [attachedFiles, buildUpdatedPatient, driveFolderId, getAutoSaveFingerprint, onAutoSave, pendingTasks]);
 
-    const handleExtractFromAttachmentsWrapper = () => {
+    const handleExtractFromAttachmentsWrapper = useCallback(() => {
         handleExtractFromAttachments(attachedFiles, { name, rut, birthDate, gender, diagnosis, clinicalNote });
-    };
+    }, [attachedFiles, birthDate, clinicalNote, diagnosis, gender, handleExtractFromAttachments, name, rut]);
 
-    const handleExtractFromAttachment = (attachmentId: string) => {
+    const handleExtractFromAttachment = useCallback((attachmentId: string) => {
         const target = attachedFiles.find(file => file.id === attachmentId);
         if (!target) {
             addToast('info', 'No se encontró el adjunto seleccionado.');
             return;
         }
         handleExtractFromAttachments([target], { name, rut, birthDate, gender, diagnosis, clinicalNote });
-    };
+    }, [addToast, attachedFiles, birthDate, clinicalNote, diagnosis, gender, handleExtractFromAttachments, name, rut]);
 
     const { toggleTask, deleteTask, addTask, updateTaskNote } = usePendingTasks({ setPendingTasks });
 
     // Render Helpers
-    const isTurno = typeId === (patientTypes.find(t => t.id === 'turno')?.id || 'turno');
+    const isTurno = useMemo(
+        () => typeId === (patientTypes.find(t => t.id === 'turno')?.id || 'turno'),
+        [patientTypes, typeId]
+    );
+
+    const handleSelectType = useCallback((id: string, label: string) => {
+        setTypeId(id);
+        setType(label);
+    }, []);
 
     return (
         <div className={`bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-inner px-4 ${initialTab === 'demographics' ? 'py-0 overflow-hidden' : 'py-1 overflow-hidden'} animate-slide-down w-full max-w-full min-w-0`}>
@@ -163,11 +227,11 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
                         attachedFiles={attachedFiles}
                         onExtractFromAttachment={handleExtractFromAttachment}
                         onNameChange={setName}
-                        onNameBlur={() => setName(formatPatientName(name))}
+                        onNameBlur={() => setName(sanitizePatientName(name))}
                         onRutChange={setRut}
                         onBirthDateChange={setBirthDate}
                         onGenderChange={setGender}
-                        onSelectType={(id: string, label: string) => { setTypeId(id); setType(label); }}
+                        onSelectType={handleSelectType}
                         onEntryTimeChange={setEntryTime}
                         onExitTimeChange={setExitTime}
                         onSave={handleSave}
@@ -232,4 +296,4 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
     );
 };
 
-export default InlinePatientEditor;
+export default React.memo(InlinePatientEditor);

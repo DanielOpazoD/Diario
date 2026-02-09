@@ -36,18 +36,8 @@ const PatientInfo: React.FC<PatientInfoProps> = ({
     hinf: { gridColumn: 'span 3' },
   };
 
-  const isPatientSectionTitleActive = activeEditTarget?.type === 'patient-section-title';
-
   return (
     <div className="sec" id="sec-datos">
-      <div
-        className="subtitle"
-        contentEditable={isEditing && isPatientSectionTitleActive}
-        suppressContentEditableWarning
-        onDoubleClick={() => onActivateEdit({ type: 'patient-section-title' })}
-      >
-        Información del Paciente
-      </div>
       <div id="patientGrid">
         <div className="patient-default-grid">
           {patientFields.filter(f => !f.isCustom).map((field) => {

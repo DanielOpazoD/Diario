@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import { clearAppStorage } from '@services/storage';
+import { clearStorage } from '@use-cases/storage';
 
 interface StorageSettingsProps {
   addToast: (type: 'success' | 'error' | 'info', message: string) => void;
@@ -14,7 +14,7 @@ const StorageSettings: React.FC<StorageSettingsProps> = ({ addToast }) => {
     if (!confirmed) return;
 
     try {
-      clearAppStorage();
+      clearStorage();
       addToast('success', 'Datos locales eliminados. Recargando...');
       window.location.reload();
     } catch (error) {

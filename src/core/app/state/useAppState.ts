@@ -9,6 +9,7 @@ export const useAppState = () => useAppStore(useShallow(state => ({
   bookmarks: state.bookmarks,
   bookmarkCategories: state.bookmarkCategories,
   showBookmarkBar: state.showBookmarkBar,
-  securityPin: state.securityPin,
+  securityPinHash: state.securityPinHash,
+  securityPinSalt: state.securityPinSalt,
   autoLockMinutes: state.autoLockMinutes,
 })));

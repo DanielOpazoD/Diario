@@ -24,15 +24,25 @@ vi.mock('@core/stores/useAppStore', () => ({
     },
 }));
 
-vi.mock('@services/storage', () => ({
+vi.mock('@use-cases/storage', () => ({
+    loadRecordsFromLocal: vi.fn(() => []),
+    loadGeneralTasksFromLocal: vi.fn(() => []),
+    loadBookmarksFromLocal: vi.fn(() => []),
+    loadBookmarkCategoriesFromLocal: vi.fn(() => []),
     saveRecordsToLocal: vi.fn(),
     saveGeneralTasksToLocal: vi.fn(),
     saveBookmarksToLocal: vi.fn(),
     saveBookmarkCategoriesToLocal: vi.fn(),
 }));
 
-vi.mock('@services/firebaseService', () => ({
-    syncPatientsToFirebase: vi.fn().mockResolvedValue(undefined),
+vi.mock('@data/adapters/firebasePatientSyncAdapter', () => ({
+    firebasePatientSyncAdapter: {
+        syncPatients: vi.fn().mockResolvedValue(undefined),
+    },
+}));
+
+vi.mock('@services/logger', () => ({
+    emitStructuredLog: vi.fn(),
 }));
 
 describe('persistenceService', () => {
@@ -69,7 +79,7 @@ describe('persistenceService', () => {
 
     describe('initPersistence', () => {
         it('should subscribe to store changes', async () => {
-            const { initPersistence } = await import('@services/persistenceService');
+            const { initPersistence } = await import('@core/app/persistence');
 
             initPersistence();
 
@@ -79,8 +89,8 @@ describe('persistenceService', () => {
         });
 
         it('should debounce save operations', async () => {
-            const { initPersistence } = await import('@services/persistenceService');
-            const { saveRecordsToLocal } = await import('@services/storage');
+            const { initPersistence } = await import('@core/app/persistence');
+            const { saveRecordsToLocal } = await import('@use-cases/storage');
 
             // Initialize and get the subscription callback
             initPersistence();
@@ -101,7 +111,7 @@ describe('persistenceService', () => {
         });
 
         it('should save user to localStorage when present', async () => {
-            const { initPersistence } = await import('@services/persistenceService');
+            const { initPersistence } = await import('@core/app/persistence');
             const localStorageSpy = vi.spyOn(window.localStorage, 'setItem');
 
             initPersistence();
@@ -119,8 +129,8 @@ describe('persistenceService', () => {
         });
 
         it('should sync to Firebase after LocalStorage save', async () => {
-            const { initPersistence } = await import('@services/persistenceService');
-            const { syncPatientsToFirebase } = await import('@services/firebaseService');
+            const { initPersistence } = await import('@core/app/persistence');
+            const { firebasePatientSyncAdapter } = await import('@data/adapters/firebasePatientSyncAdapter');
 
             initPersistence();
             const callback = mockSubscribe.mock.calls[0][1];
@@ -130,7 +140,43 @@ describe('persistenceService', () => {
 
             await vi.advanceTimersByTimeAsync(2000);
 
-            expect(syncPatientsToFirebase).toHaveBeenCalledWith(testRecords);
+            expect(firebasePatientSyncAdapter.syncPatients).toHaveBeenCalledWith(
+                expect.arrayContaining([
+                    expect.objectContaining({ id: '1', name: 'Patient 1' }),
+                ])
+            );
+        });
+
+        it('should not sync to Firebase without user', async () => {
+            const { initPersistence } = await import('@core/app/persistence');
+            const { firebasePatientSyncAdapter } = await import('@data/adapters/firebasePatientSyncAdapter');
+
+            initPersistence();
+            const callback = mockSubscribe.mock.calls[0][1];
+
+            callback({ ...baseState, records: [{ id: '1', name: 'Patient 1' }], user: null });
+
+            await vi.advanceTimersByTimeAsync(2000);
+
+            expect(firebasePatientSyncAdapter.syncPatients).not.toHaveBeenCalled();
+        });
+
+        it('should avoid re-sync when records are unchanged', async () => {
+            const { initPersistence } = await import('@core/app/persistence');
+            const { firebasePatientSyncAdapter } = await import('@data/adapters/firebasePatientSyncAdapter');
+
+            initPersistence();
+            const callback = mockSubscribe.mock.calls[0][1];
+
+            const testRecords = [{ id: '1', name: 'Patient 1', updatedAt: 10 }];
+            const user = { name: 'Test', email: 'test@test.com', avatar: 'url' };
+
+            callback({ ...baseState, records: testRecords, user });
+            await vi.advanceTimersByTimeAsync(2000);
+            callback({ ...baseState, records: testRecords, user });
+            await vi.advanceTimersByTimeAsync(2000);
+
+            expect(firebasePatientSyncAdapter.syncPatients).toHaveBeenCalledTimes(1);
         });
     });
 });

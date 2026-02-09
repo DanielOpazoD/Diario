@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { differenceInYears } from 'date-fns';
 import { parseBirthDate } from '@shared/utils/dateUtils';
 import { CheckSquare, Square, Trash2, Paperclip, Stethoscope } from 'lucide-react';
@@ -47,22 +47,18 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
         patientTypes: state.patientTypes,
     })));
 
-    const tasks = patient.pendingTasks || [];
-    const pendingCount = tasks.filter(t => !t.isCompleted).length;
-    const completedCount = tasks.filter(t => t.isCompleted).length;
-    const attachmentsCount = patient.attachedFiles?.length || 0;
+    const tasks = useMemo(() => patient.pendingTasks || [], [patient.pendingTasks]);
+    const pendingCount = useMemo(() => tasks.filter(t => !t.isCompleted).length, [tasks]);
+    const completedCount = useMemo(() => tasks.filter(t => t.isCompleted).length, [tasks]);
+    const attachmentsCount = useMemo(() => patient.attachedFiles?.length || 0, [patient.attachedFiles]);
     const isCompactRow = !patient.diagnosis && !patient.clinicalNote && tasks.length === 0 && attachmentsCount === 0;
 
-    const typeConfig = patientTypes.find(t => t.label === patient.type);
-    const coreColor = typeConfig ? typeConfig.colorClass.split('-')[1] || 'gray' : 'gray';
+    const typeConfig = useMemo(() => patientTypes.find(t => t.label === patient.type), [patientTypes, patient.type]);
+    const coreColor = useMemo(() => (typeConfig ? typeConfig.colorClass.split('-')[1] || 'gray' : 'gray'), [typeConfig]);
 
-    const handleTabClick = (tab: 'demographics' | 'clinical' | 'files' | 'tasks') => {
-        if (activeTab === tab) {
-            setActiveTab(null);
-        } else {
-            setActiveTab(tab);
-        }
-    };
+    const handleTabClick = useCallback((tab: 'demographics' | 'clinical' | 'files' | 'tasks') => {
+        setActiveTab(prev => (prev === tab ? null : tab));
+    }, []);
 
     const handleSaveInline = useCallback((updatedPatient: PatientRecord) => {
         updatePatient(updatedPatient);
@@ -74,13 +70,12 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
         updatePatient(updatedPatient);
     }, [updatePatient]);
 
-    const taskButtonClassName = activeTab === 'tasks'
-        ? 'bg-amber-500 text-white shadow-amber-500/30'
-        : pendingCount > 0
-          ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100'
-          : completedCount > 0
-            ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100'
-            : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30';
+    const taskButtonClassName = useMemo(() => {
+        if (activeTab === 'tasks') return 'bg-amber-500 text-white shadow-amber-500/30';
+        if (pendingCount > 0) return 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100';
+        if (completedCount > 0) return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100';
+        return 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30';
+    }, [activeTab, completedCount, pendingCount]);
 
     return (
         <div className={`group relative overflow-hidden transition-all duration-300 border-b border-gray-100/50 dark:border-gray-800/50 hover:bg-white/40 dark:hover:bg-brand-900/10 hover:shadow-premium-sm ${selectionMode && selected ? 'bg-brand-50/50 dark:bg-brand-900/20 ring-1 ring-brand-500/20' : ''}`}>
@@ -236,4 +231,4 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
     );
 };
 
-export default ExecutivePatientRow;
+export default React.memo(ExecutivePatientRow);

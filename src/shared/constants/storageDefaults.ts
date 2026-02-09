@@ -1,0 +1,6 @@
+export const STORAGE_DEFAULTS = {
+  AUTO_LOCK_MINUTES: 5,
+  HIGHLIGHT_PENDING_PATIENTS: true,
+  COMPACT_STATS: true,
+  SHOW_BOOKMARK_BAR: false,
+} as const;

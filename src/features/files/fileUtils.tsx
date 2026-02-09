@@ -1,5 +1,6 @@
 import React from 'react';
 import { File, FileText, Image as ImageIcon } from 'lucide-react';
+import type { AttachedFile } from '@shared/types';
 
 export const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
@@ -30,3 +31,11 @@ export const getFileColor = (mimeType: string): string => {
     if (mimeType.includes('word') || mimeType.includes('document')) return 'bg-blue-100 dark:bg-blue-900/30';
     return 'bg-gray-100 dark:bg-gray-800';
 };
+
+export const isJsonMimeType = (mimeType: string): boolean => (
+    mimeType === 'application/json' || mimeType === 'text/json'
+);
+
+export const isJsonAttachment = (file: Pick<AttachedFile, 'mimeType' | 'name'>): boolean => (
+    isJsonMimeType(file.mimeType) || file.name.toLowerCase().endsWith('.json')
+);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Save, Square, X, MessageSquare } from 'lucide-react';
 import { PendingTask } from '@shared/types';
 
@@ -20,6 +20,28 @@ const InlinePatientTasks: React.FC<InlinePatientTasksProps> = ({
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
 
+  const handleStartNote = useCallback((taskId: string, existingNote?: string) => {
+    setEditingTaskId(taskId);
+    setNoteDraft(existingNote || '');
+  }, []);
+
+  const handleNoteChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setNoteDraft(event.target.value);
+  }, []);
+
+  const handleNoteBlur = useCallback((taskId: string) => {
+    onUpdateTaskNote(taskId, noteDraft.trim());
+    setEditingTaskId(null);
+  }, [noteDraft, onUpdateTaskNote]);
+
+  const handleDelete = useCallback((taskId: string) => {
+    onDeleteTask(taskId);
+  }, [onDeleteTask]);
+
+  const handleToggle = useCallback((taskId: string) => {
+    onToggleTask(taskId);
+  }, [onToggleTask]);
+
   return (
     <div className="w-full min-w-0 overflow-hidden animate-fade-in space-y-2">
       <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2 max-h-[300px]">
@@ -32,7 +54,7 @@ const InlinePatientTasks: React.FC<InlinePatientTasksProps> = ({
             className="flex items-center group bg-white dark:bg-gray-900 p-2 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:border-blue-200"
           >
             <button
-              onClick={() => onToggleTask(task.id)}
+              onClick={() => handleToggle(task.id)}
               className="mr-3 text-gray-400 hover:text-blue-500 transition-colors"
             >
               {task.isCompleted ? <Save className="w-4 h-4 text-green-500" /> : <Square className="w-4 h-4 text-gray-300" />}
@@ -48,10 +70,7 @@ const InlinePatientTasks: React.FC<InlinePatientTasksProps> = ({
                   </span>
                   <button
                     className="text-[10px] text-blue-500 hover:text-blue-600"
-                    onClick={() => {
-                      setEditingTaskId(task.id);
-                      setNoteDraft(task.completionNote || '');
-                    }}
+                    onClick={() => handleStartNote(task.id, task.completionNote)}
                     title="Agregar nota"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
@@ -62,11 +81,8 @@ const InlinePatientTasks: React.FC<InlinePatientTasksProps> = ({
                 <div className="mt-1">
                   <input
                     value={noteDraft}
-                    onChange={(e) => setNoteDraft(e.target.value)}
-                    onBlur={() => {
-                      onUpdateTaskNote(task.id, noteDraft.trim());
-                      setEditingTaskId(null);
-                    }}
+                    onChange={handleNoteChange}
+                    onBlur={() => handleNoteBlur(task.id)}
                     placeholder="Nota de confirmación..."
                     className="w-full px-2 py-1 text-[10px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
                   />
@@ -79,7 +95,7 @@ const InlinePatientTasks: React.FC<InlinePatientTasksProps> = ({
               )}
             </div>
             <button
-              onClick={() => onDeleteTask(task.id)}
+              onClick={() => handleDelete(task.id)}
               className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100"
             >
               <X className="w-3.5 h-3.5" />
@@ -88,15 +104,15 @@ const InlinePatientTasks: React.FC<InlinePatientTasksProps> = ({
         ))}
       </div>
       <div className="mt-3">
-      <input
-        type="text"
-        placeholder="+ Nueva tarea..."
-        onKeyDown={onAddTask}
-        className="w-full px-3 py-2 text-xs bg-white dark:bg-gray-900 rounded-lg border border-gray-200/60 focus:border-blue-400 outline-none shadow-sm placeholder:text-gray-400"
-      />
+        <input
+          type="text"
+          placeholder="+ Nueva tarea..."
+          onKeyDown={onAddTask}
+          className="w-full px-3 py-2 text-xs bg-white dark:bg-gray-900 rounded-lg border border-gray-200/60 focus:border-blue-400 outline-none shadow-sm placeholder:text-gray-400"
+        />
       </div>
     </div>
   );
 };
 
-export default InlinePatientTasks;
+export default React.memo(InlinePatientTasks);

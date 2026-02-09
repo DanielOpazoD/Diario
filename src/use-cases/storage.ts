@@ -1,11 +1,18 @@
-import { localStorageAdapter } from '@data/adapters/localStorageAdapter';
+import { selectSyncStorage } from '@data/adapters/storageProvider';
+import { storageAdapter } from '@data/adapters/storageAdapter';
 
-export const loadRecordsFromLocal = localStorageAdapter.loadRecords;
-export const loadGeneralTasksFromLocal = localStorageAdapter.loadGeneralTasks;
-export const loadBookmarksFromLocal = localStorageAdapter.loadBookmarks;
-export const loadBookmarkCategoriesFromLocal = localStorageAdapter.loadBookmarkCategories;
+const storage = selectSyncStorage();
 
-export const saveRecordsToLocal = localStorageAdapter.saveRecords;
-export const saveGeneralTasksToLocal = localStorageAdapter.saveGeneralTasks;
-export const saveBookmarksToLocal = localStorageAdapter.saveBookmarks;
-export const saveBookmarkCategoriesToLocal = localStorageAdapter.saveBookmarkCategories;
+export const loadRecordsFromLocal = storage.loadRecords;
+export const loadGeneralTasksFromLocal = storage.loadGeneralTasks;
+export const loadBookmarksFromLocal = storage.loadBookmarks;
+export const loadBookmarkCategoriesFromLocal = storage.loadBookmarkCategories;
+
+export const saveRecordsToLocal = storage.saveRecords;
+export const saveGeneralTasksToLocal = storage.saveGeneralTasks;
+export const saveBookmarksToLocal = storage.saveBookmarks;
+export const saveBookmarkCategoriesToLocal = storage.saveBookmarkCategories;
+
+export const clearStorage = storageAdapter.clearStorage;
+export const downloadBackupAsJson = storageAdapter.downloadBackupAsJson;
+export const parseBackupFile = storageAdapter.parseBackupFile;

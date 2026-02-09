@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from 'react';
-import { format } from 'date-fns';
 import { PatientCreateInput, PatientRecord, PatientUpdateInput, ViewMode } from '@shared/types';
+import { formatLocalYMD } from '@shared/utils/dateUtils';
 import { ModalSkeleton } from '@core/ui';
 
 const PatientModal = lazy(() => import('@core/patient/components/PatientModal'));
@@ -51,67 +51,71 @@ const AppModals: React.FC<AppModalsProps> = ({
   isAppMenuOpen,
   initialTab,
   patientModalMode = 'daily',
-}) => (
-  <>
-    {isPatientModalOpen && (
-      <Suspense fallback={<ModalSkeleton />}>
-        {patientModalMode === 'history' ? (
-          <PatientHistoryModal
-            isOpen={isPatientModalOpen}
-            onClose={onClosePatientModal}
-            record={editingPatient}
-            initialTab={initialTab}
+}) => {
+  const selectedDate = formatLocalYMD(currentDate);
+
+  return (
+    <>
+      {isPatientModalOpen && (
+        <Suspense fallback={<ModalSkeleton />}>
+          {patientModalMode === 'history' ? (
+            <PatientHistoryModal
+              isOpen={isPatientModalOpen}
+              onClose={onClosePatientModal}
+              record={editingPatient}
+              initialTab={initialTab}
+            />
+          ) : (
+            <PatientModal
+              isOpen={isPatientModalOpen}
+              onClose={onClosePatientModal}
+              onSave={onSavePatient}
+              onAutoSave={onAutoSavePatient}
+              onSaveMultiple={onSaveMultiplePatients}
+              addToast={onToast}
+              initialData={editingPatient}
+              selectedDate={selectedDate}
+              initialTab={initialTab}
+              mode={patientModalMode}
+            />
+          )}
+        </Suspense>
+      )}
+
+      {patientToDelete && (
+        <Suspense fallback={null}>
+          <ConfirmationModal
+            isOpen={!!patientToDelete}
+            onClose={onCloseDeleteConfirmation}
+            onConfirm={onConfirmDelete}
+            title="Eliminar Paciente"
+            message="¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer."
+            isDangerous={true}
           />
-        ) : (
-          <PatientModal
-            isOpen={isPatientModalOpen}
-            onClose={onClosePatientModal}
-            onSave={onSavePatient}
-            onAutoSave={onAutoSavePatient}
-            onSaveMultiple={onSaveMultiplePatients}
-            addToast={onToast}
-            initialData={editingPatient}
-            selectedDate={format(currentDate, 'yyyy-MM-dd')}
-            initialTab={initialTab}
-            mode={patientModalMode}
+        </Suspense>
+      )}
+
+      {isBookmarksModalOpen && (
+        <Suspense fallback={<ModalSkeleton />}>
+          <BookmarksModal
+            isOpen={isBookmarksModalOpen}
+            onClose={onCloseBookmarksModal}
+            editingBookmarkId={editingBookmarkId}
           />
-        )}
-      </Suspense>
-    )}
+        </Suspense>
+      )}
 
-    {patientToDelete && (
-      <Suspense fallback={null}>
-        <ConfirmationModal
-          isOpen={!!patientToDelete}
-          onClose={onCloseDeleteConfirmation}
-          onConfirm={onConfirmDelete}
-          title="Eliminar Paciente"
-          message="¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer."
-          isDangerous={true}
-        />
-      </Suspense>
-    )}
-
-    {isBookmarksModalOpen && (
-      <Suspense fallback={<ModalSkeleton />}>
-        <BookmarksModal
-          isOpen={isBookmarksModalOpen}
-          onClose={onCloseBookmarksModal}
-          editingBookmarkId={editingBookmarkId}
-        />
-      </Suspense>
-    )}
-
-    {isAppMenuOpen && (
-      <Suspense fallback={<ModalSkeleton />}>
-        <AppMenuModal
-          isOpen={isAppMenuOpen}
-          onClose={onCloseAppMenu}
-          onNavigate={onNavigate}
-        />
-      </Suspense>
-    )}
-  </>
-);
+      {isAppMenuOpen && (
+        <Suspense fallback={<ModalSkeleton />}>
+          <AppMenuModal
+            isOpen={isAppMenuOpen}
+            onClose={onCloseAppMenu}
+            onNavigate={onNavigate}
+          />
+        </Suspense>
+      )}
+    </>
+  );
+};
 
 export default AppModals;

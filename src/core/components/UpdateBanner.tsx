@@ -1,26 +1,20 @@
 import React, { useEffect, useState } from 'react';
-
-type UpdateEventDetail = {
-  message?: string;
-};
+import { addUpdateListener, consumeUpdateNotice, removeUpdateListener } from '@shared/utils/updateNotice';
 
 const UpdateBanner: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const persistedNotice = sessionStorage.getItem('medidiario_update_notice');
-    if (persistedNotice) {
+    if (consumeUpdateNotice()) {
       setMessage('Actualización detectada. Recargando…');
-      sessionStorage.removeItem('medidiario_update_notice');
     }
 
-    const handler = (event: Event) => {
-      const customEvent = event as CustomEvent<UpdateEventDetail>;
-      setMessage(customEvent.detail?.message || 'Actualización detectada. Recargando…');
+    const handler = (event: CustomEvent<{ message?: string }>) => {
+      setMessage(event.detail?.message || 'Actualización detectada. Recargando…');
     };
 
-    window.addEventListener('app:update', handler as EventListener);
-    return () => window.removeEventListener('app:update', handler as EventListener);
+    addUpdateListener(handler);
+    return () => removeUpdateListener(handler);
   }, []);
 
   if (!message) return null;

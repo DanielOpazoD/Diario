@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import { Bookmark, BookmarkCategory } from '@shared/types';
 import { buildBookmarksExport, parseBookmarksImport } from '@use-cases/bookmarks';
+import { logEvent } from '@use-cases/logger';
 
 export interface BookmarkFilters {
   searchTerm: string;
@@ -124,7 +125,7 @@ export const useBookmarksManager = (): BookmarkFilters => {
         setBookmarks(imported);
         addToast('success', 'Marcadores importados correctamente');
       } catch (error) {
-        console.error('Error al importar marcadores', error);
+        logEvent('error', 'Bookmarks', 'Error al importar marcadores', { error });
         addToast('error', 'No se pudo importar el archivo. Verifica el formato JSON.');
       } finally {
         if (importInputRef.current) {

@@ -1,5 +1,6 @@
-import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import type { ReportSection } from '@domain/report/entities';
+import RichTextEditor from '@features/reports/components/RichTextEditor';
 
 interface ClinicalSectionProps {
   section: ReportSection;
@@ -28,29 +29,10 @@ const ClinicalSection: React.FC<ClinicalSectionProps> = ({
   onRemoveSection,
   onUpdateSectionMeta,
 }) => {
-  const noteRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   const isClinicalUpdate = section.kind === 'clinical-update';
   const dateInputId = useMemo(() => `clinical-update-date-${index}`, [index]);
   const timeInputId = useMemo(() => `clinical-update-time-${index}`, [index]);
-
-  const syncContent = useCallback(() => {
-    const node = noteRef.current;
-    if (!node) return;
-    if (node.innerHTML !== (section.content || '')) {
-      node.innerHTML = section.content || '';
-    }
-  }, [section.content]);
-
-  useEffect(() => {
-    syncContent();
-  }, [syncContent]);
-
-  const handleInput = useCallback(() => {
-    const node = noteRef.current;
-    if (!node) return;
-    onSectionContentChange(index, node.innerHTML);
-  }, [index, onSectionContentChange]);
 
   const handleMetaChange = useCallback(
     (field: 'updateDate' | 'updateTime', value: string) => {
@@ -107,23 +89,13 @@ const ClinicalSection: React.FC<ClinicalSectionProps> = ({
       ) : (
         sectionTitle
       )}
-      <div
-        ref={noteRef}
+      <RichTextEditor
         className={`txt note-area ${isAdvancedEditing ? 'advanced-mode' : ''} ${isAdvancedEditing && isFocused ? 'is-focused' : ''}`.trim()}
-        contentEditable
-        suppressContentEditableWarning
-        role="textbox"
-        aria-multiline="true"
         aria-label={`Contenido de ${section.title || 'sección clínica'}${isClinicalUpdate ? ' - actualización clínica' : ''}`}
-        onInput={handleInput}
-        onBlur={event => {
-          setIsFocused(false);
-          onSectionContentChange(index, event.currentTarget.innerHTML);
-        }}
-        onFocus={() => {
-          setIsFocused(true);
-          syncContent();
-        }}
+        value={section.content || ''}
+        onChange={(value) => onSectionContentChange(index, value)}
+        onBlur={() => setIsFocused(false)}
+        onFocus={() => setIsFocused(true)}
       />
     </div>
   );

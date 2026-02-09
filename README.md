@@ -55,7 +55,7 @@ La IA no diagnostica, **asiste y estructura**:
 
 ## 🛠️ Stack Tecnológico
 
-*   **Core:** React 19, Vite, TypeScript.
+*   **Core:** React 18, Vite, TypeScript.
 *   **Estilos:** Tailwind CSS (Animaciones fluidas, Modo Oscuro nativo).
 *   **Inteligencia:** Google GenAI SDK (`gemini-2.5-flash`).
 *   **Almacenamiento:** Google Drive API v3 (Client-side integration).
@@ -75,3 +75,21 @@ VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 ```
+
+---
+
+## ✅ Tests
+
+- `npm run test` ejecuta suites Vitest (`*.test.ts/tsx`).
+- `npm run test:node` ejecuta suites Node (`*.test.js`).
+- `npm run test:all` ejecuta ambos.
+- `npm run test:critical` ejecuta la suite crítica de dominio/sync/logging.
+- `npm run boundary:check` valida reglas de arquitectura por capas.
+- `npm run quality:gate` ejecuta el gate completo (`boundary + test:critical + test:node`).
+- Los tests Node resuelven rutas legacy con `tests/utils/legacyPaths.js`.
+
+## 🔐 Quality Gate en CI
+
+- Workflow: `.github/workflows/quality-gate.yml`
+- Se ejecuta en `push` y `pull_request` a `main`/`master`.
+- Usa `npm ci` y luego `npm run quality:gate`.

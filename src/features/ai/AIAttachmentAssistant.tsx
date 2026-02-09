@@ -1,8 +1,8 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { X, Sparkles, Send, FileText, CheckCircle, Circle } from 'lucide-react';
 import { AttachedFile } from '@shared/types';
-import { downloadUrlAsBase64 } from '@services/storage';
+import { fetchUrlAsBase64 } from '@use-cases/attachments';
 import { askAboutImages, FileContent } from '@use-cases/ai';
 
 interface AIAttachmentAssistantProps {
@@ -50,25 +50,28 @@ const AIAttachmentAssistant: React.FC<AIAttachmentAssistantProps> = ({ isOpen, o
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const toggleFileSelection = (fileId: string) => {
-    const newSelection = new Set(selectedFiles);
-    if (newSelection.has(fileId)) {
-      newSelection.delete(fileId);
-    } else {
-      newSelection.add(fileId);
-    }
-    setSelectedFiles(newSelection);
-  };
+  const toggleFileSelection = useCallback((fileId: string) => {
+    setSelectedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(fileId)) {
+        next.delete(fileId);
+      } else {
+        next.add(fileId);
+      }
+      return next;
+    });
+  }, []);
 
-  const selectAllFiles = () => {
-    if (selectedFiles.size === files.length) {
-      setSelectedFiles(new Set());
-    } else {
-      setSelectedFiles(new Set(files.map(f => f.id)));
-    }
-  };
+  const handleSelectAllFiles = useCallback(() => {
+    setSelectedFiles(prev => {
+      if (prev.size === files.length) {
+        return new Set();
+      }
+      return new Set(files.map(f => f.id));
+    });
+  }, [files]);
 
-  const handleSendMessage = async (text?: string) => {
+  const handleSendMessage = useCallback(async (text?: string) => {
     const prompt = text || inputText;
     if (!prompt.trim()) return;
     if (selectedFiles.size === 0) {
@@ -96,7 +99,7 @@ const AIAttachmentAssistant: React.FC<AIAttachmentAssistantProps> = ({ isOpen, o
         // Solo procesar imágenes y PDFs (si Gemini lo soporta, por ahora nos enfocamos en imagenes. 
         // Nota: Gemini soporta PDF, pero requiere enviarlo como application/pdf base64)
         if ((file.mimeType.startsWith('image/') || file.mimeType === 'application/pdf') && file.driveUrl) {
-          const base64 = await downloadUrlAsBase64(file.driveUrl);
+          const base64 = await fetchUrlAsBase64(file.driveUrl);
           imageParts.push({
             inlineData: {
               mimeType: file.mimeType,
@@ -127,11 +130,14 @@ const AIAttachmentAssistant: React.FC<AIAttachmentAssistantProps> = ({ isOpen, o
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [files, inputText, selectedFiles, patientName]);
 
-  const handleQuickAction = () => {
+  const handleQuickAction = useCallback(() => {
     handleSendMessage(EXAM_SUMMARY_PROMPT);
-  };
+  }, [handleSendMessage]);
+
+  const selectedCount = selectedFiles.size;
+  const allSelected = useMemo(() => selectedCount === files.length && files.length > 0, [files.length, selectedCount]);
 
   if (!isOpen) return null;
 
@@ -163,8 +169,8 @@ const AIAttachmentAssistant: React.FC<AIAttachmentAssistantProps> = ({ isOpen, o
         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800 max-h-40 overflow-y-auto custom-scrollbar">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs font-bold uppercase text-gray-500">Archivos Disponibles ({files.length})</span>
-            <button onClick={selectAllFiles} className="text-xs text-blue-600 hover:underline">
-              {selectedFiles.size === files.length ? 'Deseleccionar' : 'Seleccionar Todos'}
+            <button onClick={handleSelectAllFiles} className="text-xs text-blue-600 hover:underline">
+              {allSelected ? 'Deseleccionar' : 'Seleccionar Todos'}
             </button>
           </div>
           {files.length === 0 ? (
@@ -209,14 +215,14 @@ const AIAttachmentAssistant: React.FC<AIAttachmentAssistantProps> = ({ isOpen, o
           <div className="flex gap-2 mb-3 overflow-x-auto no-scrollbar">
             <button
               onClick={handleQuickAction}
-              disabled={isLoading || selectedFiles.size === 0}
+              disabled={isLoading || selectedCount === 0}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full text-xs font-bold border border-purple-100 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors whitespace-nowrap disabled:opacity-50"
             >
               <FileText className="w-3.5 h-3.5" /> Resumir Exámenes
             </button>
             <button
               onClick={() => handleSendMessage("¿Qué indicaciones o plan sugiere este documento?")}
-              disabled={isLoading || selectedFiles.size === 0}
+              disabled={isLoading || selectedCount === 0}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full text-xs font-bold border border-gray-200 dark:border-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5" /> Plan Sugerido

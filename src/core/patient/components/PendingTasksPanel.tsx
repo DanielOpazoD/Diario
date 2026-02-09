@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { useCallback, useId, useState } from 'react';
 import { CheckSquare, Square, X, MessageSquare } from 'lucide-react';
 import { PendingTask } from '@shared/types';
 
@@ -23,6 +23,28 @@ const PendingTasksPanel: React.FC<PendingTasksPanelProps> = ({
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
 
+  const handleStartNote = useCallback((taskId: string, existingNote?: string) => {
+    setEditingTaskId(taskId);
+    setNoteDraft(existingNote || '');
+  }, []);
+
+  const handleNoteChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setNoteDraft(event.target.value);
+  }, []);
+
+  const handleNoteBlur = useCallback((taskId: string) => {
+    onUpdateTaskNote(taskId, noteDraft.trim());
+    setEditingTaskId(null);
+  }, [noteDraft, onUpdateTaskNote]);
+
+  const handleDelete = useCallback((taskId: string) => {
+    onDeleteTask(taskId);
+  }, [onDeleteTask]);
+
+  const handleToggle = useCallback((taskId: string) => {
+    onToggleTask(taskId);
+  }, [onToggleTask]);
+
   return (
     <div className={`${minimal ? 'mt-2' : 'glass-card p-4 rounded-2xl border border-gray-100/70 dark:border-gray-800/60 bg-white/80 dark:bg-gray-900/60'} flex flex-col transition-all duration-500 shadow-premium-sm`}>
       <h4 className="text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-2 tracking-[0.2em] shrink-0 ml-0.5">
@@ -40,7 +62,7 @@ const PendingTasksPanel: React.FC<PendingTasksPanelProps> = ({
             className={`flex items-center group p-2.5 rounded-xl border transition-all duration-300 ${task.isCompleted ? 'bg-gray-50/50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800' : 'bg-white/90 dark:bg-gray-800/80 border-gray-100 dark:border-gray-700/60 shadow-premium-sm hover:shadow-premium'}`}
           >
             <button
-              onClick={() => onToggleTask(task.id)}
+              onClick={() => handleToggle(task.id)}
               className={`mr-3 transition-all duration-300 transform hover:scale-110 ${task.isCompleted ? 'text-green-500' : 'text-gray-300 hover:text-blue-500'}`}
               aria-pressed={task.isCompleted}
             >
@@ -57,10 +79,7 @@ const PendingTasksPanel: React.FC<PendingTasksPanelProps> = ({
                   </span>
                   <button
                     className="text-[10px] text-blue-500 hover:text-blue-600"
-                    onClick={() => {
-                      setEditingTaskId(task.id);
-                      setNoteDraft(task.completionNote || '');
-                    }}
+                    onClick={() => handleStartNote(task.id, task.completionNote)}
                     title="Agregar nota"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
@@ -71,11 +90,8 @@ const PendingTasksPanel: React.FC<PendingTasksPanelProps> = ({
                 <div className="mt-1">
                   <input
                     value={noteDraft}
-                    onChange={(e) => setNoteDraft(e.target.value)}
-                    onBlur={() => {
-                      onUpdateTaskNote(task.id, noteDraft.trim());
-                      setEditingTaskId(null);
-                    }}
+                    onChange={handleNoteChange}
+                    onBlur={() => handleNoteBlur(task.id)}
                     placeholder="Nota de confirmación..."
                     className="w-full px-2 py-1 text-[10px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
                   />
@@ -88,7 +104,7 @@ const PendingTasksPanel: React.FC<PendingTasksPanelProps> = ({
               )}
             </div>
             <button
-              onClick={() => onDeleteTask(task.id)}
+              onClick={() => handleDelete(task.id)}
               className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1.5 transition-all duration-300 hover:scale-110"
               aria-label="Eliminar tarea"
             >
@@ -110,4 +126,4 @@ const PendingTasksPanel: React.FC<PendingTasksPanelProps> = ({
   );
 };
 
-export default PendingTasksPanel;
+export default React.memo(PendingTasksPanel);

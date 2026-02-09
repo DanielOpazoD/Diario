@@ -32,6 +32,74 @@ const sharedRequire = (id) => {
   return require(id);
 };
 
+const createModalStateStub = (initialTab = 'clinical') => {
+  const state = {
+    name: '',
+    rut: '',
+    birthDate: '',
+    gender: '',
+    diagnosis: '',
+    clinicalNote: '',
+    pendingTasks: [],
+    attachedFiles: [],
+    driveFolderId: null,
+    activeTab: initialTab,
+    isEditingDemographics: false,
+    entryTime: '',
+    exitTime: '',
+    type: '',
+    typeId: '',
+    patientId: '',
+  };
+
+  return {
+    state,
+    hook: () => ({
+      ...state,
+      setName: (value) => { state.name = value; },
+      setRut: (value) => { state.rut = value; },
+      setBirthDate: (value) => { state.birthDate = value; },
+      setGender: (value) => { state.gender = value; },
+      setDiagnosis: (value) => { state.diagnosis = value; },
+      setClinicalNote: (value) => { state.clinicalNote = value; },
+      setPendingTasks: (value) => { state.pendingTasks = value; },
+      setAttachedFiles: (value) => { state.attachedFiles = value; },
+      setDriveFolderId: (value) => { state.driveFolderId = value; },
+      setActiveTab: (value) => { state.activeTab = value; },
+      setIsEditingDemographics: (value) => { state.isEditingDemographics = value; },
+      setEntryTime: (value) => { state.entryTime = value; },
+      setExitTime: (value) => { state.exitTime = value; },
+      setType: (value) => { state.type = value; },
+      setTypeId: (value) => { state.typeId = value; },
+      setPatientId: (value) => { state.patientId = value; },
+    }),
+  };
+};
+
+const createPatientModalComponentStubs = () => ({
+  '@core/patient/components/PatientModalHeader': {
+    default: (props) => ({ __type: 'PatientModalHeader', props }),
+  },
+  '@core/patient/components/PatientModalBody': {
+    default: (props) => ({
+      __type: 'PatientModalBody',
+      props,
+      children: [
+        { __type: 'Identification', props },
+        { __type: 'ClinicalNote', props },
+        ...(props.activeTab === 'files' ? [{ __type: 'Attachments', props }] : []),
+      ],
+    }),
+  },
+  '@core/patient/components/PatientModalFooter': {
+    default: (props) => ({
+      __type: 'PatientModalFooter',
+      props,
+      children: [{ type: 'Button', props: { onClick: props.onSave }, children: ['Guardar Ficha'] }],
+    }),
+  },
+});
+
 class MemoryStorage {
   constructor() { this.store = new Map(); }
   getItem(key) { return this.store.has(key) ? this.store.get(key) : null; }
@@ -52,6 +120,7 @@ test('formatTitleCase capitalizes each word', () => {
     window: {
       matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
     },
+    useAppStore: (selector) => selector(mockStore),
     require: (id) => {
       if (id.includes('useAppStore')) return (selector) => selector(mockStore);
       return sharedRequire(id);
@@ -64,22 +133,22 @@ test('formatTitleCase capitalizes each word', () => {
 
 test('PatientModal switches tabs and renders attachments when requested', () => {
   const { React, resetRender, runEffects } = createReactStub();
+  const usePendingTasksStub = {
+    default: () => ({
+      toggleTask: () => {},
+      deleteTask: () => {},
+      addTask: () => {},
+      updateTaskNote: () => {},
+    }),
+  };
   const patientTypes = [
     { id: 'policlinico', label: 'Policlínico' },
     { id: 'turno', label: 'Turno' },
   ];
   const ClinicalNote = (props) => ({ __type: 'ClinicalNote', props });
   const Attachments = (props) => ({ __type: 'Attachments', props });
-
-  const { default: PatientModal } = loadTsModule('components/PatientModal.tsx', {
-    React,
-    localStorage: globalThis.localStorage,
-    window: {
-      matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
-    },
-    require: sharedRequire,
-    useAppStore: () => ({ patientTypes }),
-    usePatientVoiceAndAI: () => ({ isAnalyzing: false, isListening: false, toggleListening: () => {}, handleAIAnalysis: () => {} }),
+  const patientHooksStub = {
+    usePatientVoiceAndAI: () => ({ isAnalyzing: false, isSummarizing: false, isListening: false, toggleListening: () => {}, handleAIAnalysis: () => {}, handleClinicalSummary: () => {} }),
     usePatientDataExtraction: () => ({
       fileInputRef: { current: null },
       multiFileInputRef: { current: null },
@@ -90,10 +159,24 @@ test('PatientModal switches tabs and renders attachments when requested', () => 
       handleMultiImageUpload: () => {},
       handleExtractFromAttachments: () => {},
     }),
-    './patient/ClinicalNote': ClinicalNote,
-    './patient/PatientAttachmentsSection': Attachments,
-    './patient/PatientIdentificationPanel': (props) => ({ __type: 'Identification', props }),
-    './Button': 'Button',
+  };
+
+  const modalState = createModalStateStub();
+  const { default: PatientModal } = loadTsModule('components/PatientModal.tsx', {
+    React,
+    localStorage: globalThis.localStorage,
+    window: {
+      matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
+    },
+    moduleStubs: {
+      usePatientModalState: { default: modalState.hook },
+      '@core/patient/hooks/usePatientModalState': { default: modalState.hook },
+      '@core/patient/hooks/usePendingTasks': usePendingTasksStub,
+      '@core/patient': patientHooksStub,
+      ...createPatientModalComponentStubs(),
+    },
+    require: sharedRequire,
+    useAppStore: (selector) => selector({ patientTypes }),
     '../services/googleService': {},
   });
 
@@ -126,22 +209,22 @@ test('PatientModal switches tabs and renders attachments when requested', () => 
 
 test('PatientModal validates name before saving and formats payload', () => {
   const { React, resetRender, runEffects } = createReactStub();
+  const usePendingTasksStub = {
+    default: () => ({
+      toggleTask: () => {},
+      deleteTask: () => {},
+      addTask: () => {},
+      updateTaskNote: () => {},
+    }),
+  };
   const saved = [];
   const toasts = [];
   const patientTypes = [
     { id: 'policlinico', label: 'Policlínico' },
     { id: 'turno', label: 'Turno' },
   ];
-
-  const { default: PatientModal } = loadTsModule('components/PatientModal.tsx', {
-    React,
-    localStorage: globalThis.localStorage,
-    window: {
-      matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
-    },
-    require: sharedRequire,
-    useAppStore: () => ({ patientTypes }),
-    usePatientVoiceAndAI: () => ({ isAnalyzing: false, isListening: false, toggleListening: () => {}, handleAIAnalysis: () => {} }),
+  const patientHooksStub = {
+    usePatientVoiceAndAI: () => ({ isAnalyzing: false, isSummarizing: false, isListening: false, toggleListening: () => {}, handleAIAnalysis: () => {}, handleClinicalSummary: () => {} }),
     usePatientDataExtraction: () => ({
       fileInputRef: { current: null },
       multiFileInputRef: { current: null },
@@ -152,10 +235,24 @@ test('PatientModal validates name before saving and formats payload', () => {
       handleMultiImageUpload: () => {},
       handleExtractFromAttachments: () => {},
     }),
-    './patient/ClinicalNote': (props) => ({ __type: 'ClinicalNote', props }),
-    './patient/PatientAttachmentsSection': (props) => ({ __type: 'Attachments', props }),
-    './patient/PatientIdentificationPanel': (props) => ({ __type: 'Identification', props }),
-    './Button': 'Button',
+  };
+
+  const modalState = createModalStateStub();
+  const { default: PatientModal } = loadTsModule('components/PatientModal.tsx', {
+    React,
+    localStorage: globalThis.localStorage,
+    window: {
+      matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
+    },
+    moduleStubs: {
+      usePatientModalState: { default: modalState.hook },
+      '@core/patient/hooks/usePatientModalState': { default: modalState.hook },
+      '@core/patient/hooks/usePendingTasks': usePendingTasksStub,
+      '@core/patient': patientHooksStub,
+      ...createPatientModalComponentStubs(),
+    },
+    require: sharedRequire,
+    useAppStore: (selector) => selector({ patientTypes }),
     '../services/googleService': {},
   });
 
@@ -194,21 +291,21 @@ test('PatientModal validates name before saving and formats payload', () => {
 
 test('PatientModal forwards attachment extraction with current patient context', () => {
   const { React, resetRender, runEffects } = createReactStub();
+  const usePendingTasksStub = {
+    default: () => ({
+      toggleTask: () => {},
+      deleteTask: () => {},
+      addTask: () => {},
+      updateTaskNote: () => {},
+    }),
+  };
   const patientTypes = [
     { id: 'policlinico', label: 'Policlínico' },
     { id: 'turno', label: 'Turno' },
   ];
   const extractionCalls = [];
-
-  const { default: PatientModal } = loadTsModule('components/PatientModal.tsx', {
-    React,
-    localStorage: globalThis.localStorage,
-    window: {
-      matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
-    },
-    require: sharedRequire,
-    useAppStore: () => ({ patientTypes }),
-    usePatientVoiceAndAI: () => ({ isAnalyzing: false, isListening: false, toggleListening: () => {}, handleAIAnalysis: () => {} }),
+  const patientHooksStub = {
+    usePatientVoiceAndAI: () => ({ isAnalyzing: false, isSummarizing: false, isListening: false, toggleListening: () => {}, handleAIAnalysis: () => {}, handleClinicalSummary: () => {} }),
     usePatientDataExtraction: () => ({
       fileInputRef: { current: null },
       multiFileInputRef: { current: null },
@@ -219,10 +316,24 @@ test('PatientModal forwards attachment extraction with current patient context',
       handleMultiImageUpload: () => {},
       handleExtractFromAttachments: (files, meta) => extractionCalls.push({ files, meta }),
     }),
-    './patient/ClinicalNote': (props) => ({ __type: 'ClinicalNote', props }),
-    './patient/PatientAttachmentsSection': (props) => ({ __type: 'Attachments', props }),
-    './patient/PatientIdentificationPanel': (props) => ({ __type: 'Identification', props }),
-    './Button': 'Button',
+  };
+
+  const modalState = createModalStateStub();
+  const { default: PatientModal } = loadTsModule('components/PatientModal.tsx', {
+    React,
+    localStorage: globalThis.localStorage,
+    window: {
+      matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
+    },
+    moduleStubs: {
+      usePatientModalState: { default: modalState.hook },
+      '@core/patient/hooks/usePatientModalState': { default: modalState.hook },
+      '@core/patient/hooks/usePendingTasks': usePendingTasksStub,
+      '@core/patient': patientHooksStub,
+      ...createPatientModalComponentStubs(),
+    },
+    require: sharedRequire,
+    useAppStore: (selector) => selector({ patientTypes }),
     '../services/googleService': {},
   });
 
@@ -250,6 +361,7 @@ test('PatientModal forwards attachment extraction with current patient context',
 
   const attachmentSection = findInTree(tree, (node) => node?.__type === 'Attachments');
   attachmentSection.props.onFilesChange([{ id: 'file-1', name: 'lab.pdf' }]);
+  tree = render();
 
   const refreshedPanel = findInTree(tree, (node) => node?.__type === 'Identification');
   refreshedPanel.props.onExtractFromAttachments();

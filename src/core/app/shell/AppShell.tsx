@@ -8,6 +8,8 @@ import { usePatientCrud } from '@core/patient';
 import useViewLifecycle from '@shared/hooks/useViewLifecycle';
 import { usePrefetch } from '@shared/hooks/usePrefetch';
 import useAppStartup from '@core/hooks/useAppStartup';
+import { useStorageHydration } from '@core/hooks/useStorageHydration';
+import { useStorageMigration } from '@core/hooks/useStorageMigration';
 import Login from '@core/components/Login';
 import MainLayout from '@core/layouts/MainLayout';
 import { Toast } from '@core/ui';
@@ -18,21 +20,20 @@ import { useAppActions } from '@core/app/state/useAppActions';
 import { useAppState } from '@core/app/state/useAppState';
 import { pathFromView, viewFromPath } from '@shared/routes';
 import AIChatEntry from '@features/ai/AIChatEntry';
-import { STORAGE_KEYS } from '@shared/constants/storageKeys';
+import { getDebugModeFlag } from '@shared/utils/storageFlags';
 import useRouteGuard from '@core/app/shell/useRouteGuard';
 
 const DebugConsole = lazy(() => import('@core/components/DebugConsole'));
 const AppShell: React.FC = () => {
   const { addLog } = useLogger();
-  const showDebugConsole =
-    typeof window !== 'undefined' &&
-    localStorage.getItem(STORAGE_KEYS.DEBUG_MODE) === 'true';
+  const showDebugConsole = getDebugModeFlag();
   const {
     user,
     records,
     patientTypes,
     showBookmarkBar,
-    securityPin,
+    securityPinHash,
+    securityPinSalt,
     autoLockMinutes,
   } = useAppState();
 
@@ -95,10 +96,11 @@ const AppShell: React.FC = () => {
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const { isLocked, handleUnlock: unlockWithPin } = useAutoLock({
-    securityPin,
+    securityPinHash,
+    securityPinSalt,
     autoLockMinutes,
     onLock: () => {
-      if (securityPin) {
+      if (securityPinHash && securityPinSalt) {
         addToast('info', 'Sesión bloqueada por inactividad');
       }
     },
@@ -108,6 +110,8 @@ const AppShell: React.FC = () => {
   const { prefetchOnHover } = usePrefetch(viewMode);
   useViewLifecycle(viewMode, mainScrollRef);
   useAppStartup(addLog);
+  useStorageMigration(addLog);
+  useStorageHydration(addLog);
 
 
   const handleLogout = useCallback(async () => {
@@ -116,8 +120,8 @@ const AppShell: React.FC = () => {
 
 
 
-  const handleUnlock = useCallback((pinAttempt: string) => {
-    const success = unlockWithPin(pinAttempt);
+  const handleUnlock = useCallback(async (pinAttempt: string) => {
+    const success = await unlockWithPin(pinAttempt);
 
     if (!success) {
       addToast('error', 'PIN incorrecto');
@@ -144,7 +148,7 @@ const AppShell: React.FC = () => {
           <DebugConsole />
         </Suspense>
       )}
-      {isLocked && securityPin && (
+      {isLocked && securityPinHash && securityPinSalt && (
         <LockScreen onUnlock={handleUnlock} autoLockMinutes={autoLockMinutes} />
       )}
 

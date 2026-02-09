@@ -1,4 +1,4 @@
-import { AIAnalysisResult, ExtractedPatientData } from '@shared/types';
+import { AIAnalysisResult, ExtractedPatientData, FileContent } from '@shared/types';
 import { fetchWithRetry } from "./httpClient";
 import { emitStructuredLog } from "./logger";
 
@@ -8,32 +8,35 @@ interface GeminiStatus {
   keyPreview: string;
 }
 
+const parseJsonResponse = (text: string, responseOk: boolean) => {
+  if (!text) return { data: {}, parseError: null };
+  try {
+    return { data: JSON.parse(text), parseError: null };
+  } catch (parseError) {
+    if (!responseOk) return { data: {}, parseError };
+    throw new Error("La respuesta de la IA no tiene un formato válido.");
+  }
+};
+
 const callGemini = async <T>(payload: Record<string, unknown>): Promise<T> => {
   const response = await fetchWithRetry("/.netlify/functions/gemini", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  }, { retries: 1 });
+  }, { retries: 1, timeoutMs: 20000 });
 
   const text = await response.text();
-  let data: any = {};
-
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch (e) {
-    // If parsing fails, it's likely HTML or empty
-    if (!response.ok) {
-      if (response.status === 504) {
-        throw new Error("El sistema tardó demasiado en procesar este documento (Netlify Timeout). El PDF podría ser muy complejo o la conexión es lenta. Por favor, intenta de nuevo o con un archivo más simple.");
-      }
-      throw new Error(`Error del servidor (${response.status}): No se pudo procesar la respuesta.`);
-    }
-    throw new Error("La respuesta de la IA no tiene un formato válido.");
-  }
+  const { data, parseError } = parseJsonResponse(text, response.ok);
 
   if (!response.ok || data.error) {
+    if (parseError && response.status === 504) {
+      throw new Error("El sistema tardó demasiado en procesar este documento (Netlify Timeout). El PDF podría ser muy complejo o la conexión es lenta. Por favor, intenta de nuevo o con un archivo más simple.");
+    }
     if (response.status === 404) {
       throw new Error("No se encontró la función de IA. Si estás en modo local, asegúrate de estar corriendo 'netlify dev'.");
+    }
+    if (parseError) {
+      throw new Error(`Error del servidor (${response.status}): No se pudo procesar la respuesta.`);
     }
     const message = data?.error || "Error al comunicarse con Gemini.";
     throw new Error(message);
@@ -107,13 +110,6 @@ export const extractPatientDataFromText = async (
     throw error;
   }
 };
-
-export interface FileContent {
-  inlineData: {
-    mimeType: string;
-    data: string;
-  };
-}
 
 export const askAboutImages = async (prompt: string, images: FileContent[]): Promise<string> => {
   try {

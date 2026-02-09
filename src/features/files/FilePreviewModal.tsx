@@ -1,13 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Edit3, File, FileText, Image as ImageIcon, Star, X, Download } from 'lucide-react';
 import { AttachedFile } from '@shared/types';
+import { isJsonAttachment } from './fileUtils';
 
 interface FilePreviewModalProps {
   file: AttachedFile | null;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (file: AttachedFile) => void;
+  onOpenInReports?: (file: AttachedFile) => void;
 }
 
 const categoryLabels: Record<NonNullable<AttachedFile['category']>, string> = {
@@ -18,7 +20,7 @@ const categoryLabels: Record<NonNullable<AttachedFile['category']>, string> = {
   other: 'Otro',
 };
 
-const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClose, onUpdate }) => {
+const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClose, onUpdate, onOpenInReports }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -39,6 +41,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
   const isImage = useMemo(() => file?.mimeType.startsWith('image/'), [file]);
   const isPDF = useMemo(() => file?.mimeType === 'application/pdf', [file]);
+  const isJson = useMemo(() => (file ? isJsonAttachment(file) : false), [file]);
   const isOfficeDoc = useMemo(
     () =>
       !!file?.mimeType.match(
@@ -60,21 +63,21 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
   if (!file || !isOpen) return null;
 
-  const formatSize = (bytes: number) => {
+  const formatSize = useCallback((bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
+  }, []);
 
-  const getFileIcon = () => {
+  const getFileIcon = useCallback(() => {
     if (isImage) return <ImageIcon className="w-10 h-10 text-purple-500" />;
     if (isPDF) return <FileText className="w-10 h-10 text-red-500" />;
     return <File className="w-10 h-10 text-gray-400" />;
-  };
+  }, [isImage, isPDF]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const parsedTags = tagsInput
       .split(',')
       .map((tag) => tag.trim())
@@ -89,7 +92,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       customTypeLabel: customTypeLabel.trim() || undefined,
     });
     setIsEditing(false);
-  };
+  }, [category, customTypeLabel, description, file, onUpdate, tagsInput, title]);
 
   return (
     <div className="fixed inset-0 z-[150] overflow-hidden">
@@ -122,6 +125,15 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
             >
               <Download className="w-5 h-5" />
             </a>
+            {isJson && onOpenInReports && (
+              <button
+                onClick={() => onOpenInReports(file)}
+                className="px-3 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+                title="Abrir en informes clínicos"
+              >
+                Abrir informe
+              </button>
+            )}
             <button
               onClick={() => setIsEditing((prev) => !prev)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"

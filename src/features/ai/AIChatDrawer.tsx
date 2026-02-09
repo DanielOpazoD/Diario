@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useAIChat, AIChatHeader, AIChatMessageList, AIChatInput } from './index';
 
@@ -45,12 +45,20 @@ const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ initialOpen = false }) => {
     checkGeminiStatus,
   } = useAIChat();
 
-  const quickPrompt = () => handleSend(SUMMARY_PROMPT);
+  const quickPrompt = useCallback(() => handleSend(SUMMARY_PROMPT), [handleSend]);
 
-  const handleExplain = () =>
+  const handleExplain = useCallback(() => {
     handleSend(
       'Explica los hallazgos relevantes de los adjuntos y ofrece un plan de seguimiento resumido en máximo 4 viñetas.'
     );
+  }, [handleSend]);
+
+  const handleToggleOpen = useCallback(() => setIsOpen(true), []);
+  const handleToggleExpand = useCallback(() => setIsExpanded((prev) => !prev), []);
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+    setIsExpanded(false);
+  }, []);
 
   const drawerHeight = useMemo(() => (isExpanded ? 'h-[70vh]' : 'h-[55vh]'), [isExpanded]);
 
@@ -58,7 +66,7 @@ const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ initialOpen = false }) => {
     <div className="fixed bottom-4 right-4 z-[120] flex flex-col items-end gap-2">
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={handleToggleOpen}
           className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-lg hover:shadow-xl transition"
           aria-label="Abrir asistente IA"
         >
@@ -72,12 +80,9 @@ const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ initialOpen = false }) => {
         >
           <AIChatHeader
             isExpanded={isExpanded}
-            onToggleExpand={() => setIsExpanded((prev) => !prev)}
+            onToggleExpand={handleToggleExpand}
             onClear={handleClearConversation}
-            onClose={() => {
-              setIsOpen(false);
-              setIsExpanded(false);
-            }}
+            onClose={handleClose}
           />
 
           <AIChatMessageList

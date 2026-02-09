@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Lock, ShieldCheck } from 'lucide-react';
 
 interface LockScreenProps {
-  onUnlock: (pin: string) => boolean;
+  onUnlock: (pin: string) => Promise<boolean>;
   autoLockMinutes: number;
 }
 
@@ -10,9 +10,9 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock, autoLockMinutes }) =>
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = onUnlock(pin);
+    const success = await onUnlock(pin);
     if (!success) {
       setError('PIN incorrecto. Intenta nuevamente.');
       setPin('');

@@ -1,10 +1,8 @@
 import React from 'react';
-import { AttachedFile, PendingTask, PatientCreateInput, PatientRecord, PatientTypeConfig, PatientUpdateInput } from '@shared/types';
+import { AttachedFile, PendingTask, PatientTypeConfig } from '@shared/types';
 import ClinicalNote from '@core/patient/components/ClinicalNote';
 import PatientForm from '@core/patient/components/PatientForm';
 import PatientAttachmentsSection from '@core/patient/components/PatientAttachmentsSection';
-import { formatPatientName } from '@core/patient/utils/patientUtils';
-import { sanitizeClinicalNote, sanitizeDiagnosis, sanitizeRut } from '@shared/utils/sanitization';
 
 interface PatientModalBodyProps {
   patientTypes: PatientTypeConfig[];
@@ -51,72 +49,6 @@ interface PatientModalBodyProps {
   onDriveFolderIdChange: (folderId: string | null) => void;
   addToast: (type: 'success' | 'error' | 'info', msg: string) => void;
 }
-
-export const buildPatientPayload = ({
-  initialData,
-  selectedDate,
-  patientTypes,
-  name,
-  rut,
-  birthDate,
-  gender,
-  type,
-  typeId,
-  entryTime,
-  exitTime,
-  diagnosis,
-  clinicalNote,
-  pendingTasks,
-  attachedFiles,
-  patientId,
-  driveFolderId,
-}: {
-  initialData?: PatientRecord | null;
-  selectedDate: string;
-  patientTypes: PatientTypeConfig[];
-  name: string;
-  rut: string;
-  birthDate: string;
-  gender: string;
-  type: string;
-  typeId: string;
-  entryTime: string;
-  exitTime: string;
-  diagnosis: string;
-  clinicalNote: string;
-  pendingTasks: PendingTask[];
-  attachedFiles: AttachedFile[];
-  patientId: string;
-  driveFolderId: string | null;
-}): PatientCreateInput | PatientUpdateInput => {
-  const finalName = formatPatientName(name);
-  const selectedType = patientTypes.find(t => t.id === typeId);
-
-  const basePayload = {
-    ...(initialData || {}),
-    ...(initialData ? {} : { id: patientId }),
-    name: finalName,
-    rut: sanitizeRut(rut),
-    birthDate,
-    gender,
-    type: selectedType?.label || type,
-    typeId: selectedType?.id || typeId,
-    entryTime: entryTime || undefined,
-    exitTime: exitTime || undefined,
-    diagnosis: sanitizeDiagnosis(diagnosis),
-    clinicalNote: sanitizeClinicalNote(clinicalNote),
-    pendingTasks,
-    attachedFiles,
-    driveFolderId,
-    date: initialData ? initialData.date : selectedDate,
-  };
-
-  if (initialData) {
-    return basePayload as PatientUpdateInput;
-  }
-
-  return basePayload as PatientCreateInput;
-};
 
 const PatientModalBody: React.FC<PatientModalBodyProps> = ({
   patientTypes,
@@ -230,4 +162,4 @@ const PatientModalBody: React.FC<PatientModalBodyProps> = ({
   </div>
 );
 
-export default PatientModalBody;
+export default React.memo(PatientModalBody);

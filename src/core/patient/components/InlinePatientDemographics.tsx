@@ -84,4 +84,4 @@ const InlinePatientDemographics: React.FC<InlinePatientDemographicsProps> = ({
   </div>
 );
 
-export default InlinePatientDemographics;
+export default React.memo(InlinePatientDemographics);

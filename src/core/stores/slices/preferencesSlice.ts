@@ -1,4 +1,5 @@
 import { StateCreator } from 'zustand';
+import { STORAGE_DEFAULTS } from '@shared/constants/storageDefaults';
 
 export interface PreferencesSlice {
   highlightPendingPatients: boolean;
@@ -10,9 +11,9 @@ export interface PreferencesSlice {
 }
 
 export const createPreferencesSlice: StateCreator<PreferencesSlice> = (set) => ({
-  highlightPendingPatients: true,
-  compactStats: true,
-  showBookmarkBar: false,
+  highlightPendingPatients: STORAGE_DEFAULTS.HIGHLIGHT_PENDING_PATIENTS,
+  compactStats: STORAGE_DEFAULTS.COMPACT_STATS,
+  showBookmarkBar: STORAGE_DEFAULTS.SHOW_BOOKMARK_BAR,
   setHighlightPendingPatients: (value) => set({ highlightPendingPatients: value }),
   setCompactStats: (value) => set({ compactStats: value }),
   setShowBookmarkBar: (value) => set({ showBookmarkBar: value }),

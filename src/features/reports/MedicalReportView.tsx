@@ -1,88 +1,160 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import jsPDF from 'jspdf';
-import { FileDown, Plus, Printer, Save, SlidersHorizontal, PencilRuler } from 'lucide-react';
+import { Plus, Printer, Save, SlidersHorizontal, PencilRuler, CalendarDays, UserRound, Link2, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
+import { useLocation } from 'react-router-dom';
 import { useAppActions } from '@core/app/state/useAppActions';
 import { useAppState } from '@core/app/state/useAppState';
-import { PatientCreateInput } from '@shared/types';
+import { AttachedFile, PatientCreateInput } from '@shared/types';
 import { calculateAge, normalizeBirthDateInput } from '@shared/utils/dateUtils';
 import { savePatientRecord } from '@use-cases/patient/save';
-import { uploadFileToFirebase } from '@services/firebaseStorageService';
-import { loadReportDraft, saveReportDraft } from '@services/reportDraftService';
 import {
-  DEFAULT_REPORT_PATIENT_FIELDS,
-  DEFAULT_REPORT_SECTIONS,
+  downloadPatientFileBlob,
+  downloadPatientFileBlobById,
+  updatePatientFileById,
+  uploadPatientFile,
+} from '@use-cases/attachments';
+import { sanitizeFileName } from '@shared/utils/fileNames';
+import {
   DEFAULT_REPORT_TEMPLATE_ID,
   REPORT_TEMPLATES,
-} from '@domain/report/rules';
-import type { ReportRecord, ReportSection } from '@domain/report/entities';
+  buildClinicalNote,
+  createTemplateBaseline,
+  findReportSectionContent,
+  formatDateDMY,
+} from '@domain/report';
+import type { ReportRecord, ReportSection } from '@domain/report';
 import PatientInfo from '@features/reports/components/PatientInfo';
 import ClinicalSection from '@features/reports/components/ClinicalSection';
 import Footer from '@features/reports/components/Footer';
 import reportStyles from '@features/reports/reportStyles.css?raw';
 import { logoUrls } from '@domain/report/institutionConfig';
+import { useReportDraft } from '@features/reports/hooks/useReportDraft';
+import { generateReportPdfBlob } from '@features/reports/services/reportPdfService';
+import {
+  parseClinicalReportJsonPayload,
+  stringifyClinicalReportJsonPayload,
+} from '@features/reports/services/reportJsonService';
+import { safeSessionGetItem, safeSessionRemoveItem, safeSessionSetItem } from '@shared/utils/safeSessionStorage';
+import { SESSION_KEYS } from '@shared/constants/sessionKeys';
 
-const createTemplateBaseline = (templateId: string): ReportRecord => {
-  const selectedTemplateId = REPORT_TEMPLATES[templateId] ? templateId : DEFAULT_REPORT_TEMPLATE_ID;
-  const template = REPORT_TEMPLATES[selectedTemplateId];
+const createTemplate = (templateId: string): ReportRecord =>
+  createTemplateBaseline(templateId);
 
-  return {
-    version: '1.0.0',
-    templateId: selectedTemplateId,
-    title: template?.title || 'Registro clínico',
-    patientFields: JSON.parse(JSON.stringify(DEFAULT_REPORT_PATIENT_FIELDS)),
-    sections: JSON.parse(JSON.stringify(DEFAULT_REPORT_SECTIONS)),
-    medico: '',
-    especialidad: '',
+const reportLogoStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: '0mm',
+  width: '18mm',
+  maxWidth: '18mm',
+  height: 'auto',
+  opacity: 0.6,
+  zIndex: 2,
+  display: 'block',
+};
+
+const isJsonAttachment = (fileName: string, mimeType: string): boolean => (
+  mimeType === 'application/json' || mimeType === 'text/json' || fileName.toLowerCase().endsWith('.json')
+);
+
+const normalizeFileToken = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+const isCompatibleJsonAttachment = (fileName?: string, mimeType?: string): boolean => {
+  const hasName = typeof fileName === 'string' && fileName.trim().length > 0;
+  const hasMime = typeof mimeType === 'string' && mimeType.trim().length > 0;
+  if (!hasName && !hasMime) return true;
+  if (isJsonAttachment(fileName || '', mimeType || '')) return true;
+  // Metadata incompleta no debe bloquear import/update; solo se rechaza si ambos valores
+  // existen y ambos indican claramente que no es JSON.
+  return !hasName || !hasMime;
+};
+
+type LinkedJsonSource = {
+  patientId: string;
+  fileId: string;
+  fileName?: string;
+  mimeType?: string;
+  driveUrl?: string;
+};
+
+const buildReportErrorId = (): string => (
+  (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+    ? crypto.randomUUID()
+    : `report-${Date.now()}`
+);
+
+const emitReportJsonConsoleError = (
+  stage: 'import' | 'update' | 'link',
+  error: unknown,
+  context: Record<string, unknown>
+) => {
+  const reportId = buildReportErrorId();
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const payload = {
+    reportId,
+    stage,
+    timestamp: new Date().toISOString(),
+    errorMessage,
+    ...context,
   };
+  if (typeof console !== 'undefined') {
+    console.error('[ClinicalReportJSON]', payload);
+  }
+  return payload;
 };
 
-const formatDateDMY = (value?: string) => {
-  if (!value) return '';
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return value;
-  const [, year, month, day] = match;
-  return `${day}-${month}-${year}`;
-};
+const parseLinkedJsonSource = (raw: string | null): LinkedJsonSource | null => {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as (Partial<LinkedJsonSource> & { ts?: number }) | null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    const legacyFile = (
+      'file' in parsed &&
+      parsed.file &&
+      typeof parsed.file === 'object'
+    ) ? parsed.file as Partial<AttachedFile> : null;
+    const patientId = typeof parsed.patientId === 'string' ? parsed.patientId : null;
+    const fileId = typeof parsed.fileId === 'string'
+      ? parsed.fileId
+      : typeof legacyFile?.id === 'string'
+        ? legacyFile.id
+        : null;
 
-const sanitizeFileName = (value: string) =>
-  value
-    .trim()
-    .replace(/[\s\/_\\]+/g, '_')
-    .replace(/[^a-zA-Z0-9_-]/g, '')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .toLowerCase();
+    if (!patientId || !fileId) return null;
 
-const findSectionContent = (sections: ReportRecord['sections'], keywords: string[]) => {
-  const normalized = keywords.map((keyword) => keyword.toLowerCase());
-  const match = sections.find((section) =>
-    normalized.some((keyword) => section.title.toLowerCase().includes(keyword))
-  );
-  return match?.content?.trim() || '';
-};
+    const fileName = typeof parsed.fileName === 'string'
+      ? parsed.fileName
+      : typeof legacyFile?.name === 'string'
+        ? legacyFile.name
+        : undefined;
+    const mimeType = typeof parsed.mimeType === 'string'
+      ? parsed.mimeType
+      : typeof legacyFile?.mimeType === 'string'
+        ? legacyFile.mimeType
+        : undefined;
+    const driveUrl = typeof parsed.driveUrl === 'string'
+      ? parsed.driveUrl
+      : typeof legacyFile?.driveUrl === 'string'
+        ? legacyFile.driveUrl
+        : undefined;
 
-const buildClinicalNote = (sections: ReportRecord['sections']) => {
-  const antecedentes = findSectionContent(sections, ['antecedente']);
-  const historia = findSectionContent(sections, ['historia', 'evoluci']);
-  const examen = findSectionContent(sections, ['examen']);
-  const plan = findSectionContent(sections, ['plan']);
-
-  return [
-    antecedentes ? `Antecedentes:\n${antecedentes}` : '',
-    historia ? `Historia y evolución clínica:\n${historia}` : '',
-    examen ? `Exámenes complementarios:\n${examen}` : '',
-    plan ? `Plan:\n${plan}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n\n')
-    .trim();
+    return { patientId, fileId, fileName, mimeType, driveUrl };
+  } catch (_error) {
+    return null;
+  }
 };
 
 const MedicalReportView: React.FC = () => {
   const { addPatient, updatePatient, addToast } = useAppActions();
-  const { patientTypes, user } = useAppState();
-  const [record, setRecord] = useState<ReportRecord>(() => createTemplateBaseline(DEFAULT_REPORT_TEMPLATE_ID));
+  const { patientTypes, user, records } = useAppState();
+  const location = useLocation();
+  const hasLinkedImportParams = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return Boolean(params.get('patientId') && params.get('fileId'));
+  }, [location.search]);
+  const { record, setRecord } = useReportDraft(
+    user,
+    createTemplate(DEFAULT_REPORT_TEMPLATE_ID),
+    { skipRemoteLoad: hasLinkedImportParams }
+  );
   const [activeEditTarget, setActiveEditTarget] = useState<
     | { type: 'record-title' }
     | { type: 'patient-section-title' }
@@ -95,80 +167,11 @@ const MedicalReportView: React.FC = () => {
   const [sheetZoom, setSheetZoom] = useState(1);
   const styleRef = useRef<HTMLStyleElement | null>(null);
   const lastEditableRef = useRef<HTMLElement | null>(null);
-  const draftIdRef = useRef<string>('');
-  const saveTimerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const existingId = localStorage.getItem('medidiario_report_draft_id');
-    const draftId = existingId || crypto.randomUUID();
-    draftIdRef.current = draftId;
-    if (!existingId) {
-      localStorage.setItem('medidiario_report_draft_id', draftId);
-    }
-  }, []);
-
-  useEffect(() => {
-    const localDraft = localStorage.getItem('medidiario_report_draft');
-    if (localDraft) {
-      try {
-        const parsed = JSON.parse(localDraft) as { record: ReportRecord; updatedAt?: number };
-        if (parsed?.record) {
-          setRecord(parsed.record);
-        }
-      } catch {
-        // ignore
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const draftId = draftIdRef.current;
-    if (!draftId || !user) return;
-    let cancelled = false;
-
-    (async () => {
-      const remote = await loadReportDraft(draftId);
-      if (!remote || cancelled) return;
-      const localDraft = localStorage.getItem('medidiario_report_draft');
-      let localUpdatedAt = 0;
-      if (localDraft) {
-        try {
-          const parsed = JSON.parse(localDraft) as { updatedAt?: number };
-          localUpdatedAt = parsed?.updatedAt || 0;
-        } catch {
-          localUpdatedAt = 0;
-        }
-      }
-      if (remote.updatedAt > localUpdatedAt) {
-        setRecord(remote.record);
-        localStorage.setItem('medidiario_report_draft', JSON.stringify({ record: remote.record, updatedAt: remote.updatedAt }));
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  useEffect(() => {
-    if (!draftIdRef.current) return;
-    if (saveTimerRef.current) {
-      window.clearTimeout(saveTimerRef.current);
-    }
-    saveTimerRef.current = window.setTimeout(() => {
-      const payload = { record, updatedAt: Date.now() };
-      localStorage.setItem('medidiario_report_draft', JSON.stringify(payload));
-      if (user) {
-        saveReportDraft(draftIdRef.current, record);
-      }
-    }, 800);
-
-    return () => {
-      if (saveTimerRef.current) {
-        window.clearTimeout(saveTimerRef.current);
-      }
-    };
-  }, [record, user]);
+  const importedAttachmentRef = useRef<string>('');
+  const unresolvedLinkReportRef = useRef<string>('');
+  const [linkedJsonSource, setLinkedJsonSource] = useState<LinkedJsonSource | null>(null);
+  const [isSavingLinkedJson, setIsSavingLinkedJson] = useState(false);
+  const [isResetTemplateModalOpen, setIsResetTemplateModalOpen] = useState(false);
 
   const defaultTypeId = useMemo(() => patientTypes[0]?.id || 'policlinico', [patientTypes]);
   const [selectedTypeId, setSelectedTypeId] = useState(defaultTypeId);
@@ -178,6 +181,49 @@ const MedicalReportView: React.FC = () => {
       setSelectedTypeId(patientTypes[0].id);
     }
   }, [patientTypes, selectedTypeId]);
+
+  const resolveLinkedJsonSource = useCallback((): LinkedJsonSource | null => {
+    const params = new URLSearchParams(location.search);
+    const queryPatientId = params.get('patientId');
+    const queryFileId = params.get('fileId');
+    const sessionSource = parseLinkedJsonSource(safeSessionGetItem(SESSION_KEYS.REPORT_LINKED_JSON));
+    const patientId = queryPatientId || sessionSource?.patientId || null;
+    const fileId = queryFileId || sessionSource?.fileId || null;
+
+    if (!patientId || !fileId) {
+      return null;
+    }
+
+    const patient = records.find((item) => item.id === patientId);
+    const matchingSessionSource = (
+      sessionSource &&
+      sessionSource.patientId === patientId &&
+      sessionSource.fileId === fileId
+    ) ? sessionSource : null;
+    const attachedFile =
+      (patient?.attachedFiles || []).find((item) => item.id === fileId)
+      || records.flatMap((item) => item.attachedFiles || []).find((item) => item.id === fileId);
+
+    const resolved: LinkedJsonSource = {
+      patientId,
+      fileId,
+      fileName: attachedFile?.name || matchingSessionSource?.fileName,
+      mimeType: attachedFile?.mimeType || matchingSessionSource?.mimeType,
+      driveUrl: attachedFile?.driveUrl || matchingSessionSource?.driveUrl,
+    };
+
+    if (!isCompatibleJsonAttachment(resolved.fileName, resolved.mimeType)) return null;
+
+    safeSessionSetItem(SESSION_KEYS.REPORT_LINKED_JSON, JSON.stringify({
+      patientId: resolved.patientId,
+      fileId: resolved.fileId,
+      fileName: resolved.fileName,
+      mimeType: resolved.mimeType,
+      driveUrl: resolved.driveUrl,
+      ts: Date.now(),
+    }));
+    return resolved;
+  }, [location.search, records]);
 
   useEffect(() => {
     if (styleRef.current || typeof document === 'undefined') return;
@@ -254,11 +300,11 @@ const MedicalReportView: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, [activeEditTarget]);
 
-  const handleActivateEdit = (target: typeof activeEditTarget) => {
+  const handleActivateEdit = useCallback((target: typeof activeEditTarget) => {
     setActiveEditTarget(target);
-  };
+  }, []);
 
-  const handlePatientFieldChange = (index: number, value: string) => {
+  const handlePatientFieldChange = useCallback((index: number, value: string) => {
     setRecord((prev) => {
       const nextFields = [...prev.patientFields];
       nextFields[index] = { ...nextFields[index], value };
@@ -282,62 +328,62 @@ const MedicalReportView: React.FC = () => {
       }
       return { ...prev, patientFields: nextFields, title: nextTitle };
     });
-  };
+  }, []);
 
-  const handlePatientLabelChange = (index: number, label: string) => {
+  const handlePatientLabelChange = useCallback((index: number, label: string) => {
     setRecord((prev) => {
       const nextFields = [...prev.patientFields];
       nextFields[index] = { ...nextFields[index], label };
       return { ...prev, patientFields: nextFields };
     });
-  };
+  }, []);
 
-  const handleRemovePatientField = (index: number) => {
+  const handleRemovePatientField = useCallback((index: number) => {
     setRecord((prev) => ({
       ...prev,
       patientFields: prev.patientFields.filter((_, idx) => idx !== index),
     }));
-  };
+  }, []);
 
-  const handleSectionContentChange = (index: number, content: string) => {
+  const handleSectionContentChange = useCallback((index: number, content: string) => {
     setRecord((prev) => {
       const nextSections = [...prev.sections];
       nextSections[index] = { ...nextSections[index], content };
       return { ...prev, sections: nextSections };
     });
-  };
+  }, []);
 
-  const handleSectionTitleChange = (index: number, title: string) => {
+  const handleSectionTitleChange = useCallback((index: number, title: string) => {
     setRecord((prev) => {
       const nextSections = [...prev.sections];
       nextSections[index] = { ...nextSections[index], title };
       return { ...prev, sections: nextSections };
     });
-  };
+  }, []);
 
-  const handleRemoveSection = (index: number) => {
+  const handleRemoveSection = useCallback((index: number) => {
     setRecord((prev) => ({
       ...prev,
       sections: prev.sections.filter((_, idx) => idx !== index),
     }));
-  };
+  }, []);
 
-  const handleUpdateSectionMeta = (index: number, meta: Partial<ReportSection>) => {
+  const handleUpdateSectionMeta = useCallback((index: number, meta: Partial<ReportSection>) => {
     setRecord((prev) => {
       const nextSections = [...prev.sections];
       nextSections[index] = { ...nextSections[index], ...meta };
       return { ...prev, sections: nextSections };
     });
-  };
+  }, []);
 
-  const handleAddSection = () => {
+  const handleAddSection = useCallback(() => {
     setRecord((prev) => ({
       ...prev,
       sections: [...prev.sections, { title: 'Sección personalizada', content: '' }],
     }));
-  };
+  }, []);
 
-  const handleAddClinicalUpdateSection = () => {
+  const handleAddClinicalUpdateSection = useCallback(() => {
     setRecord((prev) => ({
       ...prev,
       sections: [
@@ -345,9 +391,9 @@ const MedicalReportView: React.FC = () => {
         { title: 'Actualización clínica', content: '', kind: 'clinical-update', updateDate: '', updateTime: '' },
       ],
     }));
-  };
+  }, []);
 
-  const handleTemplateChange = (templateId: string) => {
+  const handleTemplateChange = useCallback((templateId: string) => {
     const template = REPORT_TEMPLATES[templateId];
     setRecord((prev) => {
       let nextTitle = template?.title || prev.title;
@@ -367,7 +413,7 @@ const MedicalReportView: React.FC = () => {
         title: nextTitle,
       };
     });
-  };
+  }, []);
 
   useEffect(() => {
     const birthDateField = record.patientFields.find((field) => field.id === 'fecnac');
@@ -387,12 +433,170 @@ const MedicalReportView: React.FC = () => {
     }
   }, [record.patientFields]);
 
+  useEffect(() => {
+    const source = resolveLinkedJsonSource();
+    if (!source) {
+      const params = new URLSearchParams(location.search);
+      if (!params.get('patientId') && !params.get('fileId')) {
+        setLinkedJsonSource(null);
+        importedAttachmentRef.current = '';
+        unresolvedLinkReportRef.current = '';
+      } else {
+        const unresolvedKey = `${location.search}::${records.length}`;
+        if (unresolvedLinkReportRef.current !== unresolvedKey) {
+          unresolvedLinkReportRef.current = unresolvedKey;
+          emitReportJsonConsoleError('link', new Error('Unable to resolve linked JSON source'), {
+            locationSearch: location.search,
+            linkedSession: safeSessionGetItem(SESSION_KEYS.REPORT_LINKED_JSON),
+            recordsLoaded: records.length,
+          });
+        }
+      }
+      return;
+    }
+    unresolvedLinkReportRef.current = '';
+
+    const importKey = `${source.patientId}:${source.fileId}`;
+    const alreadyLinked = (
+      linkedJsonSource &&
+      linkedJsonSource.patientId === source.patientId &&
+      linkedJsonSource.fileId === source.fileId
+    );
+    if (alreadyLinked && importedAttachmentRef.current === importKey) return;
+    importedAttachmentRef.current = importKey;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        if (typeof console !== 'undefined') {
+          console.info('[ClinicalReportJSON]', {
+            stage: 'import-start',
+            patientId: source.patientId,
+            fileId: source.fileId,
+            fileName: source.fileName || null,
+            hasDriveUrl: Boolean(source.driveUrl),
+            locationSearch: location.search,
+          });
+        }
+        let blob: Blob | null = null;
+        let driveUrlError: unknown = null;
+
+        if (source.driveUrl) {
+          try {
+            blob = await downloadPatientFileBlob(source.driveUrl);
+          } catch (error) {
+            driveUrlError = error;
+            if (typeof console !== 'undefined') {
+              console.warn('[ClinicalReportJSON]', {
+                stage: 'drive-url-fallback',
+                patientId: source.patientId,
+                fileId: source.fileId,
+                errorMessage: error instanceof Error ? error.message : String(error),
+              });
+            }
+          }
+        }
+
+        if (!blob) {
+          blob = await downloadPatientFileBlobById(source.patientId, source.fileId, source.fileName);
+        }
+
+        const jsonContent = await blob.text();
+        const parsed = parseClinicalReportJsonPayload(jsonContent);
+        if (!parsed) {
+          throw new Error(`Invalid report json (size=${jsonContent.length})`);
+        }
+        if (cancelled) return;
+        setRecord(parsed.payload.report);
+        setLinkedJsonSource(source);
+        if (driveUrlError) {
+          // Refresh in-memory source to avoid retrying stale URLs.
+          safeSessionSetItem(SESSION_KEYS.REPORT_LINKED_JSON, JSON.stringify({
+            patientId: source.patientId,
+            fileId: source.fileId,
+            fileName: source.fileName,
+            mimeType: source.mimeType,
+            ts: Date.now(),
+          }));
+        }
+        if (typeof console !== 'undefined') {
+          console.info('[ClinicalReportJSON]', {
+            stage: 'import-success',
+            patientId: source.patientId,
+            fileId: source.fileId,
+            payloadSource: parsed.source,
+            reportTitle: parsed.payload.report.title,
+          });
+        }
+        addToast('success', 'Informe JSON cargado en edición.');
+      } catch (error) {
+        if (cancelled) return;
+        importedAttachmentRef.current = '';
+        if (error instanceof Error && error.message.includes('User not authenticated')) {
+          emitReportJsonConsoleError('import', error, {
+            patientId: source.patientId,
+            fileId: source.fileId,
+            fileName: source.fileName || null,
+            hasDriveUrl: Boolean(source.driveUrl),
+            locationSearch: location.search,
+            userAuthenticated: Boolean(user),
+          });
+          return;
+        }
+        const report = emitReportJsonConsoleError('import', error, {
+          patientId: source.patientId,
+          fileId: source.fileId,
+          fileName: source.fileName || null,
+          hasDriveUrl: Boolean(source.driveUrl),
+          locationSearch: location.search,
+          userAuthenticated: Boolean(user),
+          linkedSession: safeSessionGetItem(SESSION_KEYS.REPORT_LINKED_JSON),
+        });
+        addToast('error', `No se pudo abrir el informe JSON seleccionado (reporte: ${report.reportId}).`);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    addToast,
+    downloadPatientFileBlob,
+    downloadPatientFileBlobById,
+    linkedJsonSource,
+    location.search,
+    resolveLinkedJsonSource,
+    setRecord,
+    user,
+  ]);
+
   const getFieldValue = useCallback(
     (fieldId: string) => record.patientFields.find((field) => field.id === fieldId)?.value?.trim() || '',
     [record.patientFields]
   );
+  const reportPatientName = useMemo(() => getFieldValue('nombre') || 'Paciente sin nombre', [getFieldValue]);
+  const reportPatientRut = useMemo(() => getFieldValue('rut') || 'Sin RUT', [getFieldValue]);
+  const reportDateRaw = useMemo(() => getFieldValue('finf'), [getFieldValue]);
+  const reportDateDisplay = useMemo(
+    () => (reportDateRaw ? formatDateDMY(reportDateRaw) : 'Sin fecha'),
+    [reportDateRaw]
+  );
+  const reportFileDate = useMemo(
+    () => (reportDateRaw ? formatDateDMY(reportDateRaw) : format(new Date(), 'dd-MM-yyyy')),
+    [reportDateRaw]
+  );
+  const reportDocumentType = useMemo(
+    () => REPORT_TEMPLATES[record.templateId]?.name || record.title || 'informe_clinico',
+    [record.templateId, record.title]
+  );
 
-  const buildPatientPayload = () => {
+  const buildDefaultReportFileNameBase = useCallback((patientNameOverride?: string) => {
+    const patientName = normalizeFileToken((patientNameOverride || getFieldValue('nombre') || 'paciente').trim());
+    const documentType = normalizeFileToken(reportDocumentType);
+    return sanitizeFileName(`${documentType}-${reportFileDate}-${patientName}`) || 'informe_clinico';
+  }, [getFieldValue, reportDocumentType, reportFileDate]);
+
+  const buildPatientPayload = useCallback(() => {
     const name = getFieldValue('nombre');
     const rut = getFieldValue('rut');
     const birthDate = normalizeBirthDateInput(getFieldValue('fecnac'));
@@ -403,7 +607,7 @@ const MedicalReportView: React.FC = () => {
       return null;
     }
 
-    const diagnosis = findSectionContent(record.sections, ['diagnost']);
+    const diagnosis = findReportSectionContent(record.sections, ['diagnost']);
     const clinicalNote = buildClinicalNote(record.sections);
 
     const typeConfig = patientTypes.find((type) => type.id === selectedTypeId) || patientTypes[0];
@@ -427,38 +631,9 @@ const MedicalReportView: React.FC = () => {
     };
 
     return { patientData, typeLabel };
-  };
+  }, [addToast, getFieldValue, patientTypes, record.sections, selectedTypeId]);
 
-  const handleCreatePatient = () => {
-    const payload = buildPatientPayload();
-    if (!payload) return;
-
-    const result = savePatientRecord(payload.patientData, null);
-    addPatient(result.patient);
-    addToast('success', 'Paciente creado desde informe.');
-  };
-
-  const handleCreatePatientWithPdf = async () => {
-    const payload = buildPatientPayload();
-    if (!payload) return;
-
-    const result = savePatientRecord(payload.patientData, null);
-    addPatient(result.patient);
-
-    try {
-      const blob = await generatePdfAsBlob();
-      const patientName = payload.patientData.name || 'paciente';
-      const fileNameBase = sanitizeFileName(`${record.title || 'informe'}-${patientName}`) || 'informe';
-      const file = new File([blob], `${fileNameBase}.pdf`, { type: 'application/pdf' });
-      const attachedFile = await uploadFileToFirebase(file, result.patient.id);
-      updatePatient({ ...result.patient, attachedFiles: [attachedFile] });
-      addToast('success', 'Paciente creado y PDF adjuntado.');
-    } catch (error) {
-      addToast('error', 'Paciente creado, pero el PDF no se pudo adjuntar.');
-    }
-  };
-
-  const handleToolbarCommand = (command: string) => {
+  const handleToolbarCommand = useCallback((command: string) => {
     if (command === 'zoom-in') {
       setSheetZoom((prev) => Math.min(1.35, Number((prev + 0.05).toFixed(2))));
       return;
@@ -472,215 +647,241 @@ const MedicalReportView: React.FC = () => {
     if (!target) return;
     target.focus();
     document.execCommand(command);
-  };
+  }, []);
 
-  const generatePdfAsBlob = async (): Promise<Blob> => {
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
-    const sheet = document.getElementById('sheet');
-    if (sheet) {
-      const prevTransform = (sheet as HTMLElement).style.transform;
-      const prevZoom = (sheet as HTMLElement).style.getPropertyValue('--sheet-zoom');
-      (sheet as HTMLElement).style.transform = 'none';
-      (sheet as HTMLElement).style.setProperty('--sheet-zoom', '1');
+  const resolvedLinkedJsonSource = useMemo(
+    () => linkedJsonSource || resolveLinkedJsonSource(),
+    [linkedJsonSource, resolveLinkedJsonSource]
+  );
 
-      const { default: html2canvas } = await import('html2canvas');
-      const canvas = await html2canvas(sheet as HTMLElement, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-      });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const maxWidth = pageWidth - margin * 2;
-      const maxHeight = pageHeight - margin * 2;
-      const imageWidth = maxWidth;
-      const imageHeight = (canvas.height * imageWidth) / canvas.width;
-      const scale = Math.min(1, maxHeight / imageHeight);
-      const renderWidth = imageWidth * scale;
-      const renderHeight = imageHeight * scale;
-      const offsetX = (pageWidth - renderWidth) / 2;
-      const offsetY = (pageHeight - renderHeight) / 2;
-
-      const imageData = canvas.toDataURL('image/png');
-      pdf.addImage(imageData, 'PNG', offsetX, offsetY, renderWidth, renderHeight);
-
-      (sheet as HTMLElement).style.transform = prevTransform;
-      (sheet as HTMLElement).style.setProperty('--sheet-zoom', prevZoom);
-      return pdf.output('blob');
+  const handleOpenLinkedJsonFile = useCallback(() => {
+    const source = resolvedLinkedJsonSource;
+    if (!source?.driveUrl) {
+      addToast('info', 'No hay URL disponible para abrir el JSON vinculado.');
+      return;
     }
-    const marginX = 16;
-    const marginY = 18;
-    const lineHeight = 6;
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const contentWidth = pageWidth - marginX * 2;
-    let cursorY = marginY;
+    window.open(source.driveUrl, '_blank', 'noopener,noreferrer');
+  }, [addToast, resolvedLinkedJsonSource]);
 
-    const ensureSpace = (height: number) => {
-      if (cursorY + height > pageHeight - marginY) {
-        pdf.addPage();
-        cursorY = marginY;
+  const hasLinkedJsonSource = useMemo(() => Boolean(resolvedLinkedJsonSource), [resolvedLinkedJsonSource]);
+
+  useEffect(() => {
+    const contextPayload = {
+      patientName: reportPatientName,
+      patientRut: reportPatientRut,
+      reportDate: reportDateDisplay,
+      templateName: REPORT_TEMPLATES[record.templateId]?.name || 'Informe clínico',
+      updatedAt: Date.now(),
+    };
+    safeSessionSetItem(SESSION_KEYS.REPORT_TOPBAR_CONTEXT, JSON.stringify(contextPayload));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('medidiario:report-context'));
+    }
+  }, [record.templateId, reportDateDisplay, reportPatientName, reportPatientRut]);
+
+  useEffect(() => {
+    return () => {
+      safeSessionRemoveItem(SESSION_KEYS.REPORT_TOPBAR_CONTEXT);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('medidiario:report-context'));
       }
     };
+  }, []);
 
-    const addTitle = (text: string) => {
-      if (!text.trim()) return;
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(16);
-      ensureSpace(lineHeight * 2);
-      pdf.text(text, pageWidth / 2, cursorY, { align: 'center' });
-      cursorY += lineHeight + 3;
-    };
+  const generatePdfAsBlob = useCallback(async (): Promise<Blob> => {
+    return generateReportPdfBlob(record);
+  }, [record]);
 
-    const addSectionTitle = (text: string) => {
-      if (!text.trim()) return;
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(12);
-      ensureSpace(lineHeight * 1.2);
-      pdf.text(text.trim(), marginX, cursorY);
-      cursorY += lineHeight;
-    };
+  const handleOpenResetTemplateModal = useCallback(() => {
+    setIsResetTemplateModalOpen(true);
+  }, []);
 
-    const addLabeledValue = (label: string, value: string | undefined) => {
-      const labelText = `${label}:`;
-      const displayValue = value && value.trim() ? value : '—';
-      const maxLabelWidth = contentWidth * 0.45;
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'bold');
-      const rawLabelWidth = pdf.getTextWidth(labelText);
-      const labelWidth = Math.min(rawLabelWidth, maxLabelWidth);
-      const hasInlineSpace = labelWidth + 4 < contentWidth;
+  const handleCloseResetTemplateModal = useCallback(() => {
+    setIsResetTemplateModalOpen(false);
+  }, []);
 
-      if (!hasInlineSpace) {
-        const labelLines = pdf.splitTextToSize(labelText, contentWidth);
-        const valueLines = pdf.splitTextToSize(displayValue, contentWidth);
-        const totalHeight = lineHeight * (labelLines.length + valueLines.length);
-        ensureSpace(totalHeight + 2);
-        labelLines.forEach((line: string) => {
-          pdf.text(line, marginX, cursorY);
-          cursorY += lineHeight;
-        });
-        pdf.setFont('helvetica', 'normal');
-        valueLines.forEach((line: string) => {
-          pdf.text(line, marginX, cursorY);
-          cursorY += lineHeight;
-        });
-        cursorY += 1.5;
-        return;
-      }
+  const handleConfirmResetTemplate = useCallback(() => {
+    setRecord(createTemplate(record.templateId));
+    setIsResetTemplateModalOpen(false);
+    addToast('info', 'Planilla reiniciada en blanco.');
+  }, [addToast, record.templateId, setRecord]);
 
-      const valueWidth = Math.max(contentWidth - labelWidth - 4, contentWidth * 0.35);
-      const valueLines = pdf.splitTextToSize(displayValue, valueWidth);
-      const blockHeight = lineHeight * valueLines.length;
-      ensureSpace(blockHeight + 2);
-      pdf.text(labelText, marginX, cursorY);
-      pdf.setFont('helvetica', 'normal');
-      valueLines.forEach((line: string, index: number) => {
-        pdf.text(line, marginX + labelWidth + 4, cursorY + index * lineHeight);
+  const handleCreatePatientWithPdf = useCallback(async () => {
+    const payload = buildPatientPayload();
+    if (!payload) return;
+
+    const result = savePatientRecord(payload.patientData, null);
+    addPatient(result.patient);
+
+    const fileNameBase = buildDefaultReportFileNameBase(payload.patientData.name);
+
+    let pdfFile: File | null = null;
+    try {
+      const blob = await generatePdfAsBlob();
+      pdfFile = new File([blob], `${fileNameBase}.pdf`, { type: 'application/pdf' });
+    } catch (error) {
+      addToast('error', 'Paciente creado, pero no se pudo generar el PDF estilo impresión.');
+    }
+
+    const jsonPayload = stringifyClinicalReportJsonPayload({
+      report: record,
+      patient: {
+        id: result.patient.id,
+        name: payload.patientData.name,
+        rut: payload.patientData.rut,
+        date: payload.patientData.date,
+      },
+    });
+    const jsonFile = new File([jsonPayload], `${fileNameBase}.json`, { type: 'application/json' });
+
+    const uploadEntries: Array<{ kind: 'pdf' | 'json'; file: File }> = [];
+    if (pdfFile) {
+      uploadEntries.push({ kind: 'pdf', file: pdfFile });
+    }
+    uploadEntries.push({ kind: 'json', file: jsonFile });
+
+    const uploadResults = await Promise.allSettled(
+      uploadEntries.map(async (entry) => {
+        const uploaded = await uploadPatientFile(entry.file, result.patient.id);
+        if (entry.kind === 'pdf') {
+          return {
+            ...uploaded,
+            category: 'report' as const,
+            customTypeLabel: 'Informe clínico PDF',
+          };
+        }
+        return {
+          ...uploaded,
+          category: 'report' as const,
+          customTypeLabel: 'Informe clínico JSON',
+        };
+      })
+    );
+
+    const attachedFiles = uploadResults.flatMap((resultItem) => (
+      resultItem.status === 'fulfilled' ? [resultItem.value] : []
+    ));
+
+    if (attachedFiles.length > 0) {
+      updatePatient({
+        ...result.patient,
+        attachedFiles: [...(result.patient.attachedFiles || []), ...attachedFiles],
       });
-      cursorY += blockHeight;
-      cursorY += 1.5;
-    };
+    }
 
-    const addParagraphs = (content: string) => {
-      const htmlToPlainText = (value: string) => {
-        if (!value) return '';
-        if (typeof window === 'undefined') return value;
-        const container = document.createElement('div');
-        container.innerHTML = value;
-        container.querySelectorAll('li').forEach(li => {
-          const parent = li.parentElement;
-          const isOrdered = parent?.tagName === 'OL';
-          const index = parent ? Array.from(parent.children).indexOf(li) + 1 : 0;
-          const prefix = isOrdered ? `${index}. ` : '• ';
-          const text = li.innerText.trim();
-          if (text.startsWith(prefix.trim())) return;
-          li.insertAdjacentText('afterbegin', prefix);
-        });
-        return container.innerText;
+    const failedCount = uploadResults.length - attachedFiles.length;
+    if (failedCount === 0 && attachedFiles.length === uploadEntries.length) {
+      addToast('success', 'Paciente creado y adjuntos PDF/JSON guardados.');
+      return;
+    }
+    if (attachedFiles.length > 0) {
+      addToast('info', 'Paciente creado con adjuntos parciales (revisa PDF/JSON en archivos).');
+      return;
+    }
+    addToast('error', 'Paciente creado, pero no se pudieron adjuntar PDF/JSON.');
+  }, [addPatient, addToast, buildDefaultReportFileNameBase, buildPatientPayload, generatePdfAsBlob, updatePatient]);
+
+  const handleUpdateLinkedJson = useCallback(async () => {
+    const source = linkedJsonSource || resolveLinkedJsonSource();
+    if (!source) {
+      const report = emitReportJsonConsoleError('link', new Error('Report not linked to JSON source'), {
+        locationSearch: location.search,
+        linkedSession: safeSessionGetItem(SESSION_KEYS.REPORT_LINKED_JSON),
+      });
+      addToast('info', 'Este informe no está vinculado a un JSON existente.');
+      addToast('info', `Reporte consola: ${report.reportId}`);
+      return;
+    }
+    if (!linkedJsonSource) {
+      setLinkedJsonSource(source);
+    }
+
+    const currentPatient = records.find((item) => item.id === source.patientId);
+    const existingFile = (currentPatient?.attachedFiles || []).find((item) => item.id === source.fileId);
+    const existingFileName = existingFile?.name || source.fileName;
+    const existingMimeType = existingFile?.mimeType || source.mimeType;
+    if (!isCompatibleJsonAttachment(existingFileName, existingMimeType)) {
+      addToast('error', 'No se encontró el JSON asociado para actualizar.');
+      return;
+    }
+
+    setIsSavingLinkedJson(true);
+    try {
+      const jsonPayload = stringifyClinicalReportJsonPayload({
+        report: record,
+        patient: {
+          id: source.patientId,
+          name: currentPatient?.name || '',
+          rut: currentPatient?.rut || '',
+          date: currentPatient?.date || '',
+        },
+      });
+      const targetFileName = existingFileName || `${buildDefaultReportFileNameBase()}.json`;
+      const updatedJsonFile = new File([jsonPayload], targetFileName, { type: 'application/json' });
+      const uploaded = await updatePatientFileById(
+        updatedJsonFile,
+        source.patientId,
+        source.fileId,
+        existingFileName
+      );
+
+      const mergedFile: AttachedFile = {
+        ...(existingFile || {
+          id: source.fileId,
+          name: uploaded.name,
+          mimeType: 'application/json',
+          size: uploaded.size,
+          uploadedAt: uploaded.uploadedAt,
+          driveUrl: uploaded.driveUrl,
+        }),
+        ...uploaded,
+        mimeType: 'application/json',
+        category: (existingFile?.category || 'report'),
+        customTypeLabel: (existingFile?.customTypeLabel || 'Informe clínico JSON'),
       };
 
-      const plainText = htmlToPlainText(content);
-      const paragraphs = plainText
-        .split(/\r?\n+/)
-        .map(paragraph => paragraph.trim())
-        .filter(Boolean);
+      if (currentPatient) {
+        const currentAttachedFiles = currentPatient.attachedFiles || [];
+        const hasExisting = currentAttachedFiles.some((item) => item.id === source.fileId);
+        const nextAttachedFiles = hasExisting
+          ? currentAttachedFiles.map((item) => (item.id === source.fileId ? mergedFile : item))
+          : [...currentAttachedFiles, mergedFile];
 
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(11);
-
-      if (paragraphs.length === 0) {
-        ensureSpace(lineHeight * 1.2);
-        pdf.setFont('helvetica', 'italic');
-        pdf.text('Sin contenido registrado.', marginX, cursorY);
-        pdf.setFont('helvetica', 'normal');
-        cursorY += lineHeight + 1.5;
-        return;
-      }
-
-      paragraphs.forEach((paragraph: string, index: number) => {
-        const lines = pdf.splitTextToSize(paragraph, contentWidth);
-        ensureSpace(lineHeight * lines.length + 1);
-        lines.forEach((line: string) => {
-          pdf.text(line, marginX, cursorY);
-          cursorY += lineHeight;
+        updatePatient({
+          ...currentPatient,
+          attachedFiles: nextAttachedFiles,
         });
-        if (index < paragraphs.length - 1) {
-          cursorY += 1.5;
-        }
-      });
-      cursorY += 2;
-    };
-
-    const templateTitle = record.title?.trim() || REPORT_TEMPLATES[record.templateId]?.title || 'Registro Clínico';
-    addTitle(templateTitle);
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(11);
-
-    addSectionTitle('Información del Paciente');
-    cursorY += 1;
-    record.patientFields.forEach(field => {
-      addLabeledValue(field.label, field.value);
-    });
-    cursorY += 2;
-
-    record.sections.forEach(section => {
-      addSectionTitle(section.title);
-      if (section.kind === 'clinical-update') {
-        if (section.updateDate) {
-          addLabeledValue('Fecha', formatDateDMY(section.updateDate));
-        }
-        if (section.updateTime) {
-          addLabeledValue('Hora', section.updateTime);
-        }
       }
-      addParagraphs(section.content);
-    });
-
-    if (record.medico || record.especialidad) {
-      addSectionTitle('Profesional Responsable');
-      if (record.medico) addLabeledValue('Médico', record.medico);
-      if (record.especialidad) addLabeledValue('Especialidad', record.especialidad);
+      setLinkedJsonSource({
+        patientId: source.patientId,
+        fileId: mergedFile.id,
+        fileName: mergedFile.name,
+        mimeType: mergedFile.mimeType,
+        driveUrl: mergedFile.driveUrl,
+      });
+      safeSessionSetItem(SESSION_KEYS.REPORT_LINKED_JSON, JSON.stringify({
+        patientId: source.patientId,
+        fileId: mergedFile.id,
+        fileName: mergedFile.name,
+        mimeType: mergedFile.mimeType,
+        driveUrl: mergedFile.driveUrl,
+        ts: Date.now(),
+      }));
+      addToast('success', 'Informe JSON actualizado en Firebase.');
+    } catch (error) {
+      const report = emitReportJsonConsoleError('update', error, {
+        patientId: source.patientId,
+        fileId: source.fileId,
+        fileName: source.fileName || existingFileName || null,
+        userAuthenticated: Boolean(user),
+        locationSearch: location.search,
+        linkedSession: safeSessionGetItem(SESSION_KEYS.REPORT_LINKED_JSON),
+      });
+      addToast('error', `No se pudo actualizar el JSON del informe (reporte: ${report.reportId}).`);
+    } finally {
+      setIsSavingLinkedJson(false);
     }
-
-    return pdf.output('blob');
-  };
-
-  const handleDownloadPdf = async () => {
-    const blob = await generatePdfAsBlob();
-    const patientName = getFieldValue('nombre');
-    const baseName = sanitizeFileName(`${record.title || 'informe'}-${patientName || 'paciente'}`) || 'informe';
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${baseName}.pdf`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
+  }, [addToast, buildDefaultReportFileNameBase, linkedJsonSource, location.search, record, records, resolveLinkedJsonSource, updatePatient, user]);
 
   const handlePrint = () => {
     window.print();
@@ -689,10 +890,36 @@ const MedicalReportView: React.FC = () => {
   const templateOptions = Object.values(REPORT_TEMPLATES);
 
   return (
-    <div className="clinical-report-root">
-      <div className="topbar modern-topbar">
-        <div className="topbar-main modern-topbar-main single-row">
-          <div className="template-row compact">
+    <div className="clinical-report-root report-focus-mode">
+      <div className="topbar modern-topbar report-shell-header">
+        <div className="report-context-strip">
+          <div className="report-context-item">
+            <UserRound className="report-context-icon" />
+            <div className="report-context-text">
+              <span className="report-context-label">Paciente</span>
+              <span className="report-context-value">{reportPatientName}</span>
+            </div>
+          </div>
+          <div className="report-context-item">
+            <span className="report-context-label">RUT</span>
+            <span className="report-context-value">{reportPatientRut}</span>
+          </div>
+          <div className="report-context-item">
+            <CalendarDays className="report-context-icon" />
+            <div className="report-context-text">
+              <span className="report-context-label">Fecha informe</span>
+              <span className="report-context-value">{reportDateDisplay}</span>
+            </div>
+          </div>
+          <div className="report-context-item report-context-status">
+            <span className={`report-status-dot ${isSavingLinkedJson ? 'is-saving' : hasLinkedJsonSource ? 'is-linked' : 'is-draft'}`} />
+            <span className="report-context-value">
+              {isSavingLinkedJson ? 'Guardando JSON...' : hasLinkedJsonSource ? 'JSON vinculado' : 'Borrador local/Firebase'}
+            </span>
+          </div>
+        </div>
+        <div className="topbar-main modern-topbar-main report-command-row">
+          <div className="action-group compact report-group report-group-left">
             <select
               className="template-select compact"
               value={record.templateId}
@@ -711,61 +938,74 @@ const MedicalReportView: React.FC = () => {
               <Plus />
               <span>Act. clínica</span>
             </button>
-            <span className="status-pill">
-              <span className="status-dot" data-state="saved" />
-              <span>Edición activa</span>
-            </span>
-          </div>
-
-          <div className="action-group compact">
             <button type="button" className="action-btn icon" onClick={() => setIsAdvancedEditing((prev) => !prev)} title="Edición avanzada">
               <PencilRuler />
             </button>
             <button type="button" className="action-btn icon" onClick={() => setIsGlobalStructureEditing((prev) => !prev)} title="Editar estructura">
               <SlidersHorizontal />
             </button>
-            {isAdvancedEditing && (
-              <div className="editor-toolbar" role="toolbar" aria-label="Herramientas de edición avanzada">
-                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('bold')} title="Negrita">
-                  <span className="toolbar-icon">B</span>
-                </button>
-                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('italic')} title="Cursiva">
-                  <span className="toolbar-icon toolbar-italic">I</span>
-                </button>
-                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('underline')} title="Subrayado">
-                  <span className="toolbar-icon toolbar-underline">S</span>
-                </button>
-                <span className="toolbar-divider" aria-hidden="true" />
-                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('outdent')} title="Reducir sangría">
-                  <span className="toolbar-icon">⇤</span>
-                </button>
-                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('indent')} title="Aumentar sangría">
-                  <span className="toolbar-icon">⇥</span>
-                </button>
-                <span className="toolbar-divider" aria-hidden="true" />
-                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('zoom-out')} title="Alejar">
-                  <span className="toolbar-icon">−</span>
-                </button>
-                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('zoom-in')} title="Acercar">
-                  <span className="toolbar-icon">+</span>
-                </button>
-              </div>
-            )}
-            <button type="button" className="action-btn" onClick={handleDownloadPdf}>
-              <FileDown />
-              PDF
+          </div>
+          {isAdvancedEditing && (
+            <div className="editor-toolbar report-editor-toolbar" role="toolbar" aria-label="Herramientas de edición avanzada">
+              <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('bold')} title="Negrita">
+                <span className="toolbar-icon">B</span>
+              </button>
+              <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('italic')} title="Cursiva">
+                <span className="toolbar-icon toolbar-italic">I</span>
+              </button>
+              <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('underline')} title="Subrayado">
+                <span className="toolbar-icon toolbar-underline">S</span>
+              </button>
+              <span className="toolbar-divider" aria-hidden="true" />
+              <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('outdent')} title="Reducir sangría">
+                <span className="toolbar-icon">⇤</span>
+              </button>
+              <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('indent')} title="Aumentar sangría">
+                <span className="toolbar-icon">⇥</span>
+              </button>
+              <span className="toolbar-divider" aria-hidden="true" />
+              <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('zoom-out')} title="Alejar">
+                <span className="toolbar-icon">−</span>
+              </button>
+              <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => handleToolbarCommand('zoom-in')} title="Acercar">
+                <span className="toolbar-icon">+</span>
+              </button>
+            </div>
+          )}
+          <div className="action-group compact report-group report-group-right">
+            <button
+              type="button"
+              className="action-btn"
+              onClick={handleOpenLinkedJsonFile}
+              disabled={!resolvedLinkedJsonSource?.driveUrl}
+              title={resolvedLinkedJsonSource?.driveUrl ? 'Abrir JSON vinculado en nueva pestaña' : 'No hay URL disponible'}
+            >
+              <Link2 />
+              Abrir JSON
+            </button>
+            <button type="button" className="action-btn" onClick={handleOpenResetTemplateModal} title="Restablecer planilla en blanco">
+              <RotateCcw />
+              Reiniciar planilla
             </button>
             <button type="button" className="action-btn" onClick={handlePrint}>
               <Printer />
               Imprimir
             </button>
-            <button type="button" className="action-btn" onClick={handleCreatePatient}>
+            <button
+              type="button"
+              className="action-btn"
+              onClick={handleUpdateLinkedJson}
+              disabled={isSavingLinkedJson || !hasLinkedJsonSource}
+              title={linkedJsonSource?.fileName
+                ? `Guardar cambios en ${linkedJsonSource.fileName}`
+                : 'Guardar cambios del JSON abierto desde agenda/historial'}
+            >
               <Save />
-              Crear paciente
+              {isSavingLinkedJson ? 'Guardando JSON...' : 'Guardar JSON'}
             </button>
             <button type="button" className="action-btn primary" onClick={handleCreatePatientWithPdf}>
               <Save />
-              Crear + PDF
+              Crear & Guardar
             </button>
           </div>
         </div>
@@ -780,10 +1020,24 @@ const MedicalReportView: React.FC = () => {
               style={{ '--sheet-zoom': sheetZoom } as React.CSSProperties}
             >
               {logoUrls.left && (
-                <img id="logoLeft" src={logoUrls.left} crossOrigin="anonymous" className="absolute top-2 left-2 w-12 h-auto opacity-60 print:block" alt="Logo Left" />
+                <img
+                  id="logoLeft"
+                  src={logoUrls.left}
+                  crossOrigin="anonymous"
+                  className="print:block"
+                  style={{ ...reportLogoStyle, left: '1.5mm' }}
+                  alt="Logo Left"
+                />
               )}
               {logoUrls.right && (
-                <img id="logoRight" src={logoUrls.right} crossOrigin="anonymous" className="absolute top-2 right-2 w-12 h-auto opacity-60 print:block" alt="Logo Right" />
+                <img
+                  id="logoRight"
+                  src={logoUrls.right}
+                  crossOrigin="anonymous"
+                  className="print:block"
+                  style={{ ...reportLogoStyle, right: '1.5mm' }}
+                  alt="Logo Right"
+                />
               )}
               <div
                 className="title"
@@ -843,6 +1097,39 @@ const MedicalReportView: React.FC = () => {
           )}
         </div>
       </div>
+      {isResetTemplateModalOpen && (
+        <div className="confirm-dialog-overlay" role="presentation" onClick={handleCloseResetTemplateModal}>
+          <div
+            className="confirm-dialog"
+            data-tone="warning"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-template-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="confirm-dialog-header">
+              <div className="confirm-dialog-icon" aria-hidden="true">!</div>
+              <div>
+                <div className="confirm-dialog-title" id="reset-template-title">Restablecer planilla</div>
+                <p className="confirm-dialog-message">
+                  Se limpiará el contenido del informe actual y se conservará solo la estructura base de la plantilla.
+                </p>
+              </div>
+            </div>
+            <div className="confirm-dialog-actions">
+              <button type="button" className="btn" onClick={handleCloseResetTemplateModal}>Cancelar</button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                data-tone="warning"
+                onClick={handleConfirmResetTemplate}
+              >
+                Sí, reiniciar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

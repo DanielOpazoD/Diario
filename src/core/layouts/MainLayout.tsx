@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { ViewMode, PatientRecord, User } from '@shared/types';
 import { BookmarksBar } from '@features/bookmarks';
 import MainSidebar from '@core/layouts/MainSidebar';
@@ -45,12 +45,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     }
   }, [viewMode, isMobile]);
 
-  const handleNavigation = (view: ViewMode) => {
+  const handleNavigation = useCallback((view: ViewMode) => {
     onNavigate(view);
     if (isMobile) {
       setIsSidebarOpen(false);
     }
-  };
+  }, [isMobile, onNavigate]);
 
   const bookmarkBarOffset = showBookmarkBar ? 52 : 0;
 

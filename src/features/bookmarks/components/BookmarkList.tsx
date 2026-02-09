@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Bookmark } from '@shared/types';
 import BookmarkItem from './BookmarkItem';
 import { useBookmarkDnD } from '@features/bookmarks/components/hooks/useBookmarkDnD';
@@ -34,7 +34,7 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
         handleTouchEnd,
     } = useBookmarkDnD({ sortedBookmarks, reorderBookmarks: onReorder });
 
-    const moveBookmark = (id: string, direction: 'up' | 'down') => {
+    const moveBookmark = useCallback((id: string, direction: 'up' | 'down') => {
         const index = sortedBookmarks.findIndex((bookmark) => bookmark.id === id);
         if (index < 0) return;
 
@@ -45,7 +45,7 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
         const [removed] = newOrder.splice(index, 1);
         newOrder.splice(targetIndex, 0, removed);
         onReorder(newOrder);
-    };
+    }, [onReorder, sortedBookmarks]);
 
     return (
         <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">

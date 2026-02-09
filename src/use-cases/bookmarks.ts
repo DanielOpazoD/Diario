@@ -1,5 +1,6 @@
 import { Bookmark, BookmarkCategory } from '@shared/types';
 import { ensureDefaultCategories, normalizeImportedBookmark } from '@domain/bookmarks';
+import { safeJsonParse } from '@shared/utils/json';
 
 type ExportPayload = {
   version: number;
@@ -29,13 +30,16 @@ export const parseBookmarksImport = (
   text: string,
   fallbackCategories: BookmarkCategory[]
 ): { bookmarks: Bookmark[]; categories: BookmarkCategory[] } => {
-  const parsed = JSON.parse(text);
-  const importedBookmarks = Array.isArray(parsed.bookmarks)
-    ? parsed.bookmarks
+  const parsed = safeJsonParse<unknown>(text, null);
+  const parsedObject = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
+  const importedBookmarks = Array.isArray(parsedObject?.bookmarks)
+    ? (parsedObject?.bookmarks as Bookmark[])
     : Array.isArray(parsed)
       ? parsed
       : [];
-  const importedCategories = Array.isArray(parsed.categories) ? parsed.categories : fallbackCategories;
+  const importedCategories = Array.isArray(parsedObject?.categories)
+    ? (parsedObject?.categories as BookmarkCategory[])
+    : fallbackCategories;
 
   const categoriesWithDefault = ensureDefaultCategories(importedCategories);
   const categoryIds = new Set(categoriesWithDefault.map((category) => category.id));

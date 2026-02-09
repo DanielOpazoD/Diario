@@ -1,4 +1,4 @@
-import type { StoragePort } from '@data/ports/storagePort';
+import type { LocalStoragePort } from '@data/ports/storagePorts';
 import {
   loadRecordsFromLocal,
   loadGeneralTasksFromLocal,
@@ -10,7 +10,7 @@ import {
   saveBookmarkCategoriesToLocal,
 } from '@services/storage';
 
-export const localStorageAdapter: StoragePort = {
+export const localStorageAdapter: LocalStoragePort = {
   loadRecords: loadRecordsFromLocal,
   loadGeneralTasks: loadGeneralTasksFromLocal,
   loadBookmarks: loadBookmarksFromLocal,

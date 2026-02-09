@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { askAboutImages, FileContent, validateEnvironment } from '@use-cases/ai';
 
 export interface ChatMessage {
@@ -44,7 +44,7 @@ export const useAIChat = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleFileChange = (files: FileList | null) => {
+    const handleFileChange = useCallback((files: FileList | null) => {
         if (!files) return;
 
         const validFiles: File[] = [];
@@ -61,13 +61,13 @@ export const useAIChat = () => {
 
         setAttachments((prev) => [...prev, ...validFiles]);
         setError(null);
-    };
+    }, []);
 
-    const handleRemoveAttachment = (index: number) => {
+    const handleRemoveAttachment = useCallback((index: number) => {
         setAttachments((prev) => prev.filter((_, i) => i !== index));
-    };
+    }, []);
 
-    const handleSend = async (prompt?: string) => {
+    const handleSend = useCallback(async (prompt?: string) => {
         const text = prompt ?? inputValue;
         if (!text.trim()) return;
 
@@ -103,9 +103,9 @@ export const useAIChat = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [attachments, inputValue]);
 
-    const handleClearConversation = () => {
+    const handleClearConversation = useCallback(() => {
         setMessages([
             {
                 id: 'welcome',
@@ -116,9 +116,9 @@ export const useAIChat = () => {
         setAttachments([]);
         setInputValue('');
         setError(null);
-    };
+    }, []);
 
-    const checkGeminiStatus = async () => {
+    const checkGeminiStatus = useCallback(async () => {
         setIsCheckingStatus(true);
         try {
             const status = await validateEnvironment();
@@ -128,7 +128,7 @@ export const useAIChat = () => {
         } finally {
             setIsCheckingStatus(false);
         }
-    };
+    }, []);
 
     return {
         messages,

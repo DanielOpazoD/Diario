@@ -1,16 +1,20 @@
 
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { PatientCreateInput, PatientRecord, PatientUpdateInput } from '@shared/types';
 import useAppStore from '@core/stores/useAppStore';
 import PatientModalHeader from '@core/patient/components/PatientModalHeader';
 import PatientModalFooter from '@core/patient/components/PatientModalFooter';
-import { formatPatientName, formatTitleCase } from '@core/patient/utils/patientUtils';
+import { sanitizePatientName } from '@use-cases/patient/sanitizeFields';
+import { isPatientNameValid } from '@use-cases/patient/validation';
 import { usePatientVoiceAndAI } from '@core/patient';
 import { usePatientDataExtraction } from '@core/patient';
-import PatientModalBody, { buildPatientPayload } from '@core/patient/components/PatientModalBody';
+import PatientModalBody from '@core/patient/components/PatientModalBody';
+import { buildPatientPayload } from '@use-cases/patient/buildPayload';
+import { patientPayloadFingerprint } from '@use-cases/patient/fingerprint';
 import { calculateAge } from '@shared/utils/dateUtils';
 import usePatientModalState from '@core/patient/hooks/usePatientModalState';
 import usePendingTasks from '@core/patient/hooks/usePendingTasks';
+export { formatTitleCase } from '@shared/utils/patientUtils';
 
 interface PatientModalProps {
   isOpen: boolean;
@@ -38,7 +42,10 @@ const PatientModal: React.FC<PatientModalProps> = ({
   mode = 'daily',
 }) => {
   const patientTypes = useAppStore(state => state.patientTypes);
-  const defaultTypeId = patientTypes.find(t => t.id === 'policlinico')?.id || patientTypes[0]?.id || '';
+  const defaultTypeId = useMemo(
+    () => patientTypes.find(t => t.id === 'policlinico')?.id || patientTypes[0]?.id || '',
+    [patientTypes]
+  );
 
   const {
     name,
@@ -118,20 +125,20 @@ const PatientModal: React.FC<PatientModalProps> = ({
     setClinicalNote,
   });
 
-  const handleNameBlur = () => {
+  const handleNameBlur = useCallback(() => {
     if (name) {
-      setName(formatPatientName(name));
+      setName(sanitizePatientName(name));
     }
-  };
+  }, [name, setName]);
 
-  const handleExtractFromAttachments = () => {
+  const handleExtractFromAttachments = useCallback(() => {
     extractFromAttachments(attachedFiles, { name, rut, birthDate, gender, diagnosis, clinicalNote });
-  };
+  }, [attachedFiles, birthDate, clinicalNote, diagnosis, extractFromAttachments, gender, name, rut]);
 
   const autoSaveInitialized = React.useRef(false);
   const lastAutoSaveRef = React.useRef<string | null>(null);
-  const handleAutoSave = () => {
-    if (!name.trim()) return;
+  const handleAutoSave = useCallback(() => {
+    if (!isPatientNameValid(name)) return;
     const patientToSave = buildPatientPayload({
       initialData,
       selectedDate,
@@ -152,7 +159,26 @@ const PatientModal: React.FC<PatientModalProps> = ({
       driveFolderId,
     });
     onAutoSave(patientToSave);
-  };
+  }, [
+    attachedFiles,
+    birthDate,
+    clinicalNote,
+    diagnosis,
+    driveFolderId,
+    entryTime,
+    exitTime,
+    gender,
+    initialData,
+    name,
+    onAutoSave,
+    patientId,
+    patientTypes,
+    pendingTasks,
+    rut,
+    selectedDate,
+    type,
+    typeId,
+  ]);
 
   const getAutoSaveFingerprint = React.useCallback(() => {
     const payload = buildPatientPayload({
@@ -175,23 +201,7 @@ const PatientModal: React.FC<PatientModalProps> = ({
       driveFolderId,
     }) as PatientCreateInput | PatientUpdateInput;
 
-    return JSON.stringify({
-      id: 'id' in payload ? payload.id : patientId,
-      name: payload.name,
-      rut: payload.rut,
-      birthDate: payload.birthDate,
-      gender: payload.gender,
-      type: payload.type,
-      typeId: payload.typeId,
-      entryTime: payload.entryTime ?? null,
-      exitTime: payload.exitTime ?? null,
-      diagnosis: payload.diagnosis,
-      clinicalNote: payload.clinicalNote,
-      pendingTasks: payload.pendingTasks,
-      attachedFiles: payload.attachedFiles,
-      driveFolderId: payload.driveFolderId ?? null,
-      date: payload.date,
-    });
+    return patientPayloadFingerprint(payload, patientId);
   }, [
     initialData,
     selectedDate,
@@ -212,8 +222,8 @@ const PatientModal: React.FC<PatientModalProps> = ({
     driveFolderId,
   ]);
 
-  const handleSave = () => {
-    if (!name.trim()) return addToast('error', 'Nombre requerido');
+  const handleSave = useCallback(() => {
+    if (!isPatientNameValid(name)) return addToast('error', 'Nombre requerido');
     const patientToSave = buildPatientPayload({
       initialData,
       selectedDate,
@@ -235,7 +245,28 @@ const PatientModal: React.FC<PatientModalProps> = ({
     });
     onSave(patientToSave);
     onClose();
-  };
+  }, [
+    addToast,
+    attachedFiles,
+    birthDate,
+    clinicalNote,
+    diagnosis,
+    driveFolderId,
+    entryTime,
+    exitTime,
+    gender,
+    initialData,
+    name,
+    onClose,
+    onSave,
+    patientId,
+    patientTypes,
+    pendingTasks,
+    rut,
+    selectedDate,
+    type,
+    typeId,
+  ]);
 
   React.useEffect(() => {
     if (!isOpen || mode === 'history') return;
@@ -266,7 +297,9 @@ const PatientModal: React.FC<PatientModalProps> = ({
     attachedFiles,
     driveFolderId,
     isOpen,
+    mode,
     getAutoSaveFingerprint,
+    handleAutoSave,
   ]);
 
   React.useEffect(() => {
@@ -278,8 +311,24 @@ const PatientModal: React.FC<PatientModalProps> = ({
 
   const { toggleTask, deleteTask, addTask, updateTaskNote } = usePendingTasks({ setPendingTasks });
 
-  const turnoTypeId = patientTypes.find(t => t.id === 'turno')?.id || 'turno';
-  const isTurno = typeId === turnoTypeId;
+  const handleEditToggle = useCallback(() => {
+    setIsEditingDemographics(prev => !prev);
+  }, [setIsEditingDemographics]);
+
+  const handleSelectType = useCallback((typeIdValue: string, typeLabel: string) => {
+    setType(typeLabel);
+    setTypeId(typeIdValue);
+  }, [setType, setTypeId]);
+
+  const handleChangeTab = useCallback((tab: 'clinical' | 'files') => {
+    setActiveTab(tab);
+  }, [setActiveTab]);
+
+  const turnoTypeId = useMemo(
+    () => patientTypes.find(t => t.id === 'turno')?.id || 'turno',
+    [patientTypes]
+  );
+  const isTurno = useMemo(() => typeId === turnoTypeId, [typeId, turnoTypeId]);
 
   if (!isOpen) return null;
 
@@ -297,7 +346,7 @@ const PatientModal: React.FC<PatientModalProps> = ({
           gender={gender}
           date={initialData ? initialData.date : selectedDate}
           isEditing={isEditingDemographics}
-          onEditToggle={() => setIsEditingDemographics(!isEditingDemographics)}
+          onEditToggle={handleEditToggle}
           isScanning={isScanning}
           isScanningMulti={isScanningMulti}
           fileInputRef={fileInputRef}
@@ -334,10 +383,7 @@ const PatientModal: React.FC<PatientModalProps> = ({
           onRutChange={setRut}
           onBirthDateChange={setBirthDate}
           onGenderChange={setGender}
-          onSelectType={(typeIdValue, typeLabel) => {
-            setType(typeLabel);
-            setTypeId(typeIdValue);
-          }}
+          onSelectType={handleSelectType}
           onEntryTimeChange={setEntryTime}
           onExitTimeChange={setExitTime}
           onExtractFromAttachments={handleExtractFromAttachments}
@@ -350,7 +396,7 @@ const PatientModal: React.FC<PatientModalProps> = ({
           onDeleteTask={deleteTask}
           onAddTask={addTask}
           onUpdateTaskNote={updateTaskNote}
-          onChangeTab={setActiveTab}
+          onChangeTab={handleChangeTab}
           onFilesChange={setAttachedFiles}
           onDriveFolderIdChange={setDriveFolderId}
           addToast={addToast}
@@ -366,6 +412,4 @@ const PatientModal: React.FC<PatientModalProps> = ({
   );
 };
 
-export { formatTitleCase, formatPatientName };
-
-export default PatientModal;
+export default React.memo(PatientModal);

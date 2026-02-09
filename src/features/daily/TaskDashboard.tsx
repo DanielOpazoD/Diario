@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { format, isSameDay, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckSquare, Calendar, AlertCircle, Clock } from 'lucide-react';
@@ -37,12 +37,12 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
   })));
 
   // --- Patient Task Logic ---
-  const onTogglePatientTask = (patientId: string, taskId: string) => {
+  const onTogglePatientTask = useCallback((patientId: string, taskId: string) => {
     const updatedPatient = togglePatientTask(records, patientId, taskId);
     if (updatedPatient) {
       updatePatient(updatedPatient);
     }
-  };
+  }, [records, updatePatient]);
 
   const allPatientTasks = useMemo(() => {
     const tasks: EnrichedTask[] = [];
@@ -102,7 +102,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
   }, [filteredPatientTasks]);
 
   // --- General Task Logic ---
-  const handleAddGeneralTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleAddGeneralTask = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && newGeneralTask.trim()) {
       const task = createGeneralTask(newGeneralTask);
       if (task) {
@@ -110,9 +110,9 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
       }
       setNewGeneralTask('');
     }
-  };
+  }, [addGeneralTask, newGeneralTask]);
 
-  const renderTaskGroup = (
+  const renderTaskGroup = useCallback((
     title: string,
     tasks: EnrichedTask[],
     colorClass: string,
@@ -132,7 +132,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ onNavigateToPatient }) =>
       }}
       dateLabelForTask={(date) => format(new Date(date + 'T00:00:00'), "d 'de' MMM", { locale: es })}
     />
-  );
+  ), [onNavigateToPatient, onTogglePatientTask, records]);
 
   return (
     <div className="max-w-5xl mx-auto pb-5 h-[calc(100vh-140px)] flex flex-col px-3 md:px-5">

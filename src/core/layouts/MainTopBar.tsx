@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Menu } from 'lucide-react';
 import { DateNavigator } from '@features/daily';
 import { PatientRecord, ViewMode } from '@shared/types';
+import { SESSION_KEYS } from '@shared/constants/sessionKeys';
+import { safeSessionGetItem } from '@shared/utils/safeSessionStorage';
 
 interface MainTopBarProps {
   viewMode: ViewMode;
@@ -12,6 +14,25 @@ interface MainTopBarProps {
   onOpenSidebar: () => void;
 }
 
+type ReportTopbarContext = {
+  patientName?: string;
+  patientRut?: string;
+  reportDate?: string;
+  templateName?: string;
+};
+
+const readReportContext = (): ReportTopbarContext | null => {
+  const raw = safeSessionGetItem(SESSION_KEYS.REPORT_TOPBAR_CONTEXT);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as ReportTopbarContext | null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    return parsed;
+  } catch (_error) {
+    return null;
+  }
+};
+
 const MainTopBar: React.FC<MainTopBarProps> = ({
   viewMode,
   currentDate,
@@ -19,10 +40,43 @@ const MainTopBar: React.FC<MainTopBarProps> = ({
   onDateChange,
   onOpenNewPatient,
   onOpenSidebar,
-}) => (
-  <div
-    className="sticky top-0 z-30 bg-white/85 dark:bg-gray-950/85 backdrop-blur-xl shadow-sm border-b border-gray-200/60 dark:border-gray-800/60"
-  >
+}) => {
+  const [reportContext, setReportContext] = useState<ReportTopbarContext | null>(null);
+
+  useEffect(() => {
+    if (viewMode !== 'reports') {
+      setReportContext(null);
+      return;
+    }
+
+    const refreshContext = (_event?: Event) => {
+      setReportContext(readReportContext());
+    };
+
+    refreshContext();
+    window.addEventListener('medidiario:report-context', refreshContext);
+    window.addEventListener('focus', refreshContext);
+    return () => {
+      window.removeEventListener('medidiario:report-context', refreshContext);
+      window.removeEventListener('focus', refreshContext);
+    };
+  }, [viewMode]);
+
+  const reportSubtitle = useMemo(() => {
+    if (!reportContext) return 'Edición de informe clínico';
+    const parts = [reportContext.patientRut, reportContext.reportDate].filter(Boolean);
+    if (parts.length > 0) return parts.join(' · ');
+    return reportContext.templateName || 'Edición de informe clínico';
+  }, [reportContext]);
+
+  return (
+    <div
+      className={`sticky top-0 z-30 shadow-sm border-b border-gray-200/60 dark:border-gray-800/60 ${
+        viewMode === 'reports'
+          ? 'bg-white dark:bg-gray-950 backdrop-blur-none'
+          : 'bg-white/85 dark:bg-gray-950/85 backdrop-blur-xl'
+      }`}
+    >
     <header className="shrink-0 transition-all glass pt-1 pb-1 md:pt-2 md:pb-1.5">
       <div className="max-w-5xl mx-auto w-full px-3 md:px-5 flex flex-col md:flex-row items-center justify-between gap-1.5 md:gap-0">
         <div className="flex items-center w-full md:w-auto justify-between md:justify-start">
@@ -33,13 +87,22 @@ const MainTopBar: React.FC<MainTopBarProps> = ({
             >
               <Menu className="w-6 h-6" />
             </button>
-            {viewMode !== 'daily' && viewMode !== 'tasks' && (
+            {viewMode !== 'daily' && viewMode !== 'tasks' && viewMode !== 'reports' && (
               <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight truncate">
-                {viewMode === 'stats' && 'Estadí­sticas'}
+                {viewMode === 'stats' && 'Estadísticas'}
                 {viewMode === 'bookmarks' && 'Marcadores'}
                 {viewMode === 'settings' && 'Ajustes'}
-                {viewMode === 'reports' && 'Informes Clínicos'}
               </h2>
+            )}
+            {viewMode === 'reports' && (
+              <div className="flex flex-col">
+                <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white tracking-tight truncate">
+                  {reportContext?.patientName || 'Informe clínico'}
+                </h2>
+                <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {reportSubtitle}
+                </p>
+              </div>
             )}
           </div>
 
@@ -63,6 +126,7 @@ const MainTopBar: React.FC<MainTopBarProps> = ({
       </div>
     </header>
   </div>
-);
+  );
+};
 
 export default MainTopBar;

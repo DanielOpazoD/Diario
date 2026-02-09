@@ -1,6 +1,6 @@
-import { addPendingDeletion, deletePatientFromFirebase } from '@services/firebaseService';
+import { firebasePatientSyncAdapter } from '@data/adapters/firebasePatientSyncAdapter';
 
 export const deletePatientWithSync = async (patientId: string) => {
-  addPendingDeletion(patientId);
-  await deletePatientFromFirebase(patientId);
+  firebasePatientSyncAdapter.addPendingDeletion(patientId);
+  await firebasePatientSyncAdapter.deletePatient(patientId);
 };

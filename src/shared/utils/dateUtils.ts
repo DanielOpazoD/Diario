@@ -1,4 +1,9 @@
-import { differenceInYears, parseISO } from 'date-fns';
+import { differenceInYears, format, isValid, parseISO } from 'date-fns';
+
+export const formatLocalYMD = (date?: Date, fallback: Date = new Date()): string => {
+    const base = date instanceof Date && isValid(date) ? date : fallback;
+    return format(base, 'yyyy-MM-dd');
+};
 
 export const parseBirthDate = (birthDate?: string): Date | null => {
     if (!birthDate || !birthDate.trim()) return null;
@@ -39,26 +44,7 @@ export const formatBirthDateDisplay = (birthDate?: string): string => {
     return `${day}-${month}-${year}`;
 };
 
-export const normalizeBirthDateInput = (value: string): string => {
-    if (!value) return '';
-    const trimmed = value.trim();
-    const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (isoMatch) {
-        const [, year, month, day] = isoMatch;
-        return `${day}-${month}-${year}`;
-    }
-    const dmyMatch = trimmed.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
-    if (dmyMatch) {
-        const [, day, month, yearRaw] = dmyMatch;
-        let year = yearRaw;
-        if (year.length === 2) {
-            const yearNum = Number(year);
-            year = yearNum < 30 ? `20${year}` : `19${year}`;
-        }
-        return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
-    }
-    return trimmed;
-};
+export { normalizeBirthDate as normalizeBirthDateInput } from '@domain/patient/dates';
 
 /**
  * Calculates age based on a birth date string (YYYY-MM-DD)

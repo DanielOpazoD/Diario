@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { format, addDays, isSameDay, isToday, addYears, getYear, getMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PatientRecord, PatientType } from '@shared/types';
@@ -29,7 +29,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
   }, [currentDate]);
 
   // Center the selected date (which is always in the middle of the array)
-  const scrollToCenter = (smooth = false) => {
+  const scrollToCenter = useCallback((smooth = false) => {
     if (scrollRef.current && !showPicker) {
       const container = scrollRef.current;
 
@@ -45,7 +45,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
 
       container.scrollTo({ left: scrollPos, behavior: smooth ? 'smooth' : 'auto' });
     }
-  };
+  }, [showPicker]);
 
   useLayoutEffect(() => {
     // Execute immediately on layout to prevent visual jump
@@ -55,31 +55,46 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
     const handleResize = () => scrollToCenter(false);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [days, showPicker]);
+  }, [days, scrollToCenter, showPicker]);
 
-  const getIndicators = (date: Date) => {
-    const dayRecords = records.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), date));
+  const recordsByDate = useMemo(() => {
+    const map = new Map<string, PatientRecord[]>();
+    records.forEach(record => {
+      const key = record.date;
+      const existing = map.get(key);
+      if (existing) {
+        existing.push(record);
+      } else {
+        map.set(key, [record]);
+      }
+    });
+    return map;
+  }, [records]);
+
+  const getIndicators = useCallback((date: Date) => {
+    const key = format(date, 'yyyy-MM-dd');
+    const dayRecords = recordsByDate.get(key) || [];
     const hasHosp = dayRecords.some(r => r.typeId === 'hospitalizado' || (!r.typeId && r.type === PatientType.HOSPITALIZADO));
     const hasPoli = dayRecords.some(r => r.typeId === 'policlinico' || (!r.typeId && r.type === PatientType.POLICLINICO));
     const hasExtra = dayRecords.some(r => r.typeId === 'extra' || (!r.typeId && r.type === PatientType.EXTRA));
     const hasTurno = dayRecords.some(r => r.typeId === 'turno' || (!r.typeId && r.type === PatientType.TURNO));
     return { hasHosp, hasPoli, hasExtra, hasTurno, count: dayRecords.length };
-  };
+  }, [recordsByDate]);
 
-  const handleMonthJump = (monthIndex: number) => {
+  const handleMonthJump = useCallback((monthIndex: number) => {
     const d = new Date();
     d.setFullYear(getYear(pickerDate));
     d.setMonth(monthIndex);
     onSelectDate(d);
     setShowPicker(false);
-  };
+  }, [onSelectDate, pickerDate]);
 
-  const handleYearChange = (increment: number) => {
+  const handleYearChange = useCallback((increment: number) => {
     setPickerDate(prev => addYears(prev, increment));
-  };
+  }, []);
 
   // Handle Scroll Wheel to move dates
-  const handleWheel = (e: React.WheelEvent) => {
+  const handleWheel = useCallback((e: React.WheelEvent) => {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
       if (e.deltaX > 0) onSelectDate(addDays(currentDate, 1));
       else onSelectDate(addDays(currentDate, -1));
@@ -87,7 +102,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
       if (e.deltaY > 0) onSelectDate(addDays(currentDate, 1));
       else onSelectDate(addDays(currentDate, -1));
     }
-  };
+  }, [currentDate, onSelectDate]);
 
   return (
     <div className="flex flex-col w-full max-w-lg mx-auto relative group">

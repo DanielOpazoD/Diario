@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Calendar, FileText, ClipboardList, Save } from 'lucide-react';
 import useAppStore from '@core/stores/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -55,11 +55,11 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ isOpen, onClo
 
   if (!isOpen || !record) return null;
 
-  const completedTasks = pendingTasks.filter(t => t.isCompleted);
-  const pendingOpenTasks = pendingTasks.filter(t => !t.isCompleted);
+  const completedTasks = useMemo(() => pendingTasks.filter(t => t.isCompleted), [pendingTasks]);
+  const pendingOpenTasks = useMemo(() => pendingTasks.filter(t => !t.isCompleted), [pendingTasks]);
   const { toggleTask, deleteTask, addTask, updateTaskNote } = usePendingTasks({ setPendingTasks });
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     updatePatient({
       ...record,
       pendingTasks,
@@ -68,7 +68,7 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ isOpen, onClo
       updatedAt: Date.now(),
     });
     addToast('success', 'Historial actualizado');
-  };
+  }, [addToast, attachedFiles, driveFolderId, pendingTasks, record, updatePatient]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden p-0 md:p-6">
@@ -243,4 +243,4 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ isOpen, onClo
   );
 };
 
-export default PatientHistoryModal;
+export default React.memo(PatientHistoryModal);

@@ -2,26 +2,34 @@ import type { PatientRecord } from '@shared/types';
 import { emitStructuredLog } from '../logger';
 import { getAuthInstance } from './auth';
 import { getFirestoreInstance } from './firestore';
+import { PatientRecordSchema } from '@shared/schemas';
 
 const PATIENTS_COLLECTION = 'data';
 const LEGACY_PATIENTS_COLLECTION = 'patients';
 const pendingDeletions = new Map<string, number>();
+const CONFLICT_LOG_WINDOW_MS = 10000;
+const recentConflictLogs = new Map<string, number>();
 let lastSyncedStateHash: string | null = null;
 
 const sanitizeForFirestore = (data: any) => {
   return JSON.parse(JSON.stringify(data, (_, v) => (v === undefined ? null : v)));
 };
 
+const withSyncMeta = (patient: PatientRecord, source: 'local' | 'remote') => ({
+  ...patient,
+  updatedAt: patient.updatedAt ?? Date.now(),
+  syncMeta: {
+    source,
+    updatedBy: patient.syncMeta?.updatedBy || 'unknown',
+    updatedAt: patient.updatedAt ?? Date.now(),
+  },
+});
+
 const loadFirestoreDeps = async () => {
   const [db, auth] = await Promise.all([getFirestoreInstance(), getAuthInstance()]);
   if (!db || !auth) return null;
   const firestore = await import('firebase/firestore');
   return { db, auth, ...firestore };
-};
-
-const loadPatientRecordSchema = async () => {
-  const { PatientRecordSchema } = await import('@shared/schemas');
-  return PatientRecordSchema;
 };
 
 export const addPendingDeletion = (id: string) => {
@@ -44,7 +52,13 @@ export const syncPatientsToFirebase = async (patients: PatientRecord[]) => {
   const user = deps.auth.currentUser;
   if (!user) return;
 
-  const currentStateHash = JSON.stringify(patients.map(p => ({ id: p.id, updated: p.updatedAt })));
+  const currentStateHash = JSON.stringify(
+    patients.map(p => ({
+      id: p.id,
+      updated: p.updatedAt || 0,
+      created: p.createdAt || 0,
+    }))
+  );
   if (currentStateHash === lastSyncedStateHash) return;
 
   try {
@@ -72,7 +86,7 @@ export const syncIncrementalPatientsToFirebase = async (patients: PatientRecord[
 
       chunk.forEach((patient) => {
         const docRef = deps.doc(userPatientsRef, patient.id);
-        batch.set(docRef, sanitizeForFirestore(patient));
+        batch.set(docRef, sanitizeForFirestore(withSyncMeta(patient, 'local')));
       });
 
       await batch.commit();
@@ -87,6 +101,14 @@ export const syncIncrementalPatientsToFirebase = async (patients: PatientRecord[
   }
 };
 
+const shouldLogConflict = (id: string) => {
+  const now = Date.now();
+  const last = recentConflictLogs.get(id) || 0;
+  if (now - last < CONFLICT_LOG_WINDOW_MS) return false;
+  recentConflictLogs.set(id, now);
+  return true;
+};
+
 export const subscribeToPatients = (callback: (patients: PatientRecord[]) => void) => {
   let active = true;
   let unsubPrimary = () => {};
@@ -97,8 +119,6 @@ export const subscribeToPatients = (callback: (patients: PatientRecord[]) => voi
     if (!deps || !active) return;
     const user = deps.auth.currentUser;
     if (!user) return;
-    const PatientRecordSchema = await loadPatientRecordSchema();
-
     const primaryRef = deps.collection(deps.db, 'users', user.uid, PATIENTS_COLLECTION);
     const legacyRef = deps.collection(deps.db, 'users', user.uid, LEGACY_PATIENTS_COLLECTION);
 
@@ -113,7 +133,13 @@ export const subscribeToPatients = (callback: (patients: PatientRecord[]) => voi
       sourceData.primary.forEach(p => {
         const existing = mergedMap.get(p.id);
         if (!existing || (p.updatedAt || 0) >= (existing.updatedAt || 0)) {
-          mergedMap.set(p.id, p);
+          mergedMap.set(p.id, withSyncMeta(p, 'remote'));
+        } else if (shouldLogConflict(p.id)) {
+          emitStructuredLog('warn', 'Firebase', 'Conflict resolved using newer local record', {
+            id: p.id,
+            localUpdatedAt: existing.updatedAt,
+            remoteUpdatedAt: p.updatedAt,
+          });
         }
       });
       callback(Array.from(mergedMap.values()));
@@ -131,11 +157,7 @@ export const subscribeToPatients = (callback: (patients: PatientRecord[]) => voi
             patients.push(patient);
           }
         } else {
-          console.warn(`[Firebase][${source}] Validation failed for patient ${doc.id}:`, {
-            errors: result.error.issues,
-            rawData: data,
-          });
-          emitStructuredLog('warn', 'Firebase', `Invalid data in ${source}`, {
+          emitStructuredLog('warn', 'Firebase', `Validation failed for patient in ${source}`, {
             id: doc.id,
             errors: result.error.flatten().fieldErrors,
           });

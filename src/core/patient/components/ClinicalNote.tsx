@@ -191,4 +191,4 @@ const ClinicalNote: React.FC<ClinicalNoteProps> = ({
   );
 };
 
-export default ClinicalNote;
+export default React.memo(ClinicalNote);

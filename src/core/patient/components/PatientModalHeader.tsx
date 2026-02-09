@@ -139,4 +139,4 @@ const PatientModalHeader: React.FC<PatientModalHeaderProps> = ({
     );
 };
 
-export default PatientModalHeader;
+export default React.memo(PatientModalHeader);

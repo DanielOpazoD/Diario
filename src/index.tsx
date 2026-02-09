@@ -4,7 +4,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
 import { registerSW } from 'virtual:pwa-register';
-import { STORAGE_KEYS } from '@shared/constants/storageKeys';
+import { getStoredAppVersion, setStoredAppVersion } from '@shared/utils/storageFlags';
+import { dispatchUpdateEvent, setUpdateNotice } from '@shared/utils/updateNotice';
 
 const clearServiceWorkerCaches = async () => {
   if (!('caches' in window)) return;
@@ -13,16 +14,8 @@ const clearServiceWorkerCaches = async () => {
 };
 
 const notifyUpdate = () => {
-  try {
-    sessionStorage.setItem('medidiario_update_notice', '1');
-  } catch {
-    // ignore
-  }
-  window.dispatchEvent(
-    new CustomEvent('app:update', {
-      detail: { message: 'Actualización detectada. Recargando…' },
-    })
-  );
+  setUpdateNotice();
+  dispatchUpdateEvent({ message: 'Actualización detectada. Recargando…' });
 };
 
 const scheduleReload = (update: (reloadPage?: boolean) => Promise<void> | void) => {
@@ -36,6 +29,15 @@ const scheduleReload = (update: (reloadPage?: boolean) => Promise<void> | void) 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
+}
+
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations()
+    .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+    .catch(() => undefined)
+    .finally(() => {
+      clearServiceWorkerCaches().catch(() => undefined);
+    });
 }
 
 const shouldRegisterPwa = import.meta.env.PROD && import.meta.env.VITE_DISABLE_PWA !== 'true';
@@ -52,9 +54,9 @@ const updateSW = shouldRegisterPwa
   : () => undefined;
 
 const currentVersion = import.meta.env.VITE_APP_VERSION || 'dev';
-const storedVersion = localStorage.getItem(STORAGE_KEYS.APP_VERSION);
+const storedVersion = getStoredAppVersion();
 if (storedVersion !== currentVersion) {
-  localStorage.setItem(STORAGE_KEYS.APP_VERSION, currentVersion);
+  setStoredAppVersion(currentVersion);
   if (shouldRegisterPwa && storedVersion) {
     clearServiceWorkerCaches()
       .catch(() => undefined)

@@ -9,9 +9,9 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ medico, especialidad, onMedicoChange, onEspecialidadChange }) => {
   return (
-    <div className="sec" style={{ marginTop: '4px' }}>
-      <div className="grid-2">
-        <div className="row">
+    <div className="sec report-footer" style={{ marginTop: '4px' }}>
+      <div className="grid-2 report-footer-grid">
+        <div className="row report-footer-row">
           <div className="lbl">Médico</div>
           <input
             className="inp"
@@ -20,7 +20,7 @@ const Footer: React.FC<FooterProps> = ({ medico, especialidad, onMedicoChange, o
             onChange={e => onMedicoChange(e.target.value)}
           />
         </div>
-        <div className="row">
+        <div className="row report-footer-row">
           <div className="lbl">Especialidad</div>
           <input
             className="inp"

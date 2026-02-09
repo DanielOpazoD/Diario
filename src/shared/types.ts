@@ -65,6 +65,11 @@ export interface PatientRecord {
   attachedFiles: AttachedFile[];
   updatedAt?: number;
   createdAt?: number;
+  syncMeta?: {
+    source?: 'local' | 'remote';
+    updatedBy?: string;
+    updatedAt?: number;
+  };
 }
 
 export type PatientCreateInput = Omit<PatientRecord, 'id' | 'createdAt' | 'updatedAt'>;
@@ -84,6 +89,13 @@ export interface AIAnalysisResult {
   extractedTasks: string[];
 }
 
+export interface FileContent {
+  inlineData: {
+    mimeType: string;
+    data: string;
+  };
+}
+
 export interface ExtractedPatientData {
   name: string;
   rut: string;
@@ -97,6 +109,14 @@ export interface User {
   name: string;
   email: string;
   avatar: string;
+}
+
+export interface BackupFileData {
+  patients: PatientRecord[];
+  generalTasks: GeneralTask[];
+  patientTypes: PatientTypeConfig[];
+  bookmarks: Bookmark[];
+  bookmarkCategories: BookmarkCategory[];
 }
 
 export type ViewMode = 'daily' | 'stats' | 'settings' | 'tasks' | 'bookmarks' | 'history' | 'reports';
@@ -124,7 +144,8 @@ export interface DriveFolderPreference {
 }
 
 export interface SecuritySettings {
-  pin: string | null;
+  pinHash: string | null;
+  pinSalt: string | null;
   autoLockMinutes: number;
 }
 

@@ -26,7 +26,19 @@ export function createReactStub(options = {}) {
     useCallback(fn) {
       return fn;
     },
+    useRef(initialValue) {
+      return { current: initialValue };
+    },
+    memo(component) {
+      return component;
+    },
+    forwardRef(component) {
+      return component;
+    },
     createElement(type, props, ...children) {
+      if (typeof type === 'function') {
+        return type({ ...(props || {}), children });
+      }
       return { type, props: props || {}, children };
     },
     Fragment: 'Fragment',

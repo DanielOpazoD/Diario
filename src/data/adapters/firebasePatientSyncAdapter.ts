@@ -1,6 +1,14 @@
 import type { PatientSyncPort } from '@data/ports/patientSyncPort';
-import { subscribeToPatients } from '@services/firebaseService';
+import {
+  addPendingDeletion,
+  deletePatientFromFirebase,
+  subscribeToPatients,
+  syncPatientsToFirebase,
+} from '@services/firebaseService';
 
 export const firebasePatientSyncAdapter: PatientSyncPort = {
   subscribeToPatients,
+  addPendingDeletion,
+  deletePatient: deletePatientFromFirebase,
+  syncPatients: syncPatientsToFirebase,
 };

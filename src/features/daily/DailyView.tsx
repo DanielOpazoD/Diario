@@ -1,13 +1,13 @@
 import React from 'react';
-import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@core/ui';
-import { ExecutivePatientRow } from '@core/patient';
+import ExecutivePatientRow from '@core/patient/components/ExecutivePatientRow';
 import FilterBar from '@features/daily/FilterBar';
 import VirtualizedPatientList from '@features/daily/VirtualizedPatientList';
 import PdfImportEntry from '@features/daily/components/PdfImportEntry';
 
 import { PatientRecord, PatientTypeConfig } from '@shared/types';
+import { formatLocalYMD } from '@shared/utils/dateUtils';
 import useAppStore from '@core/stores/useAppStore';
 import { useDailyMetrics } from '@shared/hooks/useDailyMetrics';
 import { usePatientFilter } from '@shared/hooks/usePatientFilter';
@@ -39,6 +39,7 @@ const DailyView: React.FC<DailyViewProps> = ({
     dailyRecords,
     patientTypes,
   );
+  const selectedDate = formatLocalYMD(currentDate);
 
   // Batch operations hook - extracted from inline state
   const {
@@ -57,7 +58,7 @@ const DailyView: React.FC<DailyViewProps> = ({
     onMovePatients,
     onCopyPatients,
     addToast,
-    initialTargetDate: format(currentDate, 'yyyy-MM-dd'),
+    initialTargetDate: selectedDate,
   });
 
   const addPatient = useAppStore(state => state.addPatient);
@@ -68,7 +69,7 @@ const DailyView: React.FC<DailyViewProps> = ({
 
     const blankPatient: PatientRecord = {
       id: crypto.randomUUID(),
-      date: format(currentDate, 'yyyy-MM-dd'),
+      date: selectedDate,
       name: '',
       rut: '',
       birthDate: '',
@@ -188,7 +189,7 @@ const DailyView: React.FC<DailyViewProps> = ({
             selectedPatients={selectedPatients}
             onToggleSelect={togglePatientSelection}
             addToast={addToast}
-            selectedDate={format(currentDate, 'yyyy-MM-dd')}
+            selectedDate={selectedDate}
           />
         </div>
       ) : (
@@ -209,7 +210,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                 selected={selectedPatients.has(patient.id)}
                 onToggleSelect={() => togglePatientSelection(patient.id)}
                 addToast={addToast}
-                selectedDate={format(currentDate, 'yyyy-MM-dd')}
+                selectedDate={selectedDate}
               />
             ))}
           </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bookmark as LucideBookmark, LayoutGrid, Plus } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
@@ -32,16 +32,20 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
     [bookmarks]
   );
 
+  const handleCloseApps = useCallback(() => {
+    setIsAppsOpen(false);
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (appsDropdownRef.current && !appsDropdownRef.current.contains(event.target as Node)) {
-        setIsAppsOpen(false);
+        handleCloseApps();
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [handleCloseApps]);
 
   return (
     <div
@@ -102,7 +106,7 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({ onOpenManager }) => {
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   role="menuitem"
-                  onClick={() => setIsAppsOpen(false)}
+                  onClick={handleCloseApps}
                 >
                   <BookmarkIcon bookmark={bookmark} sizeClass="w-5 h-5" />
                   <div className="flex-1 min-w-0">

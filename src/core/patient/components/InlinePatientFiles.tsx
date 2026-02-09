@@ -38,4 +38,4 @@ const InlinePatientFiles: React.FC<InlinePatientFilesProps> = ({
   </div>
 );
 
-export default InlinePatientFiles;
+export default React.memo(InlinePatientFiles);

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Bookmark } from '@shared/types';
+import { logEvent } from '@use-cases/logger';
 
 interface BookmarkIconProps {
   bookmark: Pick<Bookmark, 'url'> & { icon?: string }; // Manually loose type or use Partial<Pick<...>>
@@ -12,7 +13,7 @@ const normalizeUrl = (url: string) => {
   try {
     return url.match(/^https?:\/\//) ? url : `https://${url}`;
   } catch (error) {
-    console.warn('No se pudo normalizar la URL del ícono', { url, error });
+    logEvent('warn', 'Bookmarks', 'No se pudo normalizar la URL del ícono', { url, error });
     return '';
   }
 };
@@ -25,7 +26,7 @@ const getFaviconUrl = (url: string) => {
     const hostname = new URL(normalizedUrl).hostname;
     return hostname ? `https://www.google.com/s2/favicons?domain=${hostname}&sz=32` : '';
   } catch (error) {
-    console.warn('No se pudo obtener el favicon del marcador', { url, error });
+    logEvent('warn', 'Bookmarks', 'No se pudo obtener el favicon del marcador', { url, error });
     return '';
   }
 };

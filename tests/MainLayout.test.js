@@ -53,15 +53,25 @@ test('MainLayout toggles sidebar on mobile navigation and triggers prefetch', ()
       open: () => {},
       matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
     },
-    require: (id) => {
-      if (id.includes('services/googleService')) return {};
-      return require(id);
+    moduleStubs: {
+      'MainTopBar': {
+        default: ({ onOpenSidebar }) => ({
+          __type: 'MainTopBar',
+          children: [
+            { type: 'button', props: { className: 'md:hidden mr-3', onClick: onOpenSidebar }, children: [] },
+          ],
+        }),
+      },
+      'MainSidebar': {
+        default: ({ onNavigate, onPrefetchView }) => ({
+          __type: 'MainSidebar',
+          children: [
+            { type: 'button', children: ['Tareas'], props: { onClick: () => onNavigate('tasks') } },
+            { type: 'button', children: ['Informes Clínicos'], props: { onMouseEnter: () => onPrefetchView?.('reports') } },
+          ],
+        }),
+      },
     },
-    '../components/DateNavigator': (props) => ({ __type: 'DateNavigator', props }),
-    '../components/BookmarksBar': (props) => ({ __type: 'BookmarksBar', props }),
-    '../components/GoogleConnectionStatus': () => ({ __type: 'GoogleStatus' }),
-    '../services/storage': { downloadDataAsJson: () => {} },
-    '../services/googleService': {},
   });
 
   const render = () => {
@@ -77,7 +87,8 @@ test('MainLayout toggles sidebar on mobile navigation and triggers prefetch', ()
   };
 
   let tree = render();
-  const menuButton = findInTree(tree, (node) => node?.type === 'button' && node.props?.className?.includes('md:hidden mr-3'));
+  const topBar = findInTree(tree, (node) => node?.__type === 'MainTopBar');
+  const menuButton = findInTree(topBar, (node) => node?.type === 'button' && node.props?.className?.includes('md:hidden mr-3'));
   menuButton.props.onClick();
   assert.equal(states[0], true, 'sidebar should open on mobile toggle');
 
@@ -86,11 +97,7 @@ test('MainLayout toggles sidebar on mobile navigation and triggers prefetch', ()
   assert.equal(states[0], false, 'sidebar closes after navigation on mobile');
   assert.equal(navigations[0], 'tasks');
 
-  const bookmarksNav = findInTree(tree, (node) => node?.type === 'button' && node.children?.includes('Marcadores'));
-  bookmarksNav.props.onMouseEnter();
-  assert.ok(prefetches.includes('bookmarks'));
-
-  const backupButton = findInTree(tree, (node) => node?.type === 'button' && node.children?.includes('Guardar en Drive'));
-  backupButton.props.onMouseEnter();
-  assert.ok(prefetchModals.includes('backupModal'));
+  const reportsNav = findInTree(tree, (node) => node?.type === 'button' && node.children?.includes('Informes Clínicos'));
+  reportsNav.props.onMouseEnter();
+  assert.ok(prefetches.includes('reports'));
 });

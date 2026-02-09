@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Search as SearchIcon, Users, Sparkles, X, Loader, Calendar, Filter } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
@@ -47,9 +47,28 @@ const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient
     onError: (message) => addToast('error', message),
   });
 
-  const filteredVisits = semanticResults
-    ? paginatedVisits.filter(v => semanticResults.includes(v.id))
-    : paginatedVisits;
+  const filteredVisits = useMemo(
+    () => (semanticResults ? paginatedVisits.filter(v => semanticResults.includes(v.id)) : paginatedVisits),
+    [paginatedVisits, semanticResults]
+  );
+
+  const handleSemanticToggle = useCallback(() => {
+    if (isSemanticSearch) {
+      clearSemanticSearch();
+      return;
+    }
+    setIsSemanticSearch(true);
+  }, [clearSemanticSearch, isSemanticSearch, setIsSemanticSearch]);
+
+  const handleSemanticKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      handleSemanticSearch();
+    }
+  }, [handleSemanticSearch]);
+
+  const handleSemanticClear = useCallback(() => {
+    setSemanticQuery('');
+  }, [setSemanticQuery]);
 
   return (
     <div className="max-w-7xl mx-auto h-full min-h-0 flex flex-col px-3 md:px-6 animate-fade-in">
@@ -73,7 +92,7 @@ const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Búsqueda Global</label>
               <button
-                onClick={() => isSemanticSearch ? clearSemanticSearch() : setIsSemanticSearch(true)}
+                onClick={handleSemanticToggle}
                 className={`flex items-center gap-1.5 text-[10px] font-black px-3 py-1 rounded-full transition-all shadow-sm ${isSemanticSearch
                     ? 'bg-blue-600 text-white shadow-blue-500/20'
                     : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-blue-500'
@@ -93,12 +112,12 @@ const PatientsHistoryView: React.FC<PatientsHistoryViewProps> = ({ onEditPatient
                     placeholder="Ej: Pacientes diabéticos con atención de enfermería..."
                     value={semanticQuery}
                     onChange={e => setSemanticQuery(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSemanticSearch()}
+                    onKeyDown={handleSemanticKeyDown}
                     className="w-full pl-12 pr-28 py-3.5 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border-2 border-blue-200 dark:border-blue-900/40 focus:border-blue-500 outline-none text-sm transition-all shadow-sm"
                   />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                     {semanticQuery && (
-                      <button onClick={() => setSemanticQuery('')} className="p-2 text-gray-400 hover:text-gray-600">
+                      <button onClick={handleSemanticClear} className="p-2 text-gray-400 hover:text-gray-600">
                         <X className="w-4 h-4" />
                       </button>
                     )}

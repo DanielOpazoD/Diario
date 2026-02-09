@@ -62,4 +62,4 @@ const PatientModalFooter: React.FC<PatientModalFooterProps> = ({
     );
 };
 
-export default PatientModalFooter;
+export default React.memo(PatientModalFooter);

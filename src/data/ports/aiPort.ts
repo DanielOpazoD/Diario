@@ -1,5 +1,4 @@
-import { AIAnalysisResult, ExtractedPatientData } from '@shared/types';
-import type { FileContent } from '@services/geminiService';
+import { AIAnalysisResult, ExtractedPatientData, FileContent } from '@shared/types';
 
 export interface AIPort {
   validateEnvironment: () => Promise<{ status: string; length: number; keyPreview: string }>;

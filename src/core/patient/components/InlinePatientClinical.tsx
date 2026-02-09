@@ -64,4 +64,4 @@ const InlinePatientClinical: React.FC<InlinePatientClinicalProps> = ({
   </div>
 );
 
-export default InlinePatientClinical;
+export default React.memo(InlinePatientClinical);

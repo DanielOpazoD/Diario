@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PatientRecord } from '@shared/types';
-import { ExecutivePatientRow } from '@core/patient';
+import ExecutivePatientRow from '@core/patient/components/ExecutivePatientRow';
 
 interface VirtualizedPatientListProps {
     patients: PatientRecord[];

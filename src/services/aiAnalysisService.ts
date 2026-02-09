@@ -5,6 +5,7 @@
 
 import { z } from 'zod';
 import { analyzeClinicalNote, generateClinicalSummary } from '@services/geminiService';
+import { emitStructuredLog } from '@services/logger';
 import { PendingTask } from '@shared/types';
 
 // Schema for AI analysis response
@@ -45,7 +46,7 @@ export const analyzeNote = async (
         // Validate AI response with Zod
         const validation = AIAnalysisResultSchema.safeParse(result);
         if (!validation.success) {
-            console.error('[AI Service] Validation Failed', validation.error);
+            emitStructuredLog('error', 'AI', 'Validation failed', { error: validation.error });
             throw new Error('La respuesta de la IA no tiene el formato correcto.');
         }
 
@@ -116,7 +117,7 @@ export const batchAnalyzeNotes = async (
                 results.push(validation.data);
             }
         } catch (error) {
-            console.error('[AI Service] Batch analysis error:', error);
+            emitStructuredLog('error', 'AI', 'Batch analysis error', { error });
         }
     }
 

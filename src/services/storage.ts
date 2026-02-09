@@ -1,123 +1,179 @@
-
-import { Bookmark, BookmarkCategory, PatientRecord, GeneralTask, PatientTypeConfig } from '@shared/types';
+import { Bookmark, BookmarkCategory, PatientRecord, GeneralTask, BackupFileData } from '@shared/types';
 import { STORAGE_KEYS } from '@shared/constants/storageKeys';
+import { loadJsonArray, saveJson } from '@shared/utils/storageJson';
+import { ensureArray } from '@shared/utils/arrays';
+import { emitStructuredLog } from '@services/logger';
+import { normalizePatientRecord } from '@domain/patient/normalize';
+import {
+  BookmarkCategorySchema,
+  BookmarkSchema,
+  GeneralTaskSchema,
+  PatientRecordSchema,
+  PatientTypeConfigSchema,
+} from '@shared/schemas';
+import { safeRemoveItem } from '@shared/utils/safeStorage';
 
 const STORAGE_KEY = STORAGE_KEYS.RECORDS;
 const GENERAL_TASKS_KEY = STORAGE_KEYS.TASKS;
 const BOOKMARKS_KEY = STORAGE_KEYS.BOOKMARKS;
 const BOOKMARK_CATEGORIES_KEY = STORAGE_KEYS.BOOKMARK_CATEGORIES;
 
-export interface BackupFileData {
-  patients: PatientRecord[];
-  generalTasks: GeneralTask[];
-  patientTypes: PatientTypeConfig[];
-  bookmarks: Bookmark[];
-  bookmarkCategories: BookmarkCategory[];
-}
-
-export const saveRecordsToLocal = (records: PatientRecord[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  } catch (e) {
-    console.error("Error saving to local storage", e);
+const safeSetJson = (key: string, value: unknown, context: string) => {
+  const result = saveJson(key, value);
+  if (result === false) {
+    emitStructuredLog('error', 'Storage', context);
   }
 };
 
-const normalizePatients = (records: any[]): PatientRecord[] => {
-  return records.map((r: any) => ({
-    ...r,
-    driveFolderId: r.driveFolderId ?? null,
-    attachedFiles: Array.isArray(r.attachedFiles) ? r.attachedFiles : [],
-    pendingTasks: Array.isArray(r.pendingTasks) ? r.pendingTasks : [],
-  }));
+export const saveRecordsToLocal = (records: PatientRecord[]) => {
+  safeSetJson(STORAGE_KEY, records, 'Error saving records to local storage');
+};
+
+const normalizePatients = (records: unknown[]): PatientRecord[] => {
+  let invalidCount = 0;
+  const normalized = records.flatMap((record, index) => {
+    const result = PatientRecordSchema.safeParse(record);
+    if (result.success) {
+      return [normalizePatientRecord(result.data)];
+    }
+    invalidCount += 1;
+    emitStructuredLog('warn', 'Storage', 'Invalid patient record dropped', { index });
+    return [];
+  });
+  if (invalidCount > 0) {
+    emitStructuredLog('warn', 'Storage', 'Some patient records were dropped during normalization', {
+      count: invalidCount,
+    });
+  }
+  return normalized;
+};
+
+const normalizeGeneralTasks = (tasks: unknown[]): GeneralTask[] => {
+  let invalidCount = 0;
+  const normalized = tasks.flatMap((task, index) => {
+    const candidate = task && typeof task === 'object'
+      ? {
+          ...task,
+          text: typeof (task as any).text === 'string' ? (task as any).text : (task as any).title ?? '',
+          isCompleted: typeof (task as any).isCompleted === 'boolean' ? (task as any).isCompleted : false,
+          createdAt: typeof (task as any).createdAt === 'number' ? (task as any).createdAt : Date.now(),
+          priority: ['low', 'medium', 'high'].includes((task as any).priority)
+            ? (task as any).priority
+            : 'medium',
+        }
+      : task;
+    const result = GeneralTaskSchema.safeParse(candidate);
+    if (result.success) return [result.data];
+    invalidCount += 1;
+    emitStructuredLog('warn', 'Storage', 'Invalid general task dropped', { index });
+    return [];
+  });
+  if (invalidCount > 0) {
+    emitStructuredLog('warn', 'Storage', 'Some general tasks were dropped during normalization', {
+      count: invalidCount,
+    });
+  }
+  return normalized;
+};
+
+const normalizeBookmarks = (bookmarks: unknown[]): Bookmark[] => {
+  let invalidCount = 0;
+  const normalized = bookmarks.flatMap((bookmark, index) => {
+    const candidate = bookmark && typeof bookmark === 'object'
+      ? {
+          ...bookmark,
+          createdAt: typeof (bookmark as any).createdAt === 'number' ? (bookmark as any).createdAt : Date.now(),
+          order: typeof (bookmark as any).order === 'number' ? (bookmark as any).order : index,
+        }
+      : bookmark;
+    const result = BookmarkSchema.safeParse(candidate);
+    if (result.success) return [result.data];
+    invalidCount += 1;
+    emitStructuredLog('warn', 'Storage', 'Invalid bookmark dropped', { index });
+    return [];
+  });
+  if (invalidCount > 0) {
+    emitStructuredLog('warn', 'Storage', 'Some bookmarks were dropped during normalization', {
+      count: invalidCount,
+    });
+  }
+  return normalized;
+};
+
+const normalizeBookmarkCategories = (categories: unknown[]): BookmarkCategory[] => {
+  let invalidCount = 0;
+  const normalized = categories.flatMap((category, index) => {
+    const result = BookmarkCategorySchema.safeParse(category);
+    if (result.success) return [result.data];
+    invalidCount += 1;
+    emitStructuredLog('warn', 'Storage', 'Invalid bookmark category dropped', { index });
+    return [];
+  });
+  if (invalidCount > 0) {
+    emitStructuredLog('warn', 'Storage', 'Some bookmark categories were dropped during normalization', {
+      count: invalidCount,
+    });
+  }
+  return normalized;
+};
+
+const normalizePatientTypes = (types: unknown[]) => {
+  let invalidCount = 0;
+  const normalized = types.flatMap((type, index) => {
+    const result = PatientTypeConfigSchema.safeParse(type);
+    if (result.success) return [result.data];
+    invalidCount += 1;
+    emitStructuredLog('warn', 'Storage', 'Invalid patient type dropped', { index });
+    return [];
+  });
+  if (invalidCount > 0) {
+    emitStructuredLog('warn', 'Storage', 'Some patient types were dropped during normalization', {
+      count: invalidCount,
+    });
+  }
+  return normalized;
 };
 
 export const loadRecordsFromLocal = (): PatientRecord[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return [];
+  const parsed = loadJsonArray<unknown>(STORAGE_KEY, []);
 
-    const parsed = JSON.parse(data);
-    if (!Array.isArray(parsed)) return [];
-
-    // Ensure backward compatibility by defaulting arrays
-    // This fixes the "Cannot read properties of undefined (reading 'map')" error
-    return normalizePatients(parsed);
-  } catch (e) {
-    console.error("Error loading from local storage", e);
-    return [];
-  }
+  // Ensure backward compatibility by defaulting arrays
+  // This fixes the "Cannot read properties of undefined (reading 'map')" error
+  return normalizePatients(parsed);
 };
 
 export const saveGeneralTasksToLocal = (tasks: GeneralTask[]) => {
-  try {
-    localStorage.setItem(GENERAL_TASKS_KEY, JSON.stringify(tasks));
-  } catch (e) {
-    console.error("Error saving general tasks", e);
-  }
+  safeSetJson(GENERAL_TASKS_KEY, tasks, 'Error saving general tasks');
 };
 
 export const loadGeneralTasksFromLocal = (): GeneralTask[] => {
-  try {
-    const data = localStorage.getItem(GENERAL_TASKS_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (e) {
-    return [];
-  }
+  const parsed = ensureArray<unknown>(loadJsonArray<unknown>(GENERAL_TASKS_KEY, []), []);
+  return normalizeGeneralTasks(parsed);
 };
 
 export const saveBookmarksToLocal = (bookmarks: Bookmark[]) => {
-  try {
-    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
-  } catch (e) {
-    console.error('Error saving bookmarks', e);
-  }
+  safeSetJson(BOOKMARKS_KEY, bookmarks, 'Error saving bookmarks');
 };
 
 export const loadBookmarksFromLocal = (): Bookmark[] => {
-  try {
-    const data = localStorage.getItem(BOOKMARKS_KEY);
-    if (!data) return [];
-
-    const parsed = JSON.parse(data);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed.map((bookmark: any, index: number) => ({
-      ...bookmark,
-      order: typeof bookmark.order === 'number' ? bookmark.order : index,
-      createdAt: typeof bookmark.createdAt === 'number' ? bookmark.createdAt : Date.now(),
-    }));
-  } catch (e) {
-    console.error('Error loading bookmarks', e);
-    return [];
-  }
+  const parsed = loadJsonArray<unknown>(BOOKMARKS_KEY, []);
+  return normalizeBookmarks(parsed);
 };
 
 export const saveBookmarkCategoriesToLocal = (categories: BookmarkCategory[]) => {
-  try {
-    localStorage.setItem(BOOKMARK_CATEGORIES_KEY, JSON.stringify(categories));
-  } catch (e) {
-    console.error('Error saving bookmark categories', e);
-  }
+  safeSetJson(BOOKMARK_CATEGORIES_KEY, categories, 'Error saving bookmark categories');
 };
 
 export const loadBookmarkCategoriesFromLocal = (): BookmarkCategory[] => {
-  try {
-    const data = localStorage.getItem(BOOKMARK_CATEGORIES_KEY);
-    const parsed = data ? JSON.parse(data) : null;
-    if (Array.isArray(parsed)) return parsed;
-  } catch (e) {
-    console.error('Error loading bookmark categories', e);
-  }
-  return [];
+  const parsed = loadJsonArray<unknown>(BOOKMARK_CATEGORIES_KEY, []);
+  return normalizeBookmarkCategories(parsed);
 };
 
 export const clearAppStorage = () => {
   Object.values(STORAGE_KEYS).forEach((key) => {
-    try {
-      localStorage.removeItem(key);
-    } catch (e) {
-      console.error('Error clearing storage key', key, e);
+    const result = safeRemoveItem(key);
+    if (result === false) {
+      emitStructuredLog('error', 'Storage', 'Error clearing storage key', { key });
     }
   });
 };
@@ -127,16 +183,24 @@ export const downloadDataAsJson = (backupData: BackupFileData) => {
   const blob = new Blob([dataStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.download = `medidiario_backup_${new Date().toISOString().split('T')[0]}.json`;
-  link.href = url;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  try {
+    link.download = `medidiario_backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+  } finally {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
 };
 
 export const parseUploadedJson = (file: File): Promise<BackupFileData> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    if (!reader) {
+      reject(new Error("No se pudo leer el archivo en este dispositivo."));
+      return;
+    }
     reader.onload = (event) => {
       try {
         const result = event.target?.result as string;
@@ -154,10 +218,12 @@ export const parseUploadedJson = (file: File): Promise<BackupFileData> => {
 
         if (parsed && typeof parsed === 'object') {
           const patients = Array.isArray(parsed.patients) ? normalizePatients(parsed.patients) : [];
-          const generalTasks = Array.isArray(parsed.generalTasks) ? parsed.generalTasks : [];
-          const patientTypes = Array.isArray(parsed.patientTypes) ? parsed.patientTypes : [];
-          const bookmarks = Array.isArray(parsed.bookmarks) ? parsed.bookmarks : [];
-          const bookmarkCategories = Array.isArray(parsed.bookmarkCategories) ? parsed.bookmarkCategories : [];
+          const generalTasks = Array.isArray(parsed.generalTasks) ? normalizeGeneralTasks(parsed.generalTasks) : [];
+          const patientTypes = Array.isArray(parsed.patientTypes) ? normalizePatientTypes(parsed.patientTypes) : [];
+          const bookmarks = Array.isArray(parsed.bookmarks) ? normalizeBookmarks(parsed.bookmarks) : [];
+          const bookmarkCategories = Array.isArray(parsed.bookmarkCategories)
+            ? normalizeBookmarkCategories(parsed.bookmarkCategories)
+            : [];
 
           resolve({
             patients,
@@ -183,8 +249,12 @@ export const fileToBase64 = (file: File): Promise<string> => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      // Remove the Data-URI prefix (e.g. "data:image/png;base64,")
-      const base64 = result.split(',')[1];
+      const parts = result.split(',');
+      const base64 = parts.length > 1 ? parts[1] : '';
+      if (!base64) {
+        reject(new Error('Archivo inválido: no se pudo extraer base64.'));
+        return;
+      }
       resolve(base64);
     };
     reader.onerror = error => reject(error);
@@ -220,8 +290,13 @@ export const downloadUrlAsBase64 = async (url: string): Promise<string> => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const result = reader.result as string;
-      // Remove "data:mime/type;base64," prefix
-      resolve(result.split(',')[1]);
+      const parts = result.split(',');
+      const base64 = parts.length > 1 ? parts[1] : '';
+      if (!base64) {
+        reject(new Error('Contenido inválido: no se pudo extraer base64.'));
+        return;
+      }
+      resolve(base64);
     };
     reader.onerror = reject;
     reader.readAsDataURL(blob);

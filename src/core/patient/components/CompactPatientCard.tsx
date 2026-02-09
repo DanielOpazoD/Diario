@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { format, differenceInYears } from 'date-fns';
 import { CheckSquare, Square, ChevronDown, Clock, FileText, Trash2, Paperclip } from 'lucide-react';
 import { PatientRecord } from '@shared/types';
@@ -19,6 +19,11 @@ export const calculateAge = (birthDateStr?: string) => {
   }
 };
 
+export const parseLocalYMD = (value: string) => {
+  const parsed = parseBirthDate(value);
+  return parsed ?? new Date(value);
+};
+
 interface CompactPatientCardProps {
   patient: PatientRecord;
   onEdit: (p: PatientRecord) => void;
@@ -36,16 +41,16 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
     highlightPendingPatients: state.highlightPendingPatients,
   })));
 
-  const tasks = patient.pendingTasks || [];
-  const pendingCount = tasks.filter(t => !t.isCompleted).length;
-  const attachmentsCount = patient.attachedFiles?.length || 0;
+  const tasks = useMemo(() => patient.pendingTasks || [], [patient.pendingTasks]);
+  const pendingCount = useMemo(() => tasks.filter(t => !t.isCompleted).length, [tasks]);
+  const attachmentsCount = useMemo(() => patient.attachedFiles?.length || 0, [patient.attachedFiles]);
 
-  const typeConfig = patientTypes.find(t => t.label === patient.type);
+  const typeConfig = useMemo(() => patientTypes.find(t => t.label === patient.type), [patientTypes, patient.type]);
   const fullColorClass = typeConfig ? typeConfig.colorClass : 'bg-gray-100 text-gray-800 border-gray-200';
-  const coreColor = fullColorClass.split('-')[1] || 'gray';
-  const ageDisplay = calculateAge(patient.birthDate);
+  const coreColor = useMemo(() => fullColorClass.split('-')[1] || 'gray', [fullColorClass]);
+  const ageDisplay = useMemo(() => calculateAge(patient.birthDate), [patient.birthDate]);
 
-  const handleToggleTask = (taskId: string) => {
+  const handleToggleTask = useCallback((taskId: string) => {
     const updatedTasks = tasks.map(t =>
       t.id === taskId
         ? {
@@ -57,7 +62,7 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
         : t
     );
     updatePatient({ ...patient, pendingTasks: updatedTasks });
-  };
+  }, [patient, tasks, updatePatient]);
 
   return (
     <div
@@ -72,7 +77,7 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
         </button>
       )}
       <div
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => setIsExpanded(prev => !prev)}
         className="flex flex-row items-stretch cursor-pointer min-h-[76px]"
       >
         <div className={`w-1.5 shrink-0 bg-${coreColor}-500`}></div>
@@ -206,4 +211,4 @@ const CompactPatientCard: React.FC<CompactPatientCardProps> = ({ patient, onEdit
   );
 };
 
-export default CompactPatientCard;
+export default React.memo(CompactPatientCard);

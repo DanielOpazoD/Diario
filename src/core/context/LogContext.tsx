@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { LogEntry } from '@shared/types';
-import { emitStructuredLog, getSessionId, LogLevel } from '@services/logger';
+import { logEvent, getSessionId, LogLevel } from '@use-cases/logger';
 
 interface LogContextType {
   logs: LogEntry[];
@@ -14,7 +14,7 @@ export const LogProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
   const addLog = useCallback((level: LogLevel, source: string, message: string, details?: any) => {
-    const structured = emitStructuredLog(level, source, message, details);
+    const structured = logEvent(level, source, message, details);
 
     const newLog: LogEntry = {
       ...structured,

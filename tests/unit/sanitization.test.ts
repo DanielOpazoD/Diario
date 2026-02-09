@@ -47,6 +47,10 @@ describe('Sanitization Utilities', () => {
             const note = 'Dx: Neumonía\nTx: Antibióticos\nNota: Estable';
             expect(sanitizeClinicalNote(note)).toBe(note);
         });
+
+        it('should return empty string for empty input', () => {
+            expect(sanitizeClinicalNote('')).toBe('');
+        });
     });
 
     describe('sanitizePatientName', () => {
@@ -64,6 +68,10 @@ describe('Sanitization Utilities', () => {
 
         it('should allow hyphens and apostrophes', () => {
             expect(sanitizePatientName("O'Brien-Smith")).toBe("O'Brien-Smith");
+        });
+
+        it('should return empty string for empty input', () => {
+            expect(sanitizePatientName('')).toBe('');
         });
     });
 
@@ -89,6 +97,10 @@ describe('Sanitization Utilities', () => {
         it('should behave like sanitizeClinicalNote', () => {
             const input = '<b>Diagnóstico</b>: Neumonía';
             expect(sanitizeDiagnosis(input)).toBe('Diagnóstico: Neumonía');
+        });
+
+        it('should return empty string for empty input', () => {
+            expect(sanitizeDiagnosis('')).toBe('');
         });
     });
 });

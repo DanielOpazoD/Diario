@@ -9,4 +9,4 @@ export const askAboutImages = geminiAdapter.askAboutImages;
 export const generateClinicalSummary = geminiAdapter.generateClinicalSummary;
 export const searchPatientsSemantically = geminiAdapter.searchPatientsSemantically;
 
-export type { FileContent } from '@services/geminiService';
+export type { FileContent } from '@shared/types';

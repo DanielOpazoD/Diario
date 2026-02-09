@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, Timer, Trash2 } from 'lucide-react';
 import { Button } from '@core/ui';
+import { generateSalt, hashPin } from '@shared/utils/security';
 
 interface SecuritySettingsProps {
-    securityPin: string | null;
+    securityPinHash: string | null;
     autoLockMinutes: number;
-    onSetSecurityPin: (pin: string | null) => void;
+    onSetSecurityPin: (pinHash: string | null, pinSalt: string | null) => void;
     onSetAutoLockMinutes: (minutes: number) => void;
     addToast: (type: 'success' | 'error' | 'info', message: string) => void;
 }
@@ -13,7 +14,7 @@ interface SecuritySettingsProps {
 const AUTO_LOCK_OPTIONS = [0, 1, 3, 5, 10, 15, 30];
 
 const SecuritySettings: React.FC<SecuritySettingsProps> = ({
-    securityPin,
+    securityPinHash,
     autoLockMinutes,
     onSetSecurityPin,
     onSetAutoLockMinutes,
@@ -22,12 +23,13 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({
     const [newPin, setNewPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
     const [lockMinutes, setLockMinutes] = useState(autoLockMinutes);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         setLockMinutes(autoLockMinutes);
     }, [autoLockMinutes]);
 
-    const handleSavePin = () => {
+    const handleSavePin = async () => {
         if (newPin.length < 4) {
             addToast('error', 'El PIN debe tener al menos 4 dígitos');
             return;
@@ -38,14 +40,23 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({
             return;
         }
 
-        onSetSecurityPin(newPin);
+        setIsSaving(true);
+        try {
+            const salt = generateSalt();
+            const hash = await hashPin(newPin, salt);
+            onSetSecurityPin(hash, salt);
+            addToast('success', 'PIN de bloqueo actualizado');
+        } catch {
+            addToast('error', 'No se pudo guardar el PIN');
+        } finally {
+            setIsSaving(false);
+        }
         setNewPin('');
         setConfirmPin('');
-        addToast('success', 'PIN de bloqueo actualizado');
     };
 
     const handleRemovePin = () => {
-        onSetSecurityPin(null);
+        onSetSecurityPin(null, null);
         setNewPin('');
         setConfirmPin('');
         addToast('info', 'Bloqueo con PIN desactivado');
@@ -73,13 +84,13 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({
                     </div>
                 </div>
                 <span
-                    className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border ${securityPin
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border ${securityPinHash
                         ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-200 dark:border-green-800/50'
                         : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-800/50'
                         }`}
                 >
                     <Lock className="w-4 h-4" />
-                    {securityPin ? 'PIN activo' : 'PIN desactivado'}
+                    {securityPinHash ? 'PIN activo' : 'PIN desactivado'}
                 </span>
             </div>
 
@@ -113,13 +124,13 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({
                     <div className="flex flex-wrap gap-2">
                         <Button
                             onClick={handleSavePin}
-                            disabled={!newPin || !confirmPin}
+                            disabled={!newPin || !confirmPin || isSaving}
                             icon={<Lock className="w-4 h-4" />}
                             size="sm"
                         >
-                            Guardar PIN
+                            {isSaving ? 'Guardando...' : 'Guardar PIN'}
                         </Button>
-                        {securityPin && (
+                        {securityPinHash && (
                             <Button
                                 variant="secondary"
                                 size="sm"

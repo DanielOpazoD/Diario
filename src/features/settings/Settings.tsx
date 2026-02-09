@@ -8,6 +8,7 @@ import ViewPreferencesSettings from '@features/settings/ViewPreferencesSettings'
 import SecuritySettings from '@features/settings/SecuritySettings';
 import PatientTypesSettings from '@features/settings/PatientTypesSettings';
 import StorageSettings from '@features/settings/StorageSettings';
+export { validateTypeLabel } from '@features/settings/PatientTypesSettings';
 
 const Settings: React.FC = () => {
   const {
@@ -20,7 +21,7 @@ const Settings: React.FC = () => {
     records,
     setRecords,
     addToast,
-    securityPin,
+    securityPinHash,
     autoLockMinutes,
     setSecurityPin,
     setAutoLockMinutes,
@@ -38,7 +39,7 @@ const Settings: React.FC = () => {
     records: state.records,
     setRecords: state.setRecords,
     addToast: state.addToast,
-    securityPin: state.securityPin,
+    securityPinHash: state.securityPinHash,
     autoLockMinutes: state.autoLockMinutes,
     setSecurityPin: state.setSecurityPin,
     setAutoLockMinutes: state.setAutoLockMinutes,
@@ -75,7 +76,7 @@ const Settings: React.FC = () => {
         />
 
         <SecuritySettings
-          securityPin={securityPin}
+          securityPinHash={securityPinHash}
           autoLockMinutes={autoLockMinutes}
           onSetSecurityPin={setSecurityPin}
           onSetAutoLockMinutes={setAutoLockMinutes}

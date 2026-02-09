@@ -5,6 +5,7 @@
 
 import { PatientRecordSchema, PendingTaskSchema, AttachedFileSchema } from '@shared/schemas';
 import { PatientRecord, PendingTask, AttachedFile } from '@shared/types';
+import type { ZodIssue, ZodType } from 'zod';
 
 export interface ValidationResult<T> {
     success: boolean;
@@ -90,16 +91,19 @@ export const validateAttachedFile = (data: unknown): ValidationResult<AttachedFi
  * Safe parse wrapper that logs validation errors
  */
 export const safeParseWithLogging = <T>(
-    schema: { safeParse: (data: unknown) => { success: boolean; data?: T; error?: { errors: Array<{ path: (string | number)[]; message: string }> } } },
+    schema: Pick<ZodType<T>, 'safeParse'>,
     data: unknown,
-    context: string
+    context: string,
+    onError?: (context: string, errors: ZodIssue[] | undefined) => void
 ): T | null => {
     const result = schema.safeParse(data);
 
     if (result.success) {
-        return result.data as T;
+        return result.data;
     }
 
-    console.warn(`[Validation Error] ${context}:`, result.error?.errors);
+    if (onError) {
+        onError(context, result.error.issues);
+    }
     return null;
 };

@@ -1,21 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { verifyPin } from '@shared/utils/security';
 
 interface UseAutoLockParams {
-  securityPin?: string | null;
+  securityPinHash?: string | null;
+  securityPinSalt?: string | null;
   autoLockMinutes: number;
   onLock?: () => void;
   onUnlock?: () => void;
 }
 
-const useAutoLock = ({ securityPin, autoLockMinutes, onLock, onUnlock }: UseAutoLockParams) => {
-  const [isLocked, setIsLocked] = useState(() => Boolean(securityPin));
+const useAutoLock = ({ securityPinHash, securityPinSalt, autoLockMinutes, onLock, onUnlock }: UseAutoLockParams) => {
+  const hasPin = Boolean(securityPinHash && securityPinSalt);
+  const [isLocked, setIsLocked] = useState(() => hasPin);
   const lastActivityRef = useRef(0);
   useEffect(() => { lastActivityRef.current = Date.now(); }, []);
   const previousLockState = useRef(isLocked);
 
   const handleUnlock = useCallback(
-    (pinAttempt: string) => {
-      if (pinAttempt === securityPin) {
+    async (pinAttempt: string) => {
+      if (!securityPinHash || !securityPinSalt) {
+        return false;
+      }
+
+      const isValid = await verifyPin(pinAttempt, securityPinSalt, securityPinHash);
+      if (isValid) {
         setIsLocked(false);
         lastActivityRef.current = Date.now();
         return true;
@@ -23,7 +31,7 @@ const useAutoLock = ({ securityPin, autoLockMinutes, onLock, onUnlock }: UseAuto
 
       return false;
     },
-    [securityPin]
+    [securityPinHash, securityPinSalt]
   );
 
   useEffect(() => {
@@ -46,7 +54,7 @@ const useAutoLock = ({ securityPin, autoLockMinutes, onLock, onUnlock }: UseAuto
   }, [isLocked]);
 
   useEffect(() => {
-    if (!securityPin || autoLockMinutes <= 0) {
+    if (!hasPin || autoLockMinutes <= 0) {
       setIsLocked(false);
       return;
     }
@@ -59,16 +67,16 @@ const useAutoLock = ({ securityPin, autoLockMinutes, onLock, onUnlock }: UseAuto
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [securityPin, autoLockMinutes, isLocked]);
+  }, [hasPin, autoLockMinutes, isLocked]);
 
   useEffect(() => {
-    if (securityPin) {
+    if (hasPin) {
       setIsLocked(true);
       lastActivityRef.current = Date.now();
     } else {
       setIsLocked(false);
     }
-  }, [securityPin]);
+  }, [hasPin]);
 
   useEffect(() => {
     if (previousLockState.current !== isLocked) {

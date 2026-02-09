@@ -95,7 +95,15 @@ const createHookRenderer = () => {
   };
 
   const hookModule = loadTsModule('hooks/useAutoLock.ts', {
-    require: (specifier) => (specifier === 'react' ? ReactMock : realRequire(specifier)),
+    require: (specifier) => {
+      if (specifier === 'react') return ReactMock;
+      if (specifier === '@shared/utils/security') {
+        return {
+          verifyPin: async (pinAttempt, salt, hash) => pinAttempt === '1234' && salt === 'salt' && hash === 'hash',
+        };
+      }
+      return realRequire(specifier);
+    },
     window: globalThis.window,
   });
   hook = hookModule.default;
@@ -110,14 +118,15 @@ const createHookRenderer = () => {
   };
 };
 
-test('locks after inactivity and calls callbacks', (t) => {
+test('locks after inactivity and calls callbacks', async (t) => {
   t.mock.timers.enable({ now: 0 });
   globalThis.window = new EventTarget();
   const events = [];
   const renderer = createHookRenderer();
 
   renderer.render({
-    securityPin: '1234',
+    securityPinHash: 'hash',
+    securityPinSalt: 'salt',
     autoLockMinutes: 1,
     onLock: () => events.push('lock'),
     onUnlock: () => events.push('unlock'),
@@ -125,7 +134,7 @@ test('locks after inactivity and calls callbacks', (t) => {
 
   assert.equal(renderer.result.isLocked, true);
 
-  assert.equal(renderer.result.handleUnlock('1234'), true);
+  assert.equal(await renderer.result.handleUnlock('1234'), true);
   assert.equal(renderer.result.isLocked, false);
   assert.deepEqual(events, ['unlock']);
 
@@ -136,20 +145,21 @@ test('locks after inactivity and calls callbacks', (t) => {
   renderer.unmount();
 });
 
-test('activity resets the auto-lock timer', (t) => {
+test('activity resets the auto-lock timer', async (t) => {
   t.mock.timers.enable({ now: 0 });
   const activityWindow = new EventTarget();
   globalThis.window = activityWindow;
   const renderer = createHookRenderer();
 
   renderer.render({
-    securityPin: '1234',
+    securityPinHash: 'hash',
+    securityPinSalt: 'salt',
     autoLockMinutes: 1,
     onLock: () => {},
     onUnlock: () => {},
   });
 
-  renderer.result.handleUnlock('1234');
+  await renderer.result.handleUnlock('1234');
   assert.equal(renderer.result.isLocked, false);
 
   t.mock.timers.tick(30_000);

@@ -18,10 +18,15 @@ export const STORAGE_KEYS = {
     PATIENT_TYPES: 'medidiario_patient_types',
     SECURITY: 'medidiario_security',
     PREFERENCES: 'medidiario_preferences',
+    DATA_VERSION: 'medidiario_data_version',
 
     // System/Diagnostic
     DEBUG_MODE: 'medidiario_debug_enabled',
     APP_VERSION: 'medidiario_app_version',
+
+    // Reports drafts
+    REPORT_DRAFT_ID: 'medidiario_report_draft_id',
+    REPORT_DRAFT: 'medidiario_report_draft',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

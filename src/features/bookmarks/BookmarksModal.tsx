@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { BookmarkPlus, X } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import { Bookmark } from '@shared/types';
+import { logEvent } from '@use-cases/logger';
 import BookmarkForm, { BookmarkFormState } from '@features/bookmarks/components/BookmarkForm';
 import BookmarkList from '@features/bookmarks/components/BookmarkList';
 
@@ -71,14 +72,14 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
 
   if (!isOpen) return null;
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setForm(defaultFormState);
     setError(null);
     setEditingId(null);
     onClose();
-  };
+  }, [onClose]);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = useCallback((event: React.FormEvent) => {
     event.preventDefault();
     if (!form.url.trim()) {
       setError('La URL es obligatoria');
@@ -107,18 +108,18 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
       setEditingId(null);
       onClose();
     } catch (err) {
-      console.error(err);
+      logEvent('error', 'Bookmarks', 'Error saving bookmark', { error: err });
       setError('URL inválida, verifica el formato (ej: https://ejemplo.cl)');
     }
-  };
+  }, [addBookmark, editingId, form, onClose, updateBookmark]);
 
-  const handleAddCategory = () => {
+  const handleAddCategory = useCallback(() => {
     const name = prompt('Nombre de la categoría');
     if (!name) return;
     addBookmarkCategory({ name });
-  };
+  }, [addBookmarkCategory]);
 
-  const handleEditBookmark = (bookmark: Bookmark) => {
+  const handleEditBookmark = useCallback((bookmark: Bookmark) => {
     setEditingId(bookmark.id);
     setForm({
       title: bookmark.title,
@@ -129,7 +130,7 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
       isFavorite: !!bookmark.isFavorite,
     });
     setError(null);
-  };
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

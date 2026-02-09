@@ -13,7 +13,10 @@ class MemoryStorage {
 test('end-to-end: analyze note then save backup payload', async () => {
   globalThis.localStorage = new MemoryStorage();
   const gemini = loadTsModule('services/geminiService.ts', {
-    fetch: async () => ({ ok: true, json: async () => ({ result: { structuredDiagnosis: 'IA', extractedTasks: ['Revisar'] } }) }),
+    fetch: async () => ({
+      ok: true,
+      text: async () => JSON.stringify({ result: { structuredDiagnosis: 'IA', extractedTasks: ['Revisar'] } }),
+    }),
   });
 
   const { createPatientSlice } = loadTsModule('stores/slices/patientSlice.ts');

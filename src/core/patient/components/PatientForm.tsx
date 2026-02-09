@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Clock, Users, Save, ChevronUp, Sparkles, UserCog } from 'lucide-react';
 import { AttachedFile, PatientTypeConfig } from '@shared/types';
@@ -84,31 +84,36 @@ const PatientForm: React.FC<PatientFormProps> = ({
 
   const selectedType = patientTypes.find(t => t.id === typeId);
 
+  const handleCloseTypeMenu = useCallback(() => {
+    setIsTypeMenuOpen(false);
+  }, []);
+
   useEffect(() => {
     if (!isTypeMenuOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
       if (!typeMenuRef.current?.contains(event.target as Node)) {
-        setIsTypeMenuOpen(false);
+        handleCloseTypeMenu();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isTypeMenuOpen]);
+  }, [handleCloseTypeMenu, isTypeMenuOpen]);
+
+  const updateMenuPosition = useCallback(() => {
+    if (!typeMenuRef.current) return;
+    const rect = typeMenuRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const direction = spaceBelow < 220 && spaceAbove > spaceBelow ? 'up' : 'down';
+    const top = direction === 'up' ? rect.top - 8 - 220 : rect.bottom + 6;
+    const menuWidth = Math.max(160, Math.min(220, rect.width));
+    const maxLeft = window.innerWidth - menuWidth - 8;
+    const left = Math.max(8, Math.min(rect.left, maxLeft));
+    setMenuStyle({ top, left, width: menuWidth });
+  }, []);
 
   useEffect(() => {
-    if (!isTypeMenuOpen || !typeMenuRef.current) return;
-    const updateMenuPosition = () => {
-      if (!typeMenuRef.current) return;
-      const rect = typeMenuRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      const direction = spaceBelow < 220 && spaceAbove > spaceBelow ? 'up' : 'down';
-      const top = direction === 'up' ? rect.top - 8 - 220 : rect.bottom + 6;
-      const menuWidth = Math.max(160, Math.min(220, rect.width));
-      const maxLeft = window.innerWidth - menuWidth - 8;
-      const left = Math.max(8, Math.min(rect.left, maxLeft));
-      setMenuStyle({ top, left, width: menuWidth });
-    };
+    if (!isTypeMenuOpen) return;
     updateMenuPosition();
     window.addEventListener('resize', updateMenuPosition);
     window.addEventListener('scroll', updateMenuPosition, true);
@@ -116,7 +121,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
       window.removeEventListener('resize', updateMenuPosition);
       window.removeEventListener('scroll', updateMenuPosition, true);
     };
-  }, [isTypeMenuOpen]);
+  }, [isTypeMenuOpen, updateMenuPosition]);
 
   useEffect(() => {
     if (!attachedFiles.length) {
@@ -341,7 +346,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
                           type="button"
                           onClick={() => {
                             onSelectType(patientType.id, patientType.label);
-                            setIsTypeMenuOpen(false);
+                            handleCloseTypeMenu();
                           }}
                           className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-colors ${typeId === patientType.id
                             ? 'bg-blue-600 text-white'
@@ -399,7 +404,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
                         type="button"
                         onClick={() => {
                           onSelectType(patientType.id, patientType.label);
-                          setIsTypeMenuOpen(false);
+                          handleCloseTypeMenu();
                         }}
                         className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-colors ${typeId === patientType.id
                           ? 'bg-blue-600 text-white'
@@ -466,4 +471,4 @@ const PatientForm: React.FC<PatientFormProps> = ({
   );
 };
 
-export default PatientForm;
+export default React.memo(PatientForm);

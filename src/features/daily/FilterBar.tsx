@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Filter } from 'lucide-react';
 
 interface FilterStat {
@@ -16,28 +16,32 @@ interface FilterBarProps {
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({ activeFilter, onFilterChange, stats, totalCount }) => {
-  const options = [
+  const options = useMemo(() => ([
     { id: 'all', label: 'Todos', count: totalCount },
     ...stats.map((stat) => ({
       id: stat.id,
       label: stat.label,
       count: stat.count,
     })),
-  ];
-  const activeOption = options.find((option) => option.id === activeFilter);
+  ]), [stats, totalCount]);
+  const activeOption = useMemo(() => options.find((option) => option.id === activeFilter), [activeFilter, options]);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleCloseMenu = useCallback(() => {
+    setIsOpen(false);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
       if (!menuRef.current?.contains(event.target as Node)) {
-        setIsOpen(false);
+        handleCloseMenu();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+  }, [handleCloseMenu, isOpen]);
 
   return (
     <div className="flex items-center gap-3 py-0.5" aria-label="Filtros de pacientes">
@@ -66,7 +70,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ activeFilter, onFilterChange, sta
                   key={option.id}
                   onClick={() => {
                     onFilterChange(option.id);
-                    setIsOpen(false);
+                    handleCloseMenu();
                   }}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${
                     option.id === activeFilter

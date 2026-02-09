@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { X, Save, Image as ImageIcon, Calendar, FileText, Type } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -18,11 +18,15 @@ const PasteImageConfirmModal: React.FC<PasteImageConfirmModalProps> = ({
     const [title, setTitle] = useState('');
     const [note, setNote] = useState('');
     const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-    const imageUrl = React.useMemo(() => URL.createObjectURL(imageBlob), [imageBlob]);
+    const imageUrl = useMemo(() => URL.createObjectURL(imageBlob), [imageBlob]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         return () => URL.revokeObjectURL(imageUrl);
     }, [imageUrl]);
+
+    const handleConfirm = useCallback(() => {
+        onConfirm({ title, note, date });
+    }, [date, note, onConfirm, title]);
 
     if (!isOpen) return null;
 
@@ -108,7 +112,7 @@ const PasteImageConfirmModal: React.FC<PasteImageConfirmModalProps> = ({
                         Cancelar
                     </button>
                     <button
-                        onClick={() => onConfirm({ title, note, date })}
+                        onClick={handleConfirm}
                         className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-black transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 group tracking-tight"
                     >
                         <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />

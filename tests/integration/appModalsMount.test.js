@@ -15,47 +15,42 @@ globalThis.localStorage = new MemoryStorage();
 const require = createRequire(import.meta.url);
 
 const modalProps = {
-  currentDate: new Date('2024-02-10'),
+  currentDate: new Date('2024-02-10T12:00:00'),
   isPatientModalOpen: true,
   editingPatient: null,
   patientToDelete: 'p-1',
-  isBackupModalOpen: true,
-  isDrivePickerOpen: true,
   isBookmarksModalOpen: true,
   editingBookmarkId: null,
-  isUploading: false,
-  preferredFolder: 'root',
+  isAppMenuOpen: true,
   onToast: () => { },
   onClosePatientModal: () => { },
   onSavePatient: () => { },
+  onAutoSavePatient: () => { },
   onSaveMultiplePatients: () => { },
   onCloseDeleteConfirmation: () => { },
   onConfirmDelete: () => { },
-  onCloseBackupModal: () => { },
-  onConfirmBackup: () => { },
-  onCloseDrivePicker: () => { },
-  onSelectDriveFile: () => { },
-  onFolderChange: () => { },
   onCloseBookmarksModal: () => { },
+  onCloseAppMenu: () => { },
+  onNavigate: () => { },
 };
 
 test('AppModals wires lazy modals with formatted dates and props', () => {
   let lazyIndex = 0;
-  const lazyNames = ['PatientModal', 'ConfirmationModal', 'BookmarksModal'];
+  const lazyNames = ['PatientModal', 'PatientHistoryModal', 'ConfirmationModal', 'BookmarksModal', 'AppMenuModal'];
   const { React, resetRender } = createReactStub({
-    lazy: () => (props) => ({ __type: lazyNames[lazyIndex++] || 'Lazy', props }),
+    lazy: () => {
+      const name = lazyNames[lazyIndex++] || 'Lazy';
+      return (props) => ({ __type: name, props });
+    },
     Suspense: ({ children }) => ({ type: 'Suspense', children }),
   });
 
   const { default: AppModals } = loadTsModule('components/AppModals.tsx', {
     React,
     localStorage: globalThis.localStorage,
-    require: (id) => {
-      if (id.includes('LoadingSkeletons')) return { ModalSkeleton: () => ({ __type: 'Skeleton' }) };
-      if (id.includes('services/googleService')) return {};
-      return require(id);
+    moduleStubs: {
+      'core/ui': { ModalSkeleton: () => ({ __type: 'Skeleton' }) },
     },
-    './LoadingSkeletons': { ModalSkeleton: () => ({ __type: 'Skeleton' }) },
   });
 
   lazyIndex = 0;
@@ -70,12 +65,9 @@ test('AppModals wires lazy modals with formatted dates and props', () => {
   assert.equal(confirmationModal.props.isOpen, true);
   assert.match(confirmationModal.props.message, /esta acción/iu);
 
-  const backupModal = findInTree(tree, (node) => node?.__type === 'BackupModal');
-  assert.equal(backupModal.props.defaultFileName.includes('backup_medidiario'), true);
-
-  const drivePicker = findInTree(tree, (node) => node?.__type === 'DrivePickerModal');
-  assert.equal(drivePicker.props.isOpen, true);
-
   const bookmarksModal = findInTree(tree, (node) => node?.__type === 'BookmarksModal');
   assert.equal(bookmarksModal.props.isOpen, true);
+
+  const appMenuModal = findInTree(tree, (node) => node?.__type === 'AppMenuModal');
+  assert.equal(appMenuModal.props.isOpen, true);
 });

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
+import { formatLocalYMD } from '@shared/utils/dateUtils';
 
 export const useDailyRange = (currentDate: Date) => {
-  const [targetDate, setTargetDate] = useState<string>(format(currentDate, 'yyyy-MM-dd'));
+  const [targetDate, setTargetDate] = useState<string>(formatLocalYMD(currentDate));
 
   useEffect(() => {
-    setTargetDate(format(currentDate, 'yyyy-MM-dd'));
+    setTargetDate(formatLocalYMD(currentDate));
   }, [currentDate]);
 
   return { targetDate, setTargetDate };

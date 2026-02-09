@@ -1,6 +1,10 @@
-import React, { useState, useRef, useMemo, useEffect, Suspense, lazy } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useEffect, Suspense, lazy } from 'react';
 import { Trash2, ExternalLink, Edit3 } from 'lucide-react';
 import { AttachedFile } from '@shared/types';
+import { logEvent } from '@use-cases/logger';
+import { useNavigate } from 'react-router-dom';
+import { safeSessionSetItem } from '@shared/utils/safeSessionStorage';
+import { SESSION_KEYS } from '@shared/constants/sessionKeys';
 import {
   useUploadPatientFileFirebase,
   useDeletePatientFileFirebase
@@ -19,6 +23,7 @@ import {
   displayFileName,
   getFileIcon,
   getFileColor,
+  isJsonAttachment,
 } from './index';
 
 const AIAttachmentAssistant = lazy(() => import('@features/ai/AIAttachmentAssistant'));
@@ -45,6 +50,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   addToast,
   compact = false,
 }) => {
+  const navigate = useNavigate();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -115,9 +121,9 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
     window.addEventListener('paste', handleGlobalPaste);
     return () => window.removeEventListener('paste', handleGlobalPaste);
-  }, [addToast]);
+  }, []);
 
-  const handleConfirmPaste = async (metadata: { title: string; note: string; date: string }) => {
+  const handleConfirmPaste = useCallback(async (metadata: { title: string; note: string; date: string }) => {
     if (!pastedImage) return;
 
     const file = new File([pastedImage], metadata.title || `Captura_${Date.now()}.png`, { type: pastedImage.type });
@@ -140,9 +146,9 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [addToast, onFilesChange, pastedImage, uploadToFirebase, files]);
 
-  const handlePasteClick = async () => {
+  const handlePasteClick = useCallback(async () => {
     try {
       const items = await navigator.clipboard.read();
       for (const item of items) {
@@ -158,31 +164,31 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     } catch (err) {
       addToast('error', 'No se pudo acceder al portapapeles. Asegúrate de dar permisos o usar Ctrl+V.');
     }
-  };
+  }, [addToast]);
 
   const { mutateAsync: deleteFromFirebase } = useDeletePatientFileFirebase({
     addToast,
   });
 
   // Drag handlers
-  const handleDragEnter = (e: React.DragEvent) => {
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-  };
+  }, []);
 
-  const processFiles = async (fileList: FileList) => {
+  const processFiles = useCallback(async (fileList: FileList) => {
     if (!patientId) {
       addToast('error', 'Identificador de paciente no válido.');
       return;
@@ -209,7 +215,10 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
         successCount++;
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
       } catch (error: any) {
-        console.error(error);
+        logEvent('error', 'Files', 'Error uploading attachment', {
+          fileName: file.name,
+          error,
+        });
         addToast('error', `Error subiendo ${file.name}: ${error.message}`);
       }
     }
@@ -221,9 +230,9 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
     setIsUploading(false);
     setUploadProgress(0);
-  };
+  }, [addToast, files, onFilesChange, patientId, uploadToFirebase]);
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
@@ -232,16 +241,16 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
       await processFiles(e.dataTransfer.files);
       e.dataTransfer.clearData();
     }
-  };
+  }, [processFiles]);
 
-  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       await processFiles(e.target.files);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  };
+  }, [processFiles]);
 
-  const handleDelete = async (fileId: string) => {
+  const handleDelete = useCallback(async (fileId: string) => {
     const fileToDelete = files.find(f => f.id === fileId);
     if (!fileToDelete) return;
 
@@ -260,22 +269,39 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     } catch (error) {
       addToast('error', 'Error eliminando archivo');
     }
-  };
+  }, [addToast, deleteFromFirebase, files, onFilesChange, patientId]);
 
-  const handleSelectFile = (file: AttachedFile) => {
+  const handleSelectFile = useCallback((file: AttachedFile) => {
     setSelectedFile(file);
-  };
+  }, []);
 
-  const handleFileUpdate = (updatedFile: AttachedFile) => {
+  const handleFileUpdate = useCallback((updatedFile: AttachedFile) => {
     const updatedList = files.map((f) => (f.id === updatedFile.id ? updatedFile : f));
     onFilesChange(updatedList);
     setSelectedFile(updatedFile);
-  };
+  }, [files, onFilesChange]);
 
-  const toggleStar = (file: AttachedFile, e?: React.MouseEvent) => {
+  const handleOpenInReports = useCallback((file: AttachedFile) => {
+    if (!patientId) {
+      addToast('error', 'No se pudo abrir informe: paciente inválido.');
+      return;
+    }
+    setIsPreviewOpen(false);
+    safeSessionSetItem(SESSION_KEYS.REPORT_LINKED_JSON, JSON.stringify({
+      patientId,
+      fileId: file.id,
+      fileName: file.name,
+      mimeType: file.mimeType,
+      driveUrl: file.driveUrl,
+      ts: Date.now(),
+    }));
+    navigate(`/informes?patientId=${encodeURIComponent(patientId)}&fileId=${encodeURIComponent(file.id)}`);
+  }, [addToast, navigate, patientId]);
+
+  const toggleStar = useCallback((file: AttachedFile, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     handleFileUpdate({ ...file, isStarred: !file.isStarred });
-  };
+  }, [handleFileUpdate]);
 
   const filteredFiles = useMemo(
     () => files.filter((file) => !showStarredOnly || file.isStarred),
@@ -286,17 +312,16 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
   // Auto-select first file
   useEffect(() => {
-    if (!selectedFile && filteredFiles.length > 0) {
-      setSelectedFile(filteredFiles[0]);
+    const selectedExists = selectedFile && files.some((file) => file.id === selectedFile.id);
+    if (selectedExists) return;
+    if (filteredFiles.length > 0) {
+      setSelectedFile((prev) => (prev?.id === filteredFiles[0].id ? prev : filteredFiles[0]));
+      return;
     }
-  }, [filteredFiles.length, selectedFile]);
-
-  // Validate selectedFile still exists
-  useEffect(() => {
-    if (selectedFile && !files.find((file) => file.id === selectedFile.id)) {
+    if (selectedFile) {
       setSelectedFile(null);
     }
-  }, [files, selectedFile]);
+  }, [files, filteredFiles, selectedFile]);
 
   // Hidden file input
   const fileInput = (
@@ -357,6 +382,15 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
                   <p className="text-[10px] text-gray-500">{formatFileSize(file.size)}</p>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isJsonAttachment(file) && (
+                    <button
+                      onClick={() => handleOpenInReports(file)}
+                      className="px-1.5 py-0.5 text-[10px] font-semibold rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+                      title="Abrir en informes clínicos"
+                    >
+                      Informe
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setSelectedFile(file);
@@ -396,6 +430,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
               isOpen={isPreviewOpen}
               onClose={() => setIsPreviewOpen(false)}
               onUpdate={handleFileUpdate}
+              onOpenInReports={handleOpenInReports}
             />
           </Suspense>
         )}
@@ -488,6 +523,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
             isOpen={isPreviewOpen}
             onClose={() => setIsPreviewOpen(false)}
             onUpdate={handleFileUpdate}
+            onOpenInReports={handleOpenInReports}
           />
         </Suspense>
       )}

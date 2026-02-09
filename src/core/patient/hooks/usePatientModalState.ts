@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AttachedFile, PatientRecord, PatientType, PatientTypeConfig, PendingTask } from '@shared/types';
 
 interface UsePatientModalStateParams {
@@ -33,6 +33,13 @@ const usePatientModalState = ({
   const [activeTab, setActiveTab] = useState<'clinical' | 'files'>(initialTab);
   const [isEditingDemographics, setIsEditingDemographics] = useState(false);
 
+  const resolvedTypeId = useMemo(() => {
+    if (!initialData) return defaultTypeId;
+    return initialData.typeId
+      || patientTypes.find(t => t.label === initialData.type)?.id
+      || defaultTypeId;
+  }, [defaultTypeId, initialData, patientTypes]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -43,9 +50,6 @@ const usePatientModalState = ({
       setBirthDate(initialData.birthDate || '');
       setGender(initialData.gender || '');
       setType(initialData.type);
-      const resolvedTypeId = initialData.typeId
-        || patientTypes.find(t => t.label === initialData.type)?.id
-        || defaultTypeId;
       setTypeId(resolvedTypeId);
       setEntryTime(initialData.entryTime || '');
       setExitTime(initialData.exitTime || '');
@@ -74,7 +78,7 @@ const usePatientModalState = ({
     }
 
     setActiveTab(initialTab);
-  }, [isOpen, initialData, initialTab, defaultTypeId, patientTypes]);
+  }, [isOpen, initialData, initialTab, defaultTypeId, resolvedTypeId]);
 
   return {
     name,

@@ -1,15 +1,17 @@
 import { StateCreator } from 'zustand';
 
 export interface SecuritySlice {
-  securityPin: string | null;
+  securityPinHash: string | null;
+  securityPinSalt: string | null;
   autoLockMinutes: number;
-  setSecurityPin: (pin: string | null) => void;
+  setSecurityPin: (pinHash: string | null, pinSalt: string | null) => void;
   setAutoLockMinutes: (minutes: number) => void;
 }
 
 export const createSecuritySlice: StateCreator<SecuritySlice> = (set) => ({
-  securityPin: null,
+  securityPinHash: null,
+  securityPinSalt: null,
   autoLockMinutes: 5,
-  setSecurityPin: (pin) => set({ securityPin: pin }),
+  setSecurityPin: (pinHash, pinSalt) => set({ securityPinHash: pinHash, securityPinSalt: pinSalt }),
   setAutoLockMinutes: (minutes) => set({ autoLockMinutes: minutes }),
 });

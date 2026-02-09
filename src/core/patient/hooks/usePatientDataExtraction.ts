@@ -1,10 +1,19 @@
-import React, { useRef, useState } from 'react';
-import { extractMultiplePatientsFromImage, extractPatientDataFromImage, extractPatientDataFromText } from '@use-cases/ai';
-import { fileToBase64, downloadUrlAsBase64, downloadUrlAsArrayBuffer } from '@services/storage';
-import { extractTextFromPdf } from '@services/pdfText';
-import { extractPatientDataFromText as extractPatientDataFromTextLocal, normalizeExtractedPatientData } from '@core/patient/utils/patientTextExtraction';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+  extractMultiplePatientsFromImageAI,
+  extractPatientDataFromImageAI,
+  extractPatientDataFromTextAI,
+  normalizeExtractedPatientDataUseCase,
+  extractAndNormalizePatientText,
+  mergeExtractedFieldsUseCase,
+  isMissingCoreExtractedFieldsUseCase,
+} from '@use-cases/patient/extraction';
+import { filterSupportedAttachments, hasDriveUrl } from '@use-cases/patient/attachmentsSupport';
+import { diffExtractedFields } from '@use-cases/patient/fieldUpdates';
+import { logEvent } from '@use-cases/logger';
+import { encodeFileToBase64, fetchUrlAsBase64, fetchUrlAsArrayBuffer, extractTextFromPdfFile } from '@use-cases/attachments';
 import { AttachedFile, PatientCreateInput, PatientType } from '@shared/types';
-import { formatPatientName } from '@core/patient/utils/patientUtils';
+import { sanitizePatientName } from '@use-cases/patient/sanitizeFields';
 
 interface UsePatientDataExtractionParams {
   addToast: (type: 'success' | 'error' | 'info', msg: string) => void;
@@ -38,28 +47,20 @@ const usePatientDataExtraction = ({
   const [isScanningMulti, setIsScanningMulti] = useState(false);
   const [isExtractingFromFiles, setIsExtractingFromFiles] = useState(false);
 
-  const applyExtractedData = (extractedData: any) => {
+  const applyExtractedData = useCallback((extractedData: any) => {
     if (!extractedData) return;
-    const normalized = normalizeExtractedPatientData(extractedData);
-    if (normalized.name) setName(formatPatientName(normalized.name));
+    const normalized = normalizeExtractedPatientDataUseCase(extractedData);
+    if (normalized.name) setName(sanitizePatientName(normalized.name));
     if (normalized.rut) setRut(normalized.rut);
     if (normalized.birthDate) setBirthDate(normalized.birthDate);
     if (normalized.gender) setGender(normalized.gender);
     if (normalized.diagnosis) setDiagnosis(normalized.diagnosis);
     if (normalized.clinicalNote) setClinicalNote(normalized.clinicalNote);
-  };
+  }, [setBirthDate, setClinicalNote, setDiagnosis, setGender, setName, setRut]);
 
-  const mergeExtracted = (base: any, incoming: any) => ({
-    ...base,
-    name: base.name || incoming?.name || '',
-    rut: base.rut || incoming?.rut || '',
-    birthDate: base.birthDate || incoming?.birthDate || '',
-    gender: base.gender || incoming?.gender || '',
-    diagnosis: base.diagnosis || incoming?.diagnosis || '',
-    clinicalNote: base.clinicalNote || incoming?.clinicalNote || '',
-  });
+  const mergeExtracted = useCallback(mergeExtractedFieldsUseCase, []);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -67,17 +68,16 @@ const usePatientDataExtraction = ({
     try {
       if (file.type === 'application/pdf') {
         const buffer = await file.arrayBuffer();
-        const text = await extractTextFromPdf(buffer);
-        const localExtracted = extractPatientDataFromTextLocal(text);
+        const text = await extractTextFromPdfFile(buffer);
+        const localExtracted = extractAndNormalizePatientText(text);
         let finalExtracted = localExtracted;
 
-        const isMissingCore =
-          !localExtracted.name || !localExtracted.rut || !localExtracted.birthDate || !localExtracted.gender;
+        const isMissingCore = isMissingCoreExtractedFieldsUseCase(localExtracted);
 
         if (isMissingCore) {
           try {
-            const aiExtracted = await extractPatientDataFromText(text);
-            finalExtracted = mergeExtracted(localExtracted, normalizeExtractedPatientData(aiExtracted || {}));
+            const aiExtracted = await extractPatientDataFromTextAI(text);
+            finalExtracted = mergeExtracted(localExtracted, normalizeExtractedPatientDataUseCase(aiExtracted || {}));
           } catch (error) {
             addToast('info', 'IA no disponible. Usando solo extracción local del PDF.');
           }
@@ -86,8 +86,8 @@ const usePatientDataExtraction = ({
         applyExtractedData(finalExtracted);
         addToast('success', 'Datos extraídos desde PDF');
       } else {
-        const base64 = await fileToBase64(file);
-        const extractedData = await extractPatientDataFromImage(base64, file.type);
+        const base64 = await encodeFileToBase64(file);
+        const extractedData = await extractPatientDataFromImageAI(base64, file.type);
         if (extractedData) {
           applyExtractedData(extractedData);
           addToast('success', 'Datos extraídos');
@@ -99,9 +99,9 @@ const usePatientDataExtraction = ({
       setIsScanning(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  };
+  }, [addToast, applyExtractedData, mergeExtracted]);
 
-  const handleExtractFromAttachments = async (
+  const handleExtractFromAttachments = useCallback(async (
     attachedFiles: AttachedFile[],
     currentFields: { name: string; rut: string; birthDate: string; gender: string; diagnosis: string; clinicalNote: string },
   ) => {
@@ -109,7 +109,7 @@ const usePatientDataExtraction = ({
       return addToast('info', 'Primero agrega adjuntos del paciente.');
     }
 
-    const supportedFiles = attachedFiles.filter(file => file.mimeType.startsWith('image/') || file.mimeType === 'application/pdf');
+    const supportedFiles = filterSupportedAttachments(attachedFiles);
     if (!supportedFiles.length) {
       return addToast('info', 'Los adjuntos actuales no son compatibles (solo imágenes o PDF).');
     }
@@ -123,54 +123,37 @@ const usePatientDataExtraction = ({
 
       for (const file of supportedFiles) {
         try {
-          if (!file.driveUrl) continue;
+          if (!hasDriveUrl(file)) continue;
           let extractedData: any = null;
 
           if (file.mimeType === 'application/pdf') {
-            const buffer = await downloadUrlAsArrayBuffer(file.driveUrl);
-            const text = await extractTextFromPdf(buffer);
-            const localExtracted = extractPatientDataFromTextLocal(text);
-            const isMissingCore =
-              !localExtracted.name || !localExtracted.rut || !localExtracted.birthDate || !localExtracted.gender;
+            const buffer = await fetchUrlAsArrayBuffer(file.driveUrl);
+            const text = await extractTextFromPdfFile(buffer);
+            const localExtracted = extractAndNormalizePatientText(text);
+            const isMissingCore = isMissingCoreExtractedFieldsUseCase(localExtracted);
             let aiExtracted: any = null;
             if (isMissingCore) {
               try {
-                aiExtracted = await extractPatientDataFromText(text);
+                aiExtracted = await extractPatientDataFromTextAI(text);
               } catch (error) {
                 addToast('info', 'IA no disponible. Usando solo extracción local del PDF.');
               }
             }
-            extractedData = mergeExtracted(localExtracted, normalizeExtractedPatientData(aiExtracted || {}));
+            extractedData = mergeExtracted(localExtracted, normalizeExtractedPatientDataUseCase(aiExtracted || {}));
           } else {
-            const base64 = await downloadUrlAsBase64(file.driveUrl);
-            extractedData = await extractPatientDataFromImage(base64, file.mimeType);
+            const base64 = await fetchUrlAsBase64(file.driveUrl);
+            extractedData = await extractPatientDataFromImageAI(base64, file.mimeType);
           }
 
           if (extractedData) {
-            if (extractedData.name && extractedData.name !== currentFields.name) {
-              setName(formatPatientName(extractedData.name));
-              updatedFields.add('Nombre');
-            }
-            if (extractedData.rut && extractedData.rut !== currentFields.rut) {
-              setRut(extractedData.rut);
-              updatedFields.add('RUT');
-            }
-            if (extractedData.birthDate && extractedData.birthDate !== currentFields.birthDate) {
-              setBirthDate(extractedData.birthDate);
-              updatedFields.add('Nacimiento');
-            }
-            if (extractedData.gender && extractedData.gender !== currentFields.gender) {
-              setGender(extractedData.gender);
-              updatedFields.add('Género');
-            }
-            if (extractedData.diagnosis && extractedData.diagnosis !== currentFields.diagnosis) {
-              setDiagnosis(extractedData.diagnosis);
-              updatedFields.add('Diagnóstico');
-            }
-            if (extractedData.clinicalNote && extractedData.clinicalNote !== currentFields.clinicalNote) {
-              setClinicalNote(extractedData.clinicalNote);
-              updatedFields.add('Nota');
-            }
+            const { updates, labels } = diffExtractedFields(currentFields, extractedData);
+            if (updates.name) setName(sanitizePatientName(updates.name));
+            if (updates.rut) setRut(updates.rut);
+            if (updates.birthDate) setBirthDate(updates.birthDate);
+            if (updates.gender) setGender(updates.gender);
+            if (updates.diagnosis) setDiagnosis(updates.diagnosis);
+            if (updates.clinicalNote) setClinicalNote(updates.clinicalNote);
+            labels.forEach(label => updatedFields.add(label));
           }
 
           if (
@@ -184,7 +167,10 @@ const usePatientDataExtraction = ({
             break;
           }
         } catch (error) {
-          console.error('Error extracting from file', file.name, error);
+          logEvent('error', 'AI', 'Extraction failed', {
+            fileName: file.name,
+            error,
+          });
         }
       }
 
@@ -196,9 +182,9 @@ const usePatientDataExtraction = ({
     } finally {
       setIsExtractingFromFiles(false);
     }
-  };
+  }, [addToast, mergeExtracted, setBirthDate, setClinicalNote, setDiagnosis, setGender, setName, setRut]);
 
-  const handleMultiImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMultiImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -209,12 +195,12 @@ const usePatientDataExtraction = ({
 
     setIsScanningMulti(true);
     try {
-      const base64 = await fileToBase64(file);
-      const extractedPatients = await extractMultiplePatientsFromImage(base64, file.type);
+      const base64 = await encodeFileToBase64(file);
+      const extractedPatients = await extractMultiplePatientsFromImageAI(base64, file.type);
 
       if (extractedPatients && extractedPatients.length > 0) {
         const patientsToSave = extractedPatients.map(p => ({
-          name: formatPatientName(p.name),
+          name: sanitizePatientName(p.name),
           rut: p.rut,
           birthDate: p.birthDate,
           gender: p.gender,
@@ -238,7 +224,7 @@ const usePatientDataExtraction = ({
       setIsScanningMulti(false);
       if (multiFileInputRef.current) multiFileInputRef.current.value = '';
     }
-  };
+  }, [addToast, onClose, onSaveMultiple, selectedDate]);
 
   return {
     fileInputRef,

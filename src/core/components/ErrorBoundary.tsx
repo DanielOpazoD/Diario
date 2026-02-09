@@ -1,6 +1,6 @@
 import React from 'react';
 import { LogContext } from '@core/context/LogContext';
-import { emitStructuredLog } from '@services/logger';
+import { logEvent } from '@use-cases/logger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -26,7 +26,7 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBounda
     if (contextLogger) {
       contextLogger('error', 'ErrorBoundary', error.message, { stack: error.stack, componentStack: info.componentStack });
     } else {
-      emitStructuredLog('error', 'ErrorBoundary', error.message, { stack: error.stack, componentStack: info.componentStack });
+      logEvent('error', 'ErrorBoundary', error.message, { stack: error.stack, componentStack: info.componentStack });
     }
   }
 

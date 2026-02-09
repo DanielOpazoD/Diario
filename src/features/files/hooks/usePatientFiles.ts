@@ -1,9 +1,6 @@
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { AttachedFile } from '@shared/types';
-import {
-  uploadFileToFirebase,
-  deleteFileFromFirebase
-} from '@services/firebaseStorageService';
+import { uploadPatientFile, deletePatientFile } from '@use-cases/attachments';
 
 interface UsePatientFilesOptions {
   patientRut: string;
@@ -54,7 +51,7 @@ export function useUploadPatientFileFirebase({
   return useMutation({
     mutationFn: async (file: File) => {
       // Ensure we pass a valid patientId for the path
-      return uploadFileToFirebase(file, patientId);
+      return uploadPatientFile(file, patientId);
     },
     onSuccess: (newFile) => {
       // We might want to invalidate queries or update cache if we were using it
@@ -78,7 +75,7 @@ export function useDeletePatientFileFirebase({
 
   return useMutation({
     mutationFn: ({ patientId, fileName, fileId }: { patientId: string, fileName: string, fileId: string }) =>
-      deleteFileFromFirebase(patientId, fileName, fileId),
+      deletePatientFile(patientId, fileName, fileId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patientFiles'] });
       addToast('success', 'Archivo eliminado de Firebase');
