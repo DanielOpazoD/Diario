@@ -57,8 +57,11 @@ export const AttachedFileSchema = z.object({
     mimeType: z.string(),
     size: z.number(),
     uploadedAt: z.number(),
-    driveUrl: z.string().url("URL de Drive inválida"),
+    driveUrl: z.string().min(1, "Ruta de archivo inválida"),
     thumbnailLink: z.string().optional(),
+    customTitle: z.string().optional(),
+    customTypeLabel: z.string().optional(),
+    noteDate: z.string().optional(),
     tags: z.array(z.string()).optional(),
     description: z.string().optional(),
     category: z.enum(['lab', 'imaging', 'report', 'prescription', 'other']).optional(),
@@ -89,14 +92,33 @@ const normalizeAttachedFile = (value: unknown, index: number) => {
     const candidate = toObjectRecord(value);
     if (!candidate) return null;
 
+    const readString = (...keys: string[]) => {
+        for (const key of keys) {
+            const raw = candidate[key];
+            if (typeof raw === 'string' && raw.trim().length > 0) {
+                return raw.trim();
+            }
+        }
+        return '';
+    };
+
+    const inferredId = readString('id', 'fileId') || `file-${index}`;
+    const inferredName = readString('name', 'fileName', 'title') || `archivo-${index + 1}`;
+    const inferredDriveUrl = readString('driveUrl', 'downloadUrl', 'url', 'firebaseUrl', 'storagePath');
+
     const parsed = AttachedFileSchema.safeParse({
-        id: typeof candidate.id === 'string' && candidate.id.trim().length > 0 ? candidate.id : `file-${index}`,
-        name: typeof candidate.name === 'string' ? candidate.name : '',
-        mimeType: typeof candidate.mimeType === 'string' ? candidate.mimeType : 'application/octet-stream',
+        id: inferredId,
+        name: inferredName,
+        mimeType: readString('mimeType', 'type') || 'application/octet-stream',
         size: typeof candidate.size === 'number' ? candidate.size : 0,
-        uploadedAt: typeof candidate.uploadedAt === 'number' ? candidate.uploadedAt : Date.now(),
-        driveUrl: typeof candidate.driveUrl === 'string' ? candidate.driveUrl : '',
+        uploadedAt: typeof candidate.uploadedAt === 'number'
+            ? candidate.uploadedAt
+            : (typeof candidate.createdAt === 'number' ? candidate.createdAt : Date.now()),
+        driveUrl: inferredDriveUrl,
         thumbnailLink: typeof candidate.thumbnailLink === 'string' ? candidate.thumbnailLink : undefined,
+        customTitle: typeof candidate.customTitle === 'string' ? candidate.customTitle : undefined,
+        customTypeLabel: typeof candidate.customTypeLabel === 'string' ? candidate.customTypeLabel : undefined,
+        noteDate: typeof candidate.noteDate === 'string' ? candidate.noteDate : undefined,
         tags: Array.isArray(candidate.tags) ? candidate.tags.filter((tag): tag is string => typeof tag === 'string') : undefined,
         description: typeof candidate.description === 'string' ? candidate.description : undefined,
         category: candidate.category,

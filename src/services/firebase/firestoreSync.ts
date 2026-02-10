@@ -115,6 +115,24 @@ const shouldLogConflict = (id: string) => {
   return true;
 };
 
+const normalizeLegacyPatientFields = (raw: Record<string, unknown>) => {
+  const normalized = { ...raw } as Record<string, unknown>;
+
+  if (!Array.isArray(normalized.attachedFiles)) {
+    if (Array.isArray(normalized.attachments)) {
+      normalized.attachedFiles = normalized.attachments;
+    } else if (Array.isArray(normalized.files)) {
+      normalized.attachedFiles = normalized.files;
+    }
+  }
+
+  if (!Array.isArray(normalized.pendingTasks) && Array.isArray(normalized.tasks)) {
+    normalized.pendingTasks = normalized.tasks;
+  }
+
+  return normalized;
+};
+
 export const subscribeToPatients = (callback: (patients: PatientRecord[]) => void) => {
   let active = true;
   let unsubPrimary = () => {};
@@ -165,7 +183,7 @@ export const subscribeToPatients = (callback: (patients: PatientRecord[]) => voi
     const processSnapshot = (snapshot: any, source: 'primary' | 'legacy') => {
       const patients: PatientRecord[] = [];
       snapshot.forEach((doc: any) => {
-        const data = doc.data();
+        const data = normalizeLegacyPatientFields(doc.data() as Record<string, unknown>);
         const result = PatientRecordSchema.safeParse(data);
 
         if (result.success) {

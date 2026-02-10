@@ -118,7 +118,7 @@ describe('validation', () => {
     expect(parsed.typeId).toBe('policlinico');
   });
 
-  it('drops invalid pending tasks and attached files during normalization', () => {
+  it('drops invalid pending tasks and preserves legacy attached files during normalization', () => {
     const parsed = PatientRecordSchema.parse({
       id: 'p-normalize',
       name: 'Ana',
@@ -138,13 +138,15 @@ describe('validation', () => {
           uploadedAt: 1,
           driveUrl: 'https://example.com/doc.pdf',
         },
-        { id: 'f2', name: 'bad file', driveUrl: 'notaurl' },
+        { fileId: 'f2', fileName: 'bad file', url: 'gs://bucket/path/doc.pdf' },
       ],
     });
 
     expect(parsed.pendingTasks).toHaveLength(1);
     expect(parsed.pendingTasks[0].text).toBe('validar');
-    expect(parsed.attachedFiles).toHaveLength(1);
+    expect(parsed.attachedFiles).toHaveLength(2);
     expect(parsed.attachedFiles[0].id).toBe('f1');
+    expect(parsed.attachedFiles[1].id).toBe('f2');
+    expect(parsed.attachedFiles[1].driveUrl).toBe('gs://bucket/path/doc.pdf');
   });
 });

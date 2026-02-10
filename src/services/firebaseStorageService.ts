@@ -48,6 +48,86 @@ const resolveStoredFileName = (fileId: string, storageObjectName: string): strin
     return storageObjectName;
 };
 
+const UUID_PREFIX_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const FILE_PREFIX_PATTERN = /^file-[a-z0-9-]+$/i;
+
+const toDeterministicId = (value: string) => {
+    let hash = 0;
+    for (let index = 0; index < value.length; index += 1) {
+        hash = ((hash << 5) - hash) + value.charCodeAt(index);
+        hash |= 0;
+    }
+    return `legacy-${Math.abs(hash)}`;
+};
+
+const inferFileIdFromStorageObjectName = (storageObjectName: string, scopeKey?: string): string => {
+    const underscoreIndex = storageObjectName.indexOf('_');
+    if (underscoreIndex > 0) {
+        const prefix = storageObjectName.slice(0, underscoreIndex);
+        if (UUID_PREFIX_PATTERN.test(prefix) || FILE_PREFIX_PATTERN.test(prefix)) {
+            return prefix;
+        }
+    }
+
+    const dotIndex = storageObjectName.indexOf('.');
+    if (dotIndex > 0) {
+        const prefix = storageObjectName.slice(0, dotIndex);
+        if (UUID_PREFIX_PATTERN.test(prefix) || FILE_PREFIX_PATTERN.test(prefix)) {
+            return prefix;
+        }
+    }
+
+    return toDeterministicId(`${scopeKey || 'global'}:${storageObjectName}`);
+};
+
+const mapStorageRefToAttachedFile = async (
+    itemRef: { name: string },
+    patientId: string,
+    getDownloadURLFn: (itemRef: any) => Promise<string>,
+    getMetadataFn: (itemRef: any) => Promise<{ contentType?: string | null; size?: string | number | null; timeCreated?: string | null; }>
+): Promise<AttachedFile | null> => {
+    try {
+        const [downloadUrl, metadata] = await Promise.all([
+            getDownloadURLFn(itemRef),
+            getMetadataFn(itemRef),
+        ]);
+
+        const inferredId = inferFileIdFromStorageObjectName(itemRef.name, patientId);
+        const resolvedName = resolveStoredFileName(inferredId, itemRef.name);
+
+        return {
+            id: inferredId,
+            name: resolvedName,
+            mimeType: metadata.contentType || 'application/octet-stream',
+            size: Number(metadata.size ?? 0),
+            uploadedAt: metadata.timeCreated ? Date.parse(metadata.timeCreated) : Date.now(),
+            driveUrl: downloadUrl,
+            isStarred: false,
+        };
+    } catch {
+        return null;
+    }
+};
+
+const dedupeAttachedFiles = (files: AttachedFile[]): AttachedFile[] => {
+    const byKey = new Map<string, AttachedFile>();
+
+    files.forEach((file) => {
+        const key = file.id || file.driveUrl || `${file.name}-${file.uploadedAt}`;
+        const existing = byKey.get(key);
+        if (!existing) {
+            byKey.set(key, file);
+            return;
+        }
+
+        if ((file.uploadedAt ?? 0) >= (existing.uploadedAt ?? 0)) {
+            byKey.set(key, file);
+        }
+    });
+
+    return Array.from(byKey.values()).sort((left, right) => (right.uploadedAt ?? 0) - (left.uploadedAt ?? 0));
+};
+
 const resolveExistingFileStorageRef = async (
     patientId: string,
     fileId: string,
@@ -182,6 +262,65 @@ export const deleteFileFromFirebase = async (patientId: string, fileName: string
             patientId: anonymizeIdentifier(patientId, 'patient'),
             fileId: anonymizeIdentifier(fileId, 'file'),
         });
+    }
+};
+
+export const listPatientFilesFromFirebase = async (patientId: string): Promise<AttachedFile[]> => {
+    const { storage, user } = await getFirebaseContext();
+    const { ref, listAll, getDownloadURL, getMetadata } = await import("firebase/storage");
+    const patientFolderRef = ref(storage, buildPatientStoragePath(user.uid, patientId));
+
+    try {
+        const listing = await listAll(patientFolderRef);
+        if (!listing.items.length) return [];
+
+        const files = await Promise.all(
+            listing.items.map((itemRef) => mapStorageRefToAttachedFile(itemRef, patientId, getDownloadURL, getMetadata))
+        );
+
+        return dedupeAttachedFiles(files.filter((file): file is AttachedFile => Boolean(file)));
+    } catch (error) {
+        emitStructuredLog("warn", "FirebaseStorage", "Error listing patient files", {
+            error,
+            patientId: anonymizeIdentifier(patientId, 'patient'),
+        });
+        return [];
+    }
+};
+
+export const listAllPatientFilesFromFirebase = async (): Promise<Record<string, AttachedFile[]>> => {
+    const { storage, user } = await getFirebaseContext();
+    const { ref, listAll, getDownloadURL, getMetadata } = await import("firebase/storage");
+    const rootRef = ref(storage, `users/${user.uid}/patients`);
+
+    try {
+        const rootListing = await listAll(rootRef);
+        if (!rootListing.prefixes.length) return {};
+
+        const perPatientEntries = await Promise.all(
+            rootListing.prefixes.map(async (patientFolderRef) => {
+                const patientId = patientFolderRef.name;
+                try {
+                    const listing = await listAll(patientFolderRef);
+                    if (!listing.items.length) return [patientId, []] as const;
+
+                    const files = await Promise.all(
+                        listing.items.map((itemRef) => mapStorageRefToAttachedFile(itemRef, patientId, getDownloadURL, getMetadata))
+                    );
+                    return [patientId, dedupeAttachedFiles(files.filter((file): file is AttachedFile => Boolean(file)))] as const;
+                } catch {
+                    return [patientId, []] as const;
+                }
+            })
+        );
+
+        return Object.fromEntries(perPatientEntries);
+    } catch (error) {
+        emitStructuredLog("warn", "FirebaseStorage", "Error listing all patient folders", {
+            error,
+            user: anonymizeIdentifier(user.uid, 'user'),
+        });
+        return {};
     }
 };
 

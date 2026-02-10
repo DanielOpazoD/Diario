@@ -93,7 +93,7 @@ const Settings: React.FC = () => {
           addToast={addToast}
         />
 
-        <StorageSettings addToast={addToast} />
+        <StorageSettings addToast={addToast} records={records} setRecords={setRecords} />
       </div>
     </div>
   );

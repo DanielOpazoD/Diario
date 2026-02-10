@@ -1,9 +1,11 @@
 
 import { useEffect, useRef } from 'react';
 import useAppStore from '@core/stores/useAppStore';
+import type { PatientRecord } from '@shared/types';
 import { env } from '@shared/config/env';
 import { SYNC_POLICY } from '@shared/config/syncPolicy';
 import { logEvent } from '@use-cases/logger';
+import { listPatientFiles } from '@use-cases/attachments';
 import { reconcilePatientRecords } from '@use-cases/patientSyncMerge';
 import { subscribeToPatients } from '@use-cases/patientSync';
 import {
@@ -19,6 +21,83 @@ const useFirebaseSync = () => {
 
     // Keep track of the patient subscription unsubscribe function
     const patientUnsubRef = useRef<(() => void) | null>(null);
+    const recoveryInFlightRef = useRef<Set<string>>(new Set());
+    const recoveryAttemptedAtRef = useRef<Map<string, number>>(new Map());
+
+    const RECOVERY_RETRY_MS = 120000;
+
+    const findSiblingFilesByRut = (target: PatientRecord, allRecords: PatientRecord[]) => {
+        const targetRut = target.rut.trim().toLowerCase();
+        if (!targetRut) return [];
+
+        const siblingRecords = allRecords.filter((record) => (
+            record.id !== target.id &&
+            record.rut.trim().toLowerCase() === targetRut &&
+            (record.attachedFiles?.length ?? 0) > 0
+        ));
+
+        const merged = siblingRecords.flatMap((record) => record.attachedFiles || []);
+        const byId = new Map<string, typeof merged[number]>();
+        merged.forEach((file) => {
+            if (!byId.has(file.id)) {
+                byId.set(file.id, file);
+            }
+        });
+        return Array.from(byId.values());
+    };
+
+    const recoverMissingAttachments = async (records: PatientRecord[]) => {
+        const now = Date.now();
+        const recoverable = records
+            .filter((record) => (record.attachedFiles?.length ?? 0) === 0)
+            .filter((record) => !recoveryInFlightRef.current.has(record.id))
+            .filter((record) => {
+                const attemptedAt = recoveryAttemptedAtRef.current.get(record.id) || 0;
+                return now - attemptedAt > RECOVERY_RETRY_MS;
+            });
+
+        if (recoverable.length === 0) return;
+        recoverable.forEach((record) => {
+            recoveryInFlightRef.current.add(record.id);
+            recoveryAttemptedAtRef.current.set(record.id, now);
+        });
+
+        const recoveredById = new Map<string, PatientRecord>();
+
+        await Promise.all(recoverable.map(async (record) => {
+            try {
+                const filesFromStorage = await listPatientFiles(record.id);
+                const files = filesFromStorage.length > 0
+                    ? filesFromStorage
+                    : findSiblingFilesByRut(record, records);
+                if (files.length === 0) return;
+                recoveredById.set(record.id, {
+                    ...record,
+                    attachedFiles: files,
+                    updatedAt: Math.max(record.updatedAt ?? 0, Date.now()),
+                });
+            } catch {
+                // no-op; per-record cleanup runs in finally
+            } finally {
+                recoveryInFlightRef.current.delete(record.id);
+            }
+        }));
+
+        if (recoveredById.size === 0) return;
+
+        const latestRecords = useAppStore.getState().records;
+        const nextRecords = latestRecords.map((record) => recoveredById.get(record.id) || record);
+        setRecords(nextRecords);
+
+        logEvent(
+            'info',
+            'FirebaseSync',
+            `Adjuntos recuperados desde Storage para ${recoveredById.size} paciente(s)`,
+            {
+                recoveredPatients: recoveredById.size,
+            }
+        );
+    };
 
     useEffect(() => {
         if (!env.flags.isFirebaseConfigured) return;
@@ -96,6 +175,9 @@ const useFirebaseSync = () => {
                                 if (shouldUpdate) {
                                     setRecords(records);
                                 }
+
+                                const recordsForRecovery = shouldUpdate ? records : currentRecords;
+                                void recoverMissingAttachments(recordsForRecovery);
                             });
                 });
             } catch {

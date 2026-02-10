@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef, useState, useEffect, Suspense, laz
 import { Trash2, ExternalLink, Edit3 } from 'lucide-react';
 import { AttachedFile } from '@shared/types';
 import { logEvent } from '@use-cases/logger';
+import { listPatientFiles } from '@use-cases/attachments';
 import { useNavigate } from 'react-router-dom';
 import { safeSessionSetItem } from '@shared/utils/safeSessionStorage';
 import { SESSION_KEYS } from '@shared/constants/sessionKeys';
@@ -60,6 +61,8 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [showStarredOnly, setShowStarredOnly] = useState(false);
   const [pastedImage, setPastedImage] = useState<Blob | null>(null);
+  const [isRecoveringFiles, setIsRecoveringFiles] = useState(false);
+  const hasAttemptedRecoveryRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -123,6 +126,11 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     return () => window.removeEventListener('paste', handleGlobalPaste);
   }, []);
 
+  useEffect(() => {
+    hasAttemptedRecoveryRef.current = false;
+    setIsRecoveringFiles(false);
+  }, [patientId]);
+
   const handleConfirmPaste = useCallback(async (metadata: { title: string; note: string; date: string }) => {
     if (!pastedImage) return;
 
@@ -169,6 +177,28 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   const { mutateAsync: deleteFromFirebase } = useDeletePatientFileFirebase({
     addToast,
   });
+
+  useEffect(() => {
+    if (!patientId || files.length > 0) return;
+    if (hasAttemptedRecoveryRef.current) return;
+
+    hasAttemptedRecoveryRef.current = true;
+    setIsRecoveringFiles(true);
+
+    (async () => {
+      try {
+        const recovered = await listPatientFiles(patientId);
+        if (recovered.length > 0) {
+          onFilesChange(recovered);
+          addToast('info', `Se recuperaron ${recovered.length} adjuntos desde Firebase Storage.`);
+        }
+      } catch (_error) {
+        // Silent fallback: users can continue working even if recovery fails.
+      } finally {
+        setIsRecoveringFiles(false);
+      }
+    })();
+  }, [addToast, files.length, onFilesChange, patientId]);
 
   // Drag handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -352,9 +382,15 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
           onPasteClick={handlePasteClick}
         />
 
-        {files.length === 0 && !isUploading && (
+        {files.length === 0 && !isUploading && !isRecoveringFiles && (
           <div className="text-center py-4 text-gray-400 text-xs">
             No hay archivos adjuntos.
+          </div>
+        )}
+
+        {files.length === 0 && isRecoveringFiles && (
+          <div className="text-center py-4 text-gray-400 text-xs">
+            Recuperando adjuntos desde Firebase...
           </div>
         )}
 

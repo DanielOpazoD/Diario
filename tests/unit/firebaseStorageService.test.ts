@@ -4,6 +4,7 @@ import {
   updateFileInFirebase,
   updateFileInFirebaseById,
   deleteFileFromFirebase,
+  listPatientFilesFromFirebase,
   downloadFileBlobFromFirebaseUrl,
   downloadFileBlobFromFirebaseById,
 } from '@services/firebaseStorageService';
@@ -25,6 +26,11 @@ vi.mock('firebase/storage', () => ({
   listAll: vi.fn(async () => ({ items: [] })),
   uploadBytes: vi.fn(async (_ref: unknown, _file: File) => ({ ref: { path: 'ref' } })),
   getDownloadURL: vi.fn(async () => 'https://download/url'),
+  getMetadata: vi.fn(async () => ({
+    contentType: 'application/pdf',
+    size: '10',
+    timeCreated: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+  })),
   deleteObject: vi.fn(async () => undefined),
   getBlob: vi.fn(async () => new Blob(['x'], { type: 'text/plain' })),
 }));
@@ -314,5 +320,52 @@ describe('firebaseStorageService', () => {
         name: 'current-name.json',
       })
     );
+  });
+
+  it('lists patient files from storage for metadata recovery', async () => {
+    const { getStorageInstance } = await import('@services/firebase/storage');
+    const { getAuthInstance } = await import('@services/firebase/auth');
+    const { listAll, getDownloadURL } = await import('firebase/storage');
+
+    (getStorageInstance as any).mockResolvedValue({});
+    (getAuthInstance as any).mockResolvedValue({ currentUser: { uid: 'user-1' } });
+    (listAll as any).mockResolvedValueOnce({
+      items: [
+        { name: 'file-1_reporte.pdf', path: 'users/user-1/patients/patient-1/file-1_reporte.pdf' },
+      ],
+    });
+    (getDownloadURL as any).mockResolvedValueOnce('https://download/url/file-1');
+
+    const files = await listPatientFilesFromFirebase('patient-1');
+    expect(files).toHaveLength(1);
+    expect(files[0]).toEqual(expect.objectContaining({
+      id: 'file-1',
+      name: 'reporte.pdf',
+      driveUrl: 'https://download/url/file-1',
+    }));
+  });
+
+  it('keeps deterministic unique ids for legacy names with underscores', async () => {
+    const { getStorageInstance } = await import('@services/firebase/storage');
+    const { getAuthInstance } = await import('@services/firebase/auth');
+    const { listAll, getDownloadURL } = await import('firebase/storage');
+
+    (getStorageInstance as any).mockResolvedValue({});
+    (getAuthInstance as any).mockResolvedValue({ currentUser: { uid: 'user-1' } });
+    (listAll as any).mockResolvedValueOnce({
+      items: [
+        { name: 'evolucion_medica_16-02.pdf', path: 'users/user-1/patients/patient-1/evolucion_medica_16-02.pdf' },
+        { name: 'evolucion_medica_17-02.pdf', path: 'users/user-1/patients/patient-1/evolucion_medica_17-02.pdf' },
+      ],
+    });
+    (getDownloadURL as any)
+      .mockResolvedValueOnce('https://download/url/legacy-1')
+      .mockResolvedValueOnce('https://download/url/legacy-2');
+
+    const files = await listPatientFilesFromFirebase('patient-1');
+    expect(files).toHaveLength(2);
+    expect(files[0].id).toContain('legacy-');
+    expect(files[1].id).toContain('legacy-');
+    expect(files[0].id).not.toBe(files[1].id);
   });
 });

@@ -13,6 +13,8 @@ export interface AttachmentsPort {
     fileId: string,
     existingFileName?: string
   ) => Promise<AttachedFile>;
+  listPatientFiles: (patientId: string) => Promise<AttachedFile[]>;
+  listAllPatientFiles: () => Promise<Record<string, AttachedFile[]>>;
   deletePatientFile: (patientId: string, fileName: string, fileId: string) => Promise<void>;
   downloadPatientFileBlob: (url: string) => Promise<Blob>;
   downloadPatientFileBlobById: (patientId: string, fileId: string, existingFileName?: string) => Promise<Blob>;
