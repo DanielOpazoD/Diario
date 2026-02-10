@@ -1,6 +1,7 @@
 import { PatientRecord } from '@shared/types';
 import { firebasePatientSyncAdapter } from '@data/adapters/firebasePatientSyncAdapter';
 import { logEvent } from '@use-cases/logger';
+import { SYNC_POLICY } from '@shared/config/syncPolicy';
 
 export const subscribeToPatients = (callback: (patients: PatientRecord[]) => void) =>
   firebasePatientSyncAdapter.subscribeToPatients(callback);
@@ -17,6 +18,12 @@ const NON_RETRYABLE_SYNC_PATTERNS = [
 const isNonRetryableSyncError = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   return NON_RETRYABLE_SYNC_PATTERNS.some((pattern) => pattern.test(message));
+};
+
+const isOffline = () => {
+  if (typeof navigator === 'undefined') return false;
+  if (typeof navigator.onLine !== 'boolean') return false;
+  return navigator.onLine === false;
 };
 
 const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, operation: string) => {
@@ -57,6 +64,14 @@ export const syncPatientsWithRetry = async (
 
   let attempt = 0;
   let lastError: unknown;
+  if (isOffline()) {
+    const offlineError = new Error('offline: no network connection');
+    logEvent('warn', 'PatientSync', 'Sync skipped while offline', {
+      patientCount: patients.length,
+    });
+    throw offlineError;
+  }
+
   while (attempt < maxAttempts) {
     try {
       await withTimeout(
@@ -77,7 +92,10 @@ export const syncPatientsWithRetry = async (
         error: error instanceof Error ? error.message : String(error),
       });
       if (attempt >= maxAttempts || nonRetryable) break;
-      const backoff = baseDelayMs * Math.pow(2, attempt - 1);
+      const backoff = Math.min(
+        baseDelayMs * Math.pow(2, attempt - 1),
+        SYNC_POLICY.retryBackoffMaxMs
+      );
       const jitter = Math.floor(Math.random() * 100);
       await sleep(backoff + jitter);
     }

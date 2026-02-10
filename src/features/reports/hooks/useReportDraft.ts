@@ -22,6 +22,12 @@ type UseReportDraftOptions = {
   skipRemoteLoad?: boolean;
 };
 
+const createDraftId = () => (
+  (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+    ? crypto.randomUUID()
+    : `draft-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+);
+
 export const useReportDraft = (
   user: UserLike,
   initialRecord: ReportRecord,
@@ -44,7 +50,7 @@ export const useReportDraft = (
 
   useEffect(() => {
     const existingId = readLocal(STORAGE_KEYS.REPORT_DRAFT_ID);
-    const draftId = existingId || crypto.randomUUID();
+    const draftId = existingId || createDraftId();
     draftIdRef.current = draftId;
     if (!existingId) {
       writeLocal(STORAGE_KEYS.REPORT_DRAFT_ID, draftId);

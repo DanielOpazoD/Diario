@@ -29,6 +29,16 @@ const sharedRequire = (id) => {
   }
   if (id.includes('services/googleService')) return {};
   if (id.includes('services/storage')) return { fileToBase64: async () => '' };
+  if (id.includes('services/firebaseStorageService')) {
+    return {
+      uploadFileToFirebase: async () => ({}),
+      updateFileInFirebase: async () => ({}),
+      updateFileInFirebaseById: async () => ({}),
+      deleteFileFromFirebase: async () => ({}),
+      downloadFileBlobFromFirebaseUrl: async () => new Blob(),
+      downloadFileBlobFromFirebaseById: async () => new Blob(),
+    };
+  }
   return require(id);
 };
 
@@ -115,10 +125,21 @@ globalThis.window = {
 test('formatTitleCase capitalizes each word', () => {
   const localStorage = new MemoryStorage();
   const mockStore = { patientTypes: [] };
+  const firebaseStorageStub = {
+    uploadFileToFirebase: async () => ({}),
+    updateFileInFirebase: async () => ({}),
+    updateFileInFirebaseById: async () => ({}),
+    deleteFileFromFirebase: async () => ({}),
+    downloadFileBlobFromFirebaseUrl: async () => new Blob(),
+    downloadFileBlobFromFirebaseById: async () => new Blob(),
+  };
   const { formatTitleCase } = loadTsModule('components/PatientModal.tsx', {
     localStorage,
     window: {
       matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
+    },
+    moduleStubs: {
+      '@services/firebaseStorageService': firebaseStorageStub,
     },
     useAppStore: (selector) => selector(mockStore),
     require: (id) => {

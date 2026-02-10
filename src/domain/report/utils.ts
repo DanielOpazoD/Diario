@@ -1,5 +1,7 @@
 import type { ReportRecord } from '@domain/report/entities';
 
+const normalizeText = (value: string) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 export const formatDateDMY = (value?: string) => {
   if (!value) return '';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -9,9 +11,9 @@ export const formatDateDMY = (value?: string) => {
 };
 
 export const findReportSectionContent = (sections: ReportRecord['sections'], keywords: string[]) => {
-  const normalized = keywords.map((keyword) => keyword.toLowerCase());
+  const normalized = keywords.map((keyword) => normalizeText(keyword));
   const match = sections.find((section) =>
-    normalized.some((keyword) => section.title.toLowerCase().includes(keyword))
+    normalized.some((keyword) => normalizeText(section.title).includes(keyword))
   );
   return match?.content?.trim() || '';
 };

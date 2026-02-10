@@ -104,4 +104,22 @@ describe('syncPatientsWithRetry', () => {
       /attemptTimeoutMs/
     );
   });
+
+  it('fails fast when browser is offline', async () => {
+    const onlineGetter = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+    const { syncPatientsWithRetry } = await import('@use-cases/patientSync');
+
+    await expect(syncPatientsWithRetry([buildPatient('p5')], 3, 1, 1000)).rejects.toThrow(
+      /offline/
+    );
+    expect(syncPatientsMock).not.toHaveBeenCalled();
+    expect(logEventMock).toHaveBeenCalledWith(
+      'warn',
+      'PatientSync',
+      'Sync skipped while offline',
+      expect.objectContaining({ patientCount: 1 })
+    );
+
+    onlineGetter.mockRestore();
+  });
 });

@@ -1,5 +1,6 @@
 import { safeSessionGetItem, safeSessionSetItem } from '@shared/utils/safeSessionStorage';
 import { SESSION_KEYS } from '@shared/constants/sessionKeys';
+import { anonymizeIdentifier, sanitizeErrorForLog, sanitizeUrlForLog } from '@shared/utils/privacy';
 
 export type LogLevel = 'info' | 'warn' | 'error';
 
@@ -30,6 +31,7 @@ const SENSITIVE_KEYS = new Set([
 ]);
 
 const SENSITIVE_SUBSTRINGS = ['name', 'rut', 'diagnosis', 'clinical', 'patient', 'note', 'record', 'raw'];
+const IDENTIFIER_KEYS = ['id', 'uid', 'patientId', 'fileId', 'recordId'];
 
 const isSensitiveKey = (key: string) => {
   if (SENSITIVE_KEYS.has(key)) return true;
@@ -46,17 +48,40 @@ const redactValue = (value: unknown): unknown => {
   return undefined;
 };
 
+const isIdentifierKey = (key: string) => {
+  const normalized = key.toLowerCase();
+  return IDENTIFIER_KEYS.some((candidate) => normalized === candidate.toLowerCase());
+};
+
+const normalizeStringValue = (value: string) => {
+  const sanitized = sanitizeUrlForLog(value);
+  if (sanitized.length <= 240) return sanitized;
+  return `${sanitized.slice(0, 237)}...`;
+};
+
 const redactDetails = (details: unknown): unknown => {
+  if (details instanceof Error) return sanitizeErrorForLog(details);
+  if (typeof details === 'string') return normalizeStringValue(details);
   if (!details || typeof details !== 'object') return details;
   if (Array.isArray(details)) {
     return details.map((entry) => redactDetails(entry));
   }
   const result: Record<string, unknown> = {};
   Object.entries(details).forEach(([key, value]) => {
+    if (key.toLowerCase() === 'error') {
+      result[key] = sanitizeErrorForLog(value);
+      return;
+    }
+    if (isIdentifierKey(key) && typeof value === 'string') {
+      result[key] = anonymizeIdentifier(value, key);
+      return;
+    }
     if (isSensitiveKey(key)) {
       result[key] = redactValue(value);
     } else if (value && typeof value === 'object') {
       result[key] = redactDetails(value);
+    } else if (typeof value === 'string') {
+      result[key] = normalizeStringValue(value);
     } else {
       result[key] = value;
     }

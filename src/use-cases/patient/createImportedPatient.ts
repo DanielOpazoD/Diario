@@ -1,6 +1,8 @@
 import { format } from 'date-fns';
-import { formatPatientName } from '@shared/utils/patientUtils';
+import { inferPatientTypeId } from '@shared/utils/patientUtils';
 import { PatientRecord, PatientType, ExtractedPatientData } from '@shared/types';
+import { sanitizePatientFields } from '@use-cases/patient/sanitizeFields';
+import { normalizeBirthDate } from '@domain/patient/dates';
 
 interface CreateImportedPatientParams {
   id: string;
@@ -14,18 +16,30 @@ export const createImportedPatientRecord = ({
   extractedData,
   currentDate,
   timestamp,
-}: CreateImportedPatientParams): PatientRecord => ({
-  id,
-  name: extractedData.name ? formatPatientName(extractedData.name) : 'Paciente Nuevo',
-  rut: extractedData.rut || '',
-  birthDate: extractedData.birthDate || '',
-  gender: extractedData.gender || '',
-  type: PatientType.POLICLINICO,
-  diagnosis: extractedData.diagnosis && extractedData.diagnosis.trim() ? extractedData.diagnosis : 'Importado desde PDF',
-  clinicalNote: extractedData.clinicalNote || '',
-  date: format(currentDate, 'yyyy-MM-dd'),
-  attachedFiles: [],
-  pendingTasks: [],
-  createdAt: timestamp,
-  updatedAt: timestamp,
-});
+}: CreateImportedPatientParams): PatientRecord => {
+  const sanitized = sanitizePatientFields({
+    name: extractedData.name || '',
+    rut: extractedData.rut || '',
+    diagnosis: extractedData.diagnosis || '',
+    clinicalNote: extractedData.clinicalNote || '',
+  });
+
+  const type = PatientType.POLICLINICO;
+
+  return {
+    id,
+    name: sanitized.name || 'Paciente Nuevo',
+    rut: sanitized.rut,
+    birthDate: normalizeBirthDate(extractedData.birthDate || ''),
+    gender: extractedData.gender?.trim() || '',
+    type,
+    typeId: inferPatientTypeId(type),
+    diagnosis: sanitized.diagnosis || 'Importado desde PDF',
+    clinicalNote: sanitized.clinicalNote,
+    date: format(currentDate, 'yyyy-MM-dd'),
+    attachedFiles: [],
+    pendingTasks: [],
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+};

@@ -70,8 +70,6 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
     }
   }, [editingId, bookmarks]);
 
-  if (!isOpen) return null;
-
   const handleClose = useCallback(() => {
     setForm(defaultFormState);
     setError(null);
@@ -131,6 +129,8 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ isOpen, onClose, editin
     });
     setError(null);
   }, []);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

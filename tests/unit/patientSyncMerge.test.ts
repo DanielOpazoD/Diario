@@ -48,6 +48,17 @@ describe('reconcilePatientRecords', () => {
     expect(result.records[0].name).toBe('Local');
   });
 
+  it('can prefer remote on equal timestamps when policy requires it', () => {
+    const local = [buildPatient('p1', 10, 0, 'Local')];
+    const remote = [buildPatient('p1', 10, 0, 'Remote')];
+
+    const result = reconcilePatientRecords(local, remote, 1000, 30000, 'newer-wins-remote-tie');
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.records[0].name).toBe('Remote');
+    expect(result.changes).toEqual([{ type: 'update', id: 'p1' }]);
+  });
+
   it('uses createdAt when updatedAt is missing', () => {
     const now = 1000;
     const local = [buildPatient('p1', undefined, 900, 'Local')];
@@ -88,5 +99,20 @@ describe('reconcilePatientRecords', () => {
     expect(result.hasChanges).toBe(true);
     expect(result.records).toHaveLength(1);
     expect(result.changes[0].type).toBe('add');
+  });
+
+  it('protects against suspicious mass removals from a sparse remote snapshot', () => {
+    const now = 1_000_000;
+    const local = Array.from({ length: 10 }, (_, index) => (
+      buildPatient(`p${index + 1}`, now - 60_000, now - 60_000, `Local-${index + 1}`)
+    ));
+    const remote = [buildPatient('p1', now - 60_000, now - 60_000, 'Remote-1')];
+
+    const result = reconcilePatientRecords(local, remote, now, 10_000);
+
+    expect(result.records).toHaveLength(10);
+    expect(result.changes).toHaveLength(0);
+    expect(result.stats.protectedRemovals).toBe(9);
+    expect(result.stats.staleRemovals).toBe(0);
   });
 });

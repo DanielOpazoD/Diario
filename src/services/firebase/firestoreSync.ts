@@ -3,6 +3,10 @@ import { emitStructuredLog } from '../logger';
 import { getAuthInstance } from './auth';
 import { getFirestoreInstance } from './firestore';
 import { PatientRecordSchema } from '@shared/schemas';
+import { SYNC_POLICY } from '@shared/config/syncPolicy';
+import { resolvePatientConflict } from '@use-cases/patient/syncConflict';
+import { anonymizeIdentifier } from '@shared/utils/privacy';
+import { getPatientSyncStateSignature } from '@use-cases/patient/syncState';
 
 const PATIENTS_COLLECTION = 'data';
 const LEGACY_PATIENTS_COLLECTION = 'patients';
@@ -53,11 +57,13 @@ export const syncPatientsToFirebase = async (patients: PatientRecord[]) => {
   if (!user) return;
 
   const currentStateHash = JSON.stringify(
-    patients.map(p => ({
-      id: p.id,
-      updated: p.updatedAt || 0,
-      created: p.createdAt || 0,
-    }))
+    patients
+      .slice()
+      .sort((left, right) => left.id.localeCompare(right.id))
+      .map((patient) => ({
+        id: patient.id,
+        signature: getPatientSyncStateSignature(patient),
+      }))
   );
   if (currentStateHash === lastSyncedStateHash) return;
 
@@ -132,13 +138,24 @@ export const subscribeToPatients = (callback: (patients: PatientRecord[]) => voi
       sourceData.legacy.forEach(p => mergedMap.set(p.id, p));
       sourceData.primary.forEach(p => {
         const existing = mergedMap.get(p.id);
-        if (!existing || (p.updatedAt || 0) >= (existing.updatedAt || 0)) {
+        if (!existing) {
           mergedMap.set(p.id, withSyncMeta(p, 'remote'));
-        } else if (shouldLogConflict(p.id)) {
-          emitStructuredLog('warn', 'Firebase', 'Conflict resolved using newer local record', {
-            id: p.id,
-            localUpdatedAt: existing.updatedAt,
-            remoteUpdatedAt: p.updatedAt,
+          return;
+        }
+
+        const decision = resolvePatientConflict(existing, p, SYNC_POLICY.conflictPolicy);
+        if (decision.winner === 'remote') {
+          mergedMap.set(p.id, withSyncMeta(p, 'remote'));
+          return;
+        }
+
+        if (shouldLogConflict(p.id)) {
+          emitStructuredLog('warn', 'Firebase', 'Conflict resolved keeping existing record', {
+            patientRef: anonymizeIdentifier(p.id, 'patient'),
+            reason: decision.reason,
+            existingUpdatedAt: existing.updatedAt,
+            incomingUpdatedAt: p.updatedAt,
+            policy: SYNC_POLICY.conflictPolicy,
           });
         }
       });

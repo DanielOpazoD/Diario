@@ -68,6 +68,24 @@ describe('firebaseStorageService', () => {
     );
   });
 
+  it('stores uploads using opaque object name (without original filename)', async () => {
+    const { getStorageInstance } = await import('@services/firebase/storage');
+    const { getAuthInstance } = await import('@services/firebase/auth');
+    const { uploadBytes } = await import('firebase/storage');
+
+    (getStorageInstance as any).mockResolvedValue({});
+    (getAuthInstance as any).mockResolvedValue({ currentUser: { uid: 'user-1' } });
+
+    await uploadFileToFirebase(
+      new File(['a'], 'elena_araki_16-01.pdf', { type: 'application/pdf' }),
+      'patient-1'
+    );
+
+    const storageRef = (uploadBytes as any).mock.calls[0]?.[0];
+    expect(storageRef.path).toContain('/uuid-1.pdf');
+    expect(storageRef.path).not.toContain('elena_araki_16-01');
+  });
+
   it('updates existing file and keeps file identity', async () => {
     const { getStorageInstance } = await import('@services/firebase/storage');
     const { getAuthInstance } = await import('@services/firebase/auth');

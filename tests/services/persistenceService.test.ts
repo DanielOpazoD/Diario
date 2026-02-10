@@ -65,6 +65,8 @@ describe('persistenceService', () => {
     beforeEach(async () => {
         vi.useFakeTimers();
         vi.clearAllMocks();
+        const { resetPersistenceForTests } = await import('@core/app/persistence');
+        resetPersistenceForTests();
 
         // Get the mocked subscribe function
         const useAppStore = (await import('@core/stores/useAppStore')).default as unknown as {
@@ -73,7 +75,10 @@ describe('persistenceService', () => {
         mockSubscribe = useAppStore.subscribe;
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        // Ensure singleton subscription state does not leak between tests.
+        const { resetPersistenceForTests } = await import('@core/app/persistence');
+        resetPersistenceForTests();
         vi.useRealTimers();
     });
 

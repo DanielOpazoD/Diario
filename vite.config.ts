@@ -69,6 +69,22 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       setupFiles: './tests/setup.ts',
       include: ['**/*.test.{ts,tsx}'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json-summary', 'html'],
+        exclude: [
+          'src/**/*.d.ts',
+          'vendor/**',
+          'dist/**',
+          'node_modules/**',
+        ],
+        thresholds: {
+          lines: 72,
+          statements: 70,
+          functions: 70,
+          branches: 60,
+        },
+      },
     },
     plugins: [
       localStorageProxyPlugin(),

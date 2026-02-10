@@ -53,4 +53,36 @@ describe('logger', () => {
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
   });
+
+  it('redacts sensitive details, sanitizes errors and anonymizes identifiers', async () => {
+    vi.resetModules();
+    vi.stubGlobal('sessionStorage', {
+      getItem: vi.fn(() => 'session-4'),
+      setItem: vi.fn(),
+    });
+    vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-4') });
+
+    const { emitStructuredLog } = await import('@services/logger');
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    const entry = emitStructuredLog('info', 'Test', 'Privacy', {
+      patientId: 'patient-123',
+      url: 'https://host/path?token=abc',
+      name: 'Juan Perez',
+      error: new Error('Failed https://host/path?key=secret'),
+    });
+
+    expect(entry.details).toEqual(
+      expect.objectContaining({
+        patientId: expect.stringMatching(/^patientId#/),
+        url: 'https://host/path?token=%5BREDACTED%5D',
+        name: '[REDACTED]',
+        error: expect.objectContaining({
+          message: 'Failed https://host/path?key=[REDACTED]',
+        }),
+      })
+    );
+
+    infoSpy.mockRestore();
+  });
 });

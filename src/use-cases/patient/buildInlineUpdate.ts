@@ -1,6 +1,7 @@
 import { AttachedFile, PatientRecord, PatientTypeConfig, PendingTask } from '@shared/types';
 import { sanitizePatientFields } from '@use-cases/patient/sanitizeFields';
 import { resolvePatientType } from '@use-cases/patient/resolveType';
+import { normalizeAttachedFiles, normalizePendingTasks } from '@use-cases/patient/normalizeCollections';
 
 interface BuildInlineUpdateParams {
   patient: PatientRecord;
@@ -39,6 +40,8 @@ export const buildInlineUpdatedPatient = ({
 }: BuildInlineUpdateParams): PatientRecord => {
   const sanitized = sanitizePatientFields({ name, rut, diagnosis, clinicalNote });
   const resolvedType = resolvePatientType(patientTypes, typeId, type);
+  const normalizedTasks = normalizePendingTasks(pendingTasks);
+  const normalizedAttachedFiles = normalizeAttachedFiles(attachedFiles);
 
   return {
     ...patient,
@@ -52,8 +55,8 @@ export const buildInlineUpdatedPatient = ({
     exitTime: exitTime || undefined,
     diagnosis: sanitized.diagnosis,
     clinicalNote: sanitized.clinicalNote,
-    pendingTasks,
-    attachedFiles,
+    pendingTasks: normalizedTasks,
+    attachedFiles: normalizedAttachedFiles,
     driveFolderId,
   };
 };

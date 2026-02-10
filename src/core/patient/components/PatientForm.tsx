@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect, useId, useState } from 'react';
 import { Clock, Users, Save, ChevronUp, Sparkles, UserCog } from 'lucide-react';
 import { AttachedFile, PatientTypeConfig } from '@shared/types';
 import { formatBirthDateDisplay, normalizeBirthDateInput } from '@shared/utils/dateUtils';
 import { Button } from '@core/ui';
+import PatientTypeDropdown from '@core/patient/components/PatientTypeDropdown';
 
 interface PatientFormProps {
   name: string;
@@ -73,55 +73,9 @@ const PatientForm: React.FC<PatientFormProps> = ({
   const exitTimeId = useId();
 
   const [isExpanded, setIsExpanded] = useState(defaultExpanded || !name || name.trim() === '');
-  const [isTypeMenuOpen, setIsTypeMenuOpen] = useState(false);
-  const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; width: number }>({
-    top: 0,
-    left: 0,
-    width: 0,
-  });
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string>(attachedFiles[0]?.id || '');
-  const typeMenuRef = useRef<HTMLDivElement>(null);
 
   const selectedType = patientTypes.find(t => t.id === typeId);
-
-  const handleCloseTypeMenu = useCallback(() => {
-    setIsTypeMenuOpen(false);
-  }, []);
-
-  useEffect(() => {
-    if (!isTypeMenuOpen) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!typeMenuRef.current?.contains(event.target as Node)) {
-        handleCloseTypeMenu();
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [handleCloseTypeMenu, isTypeMenuOpen]);
-
-  const updateMenuPosition = useCallback(() => {
-    if (!typeMenuRef.current) return;
-    const rect = typeMenuRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    const direction = spaceBelow < 220 && spaceAbove > spaceBelow ? 'up' : 'down';
-    const top = direction === 'up' ? rect.top - 8 - 220 : rect.bottom + 6;
-    const menuWidth = Math.max(160, Math.min(220, rect.width));
-    const maxLeft = window.innerWidth - menuWidth - 8;
-    const left = Math.max(8, Math.min(rect.left, maxLeft));
-    setMenuStyle({ top, left, width: menuWidth });
-  }, []);
-
-  useEffect(() => {
-    if (!isTypeMenuOpen) return;
-    updateMenuPosition();
-    window.addEventListener('resize', updateMenuPosition);
-    window.addEventListener('scroll', updateMenuPosition, true);
-    return () => {
-      window.removeEventListener('resize', updateMenuPosition);
-      window.removeEventListener('scroll', updateMenuPosition, true);
-    };
-  }, [isTypeMenuOpen, updateMenuPosition]);
 
   useEffect(() => {
     if (!attachedFiles.length) {
@@ -323,43 +277,13 @@ const PatientForm: React.FC<PatientFormProps> = ({
             </div>
             {inlineLayout && (
               <div className={superMinimalist ? "flex-[1.2] min-w-0" : "flex-[1.2] basis-0 min-w-0"}>
-                <div ref={typeMenuRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsTypeMenuOpen((prev) => !prev)}
-                    className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-100"
-                    aria-haspopup="listbox"
-                    aria-expanded={isTypeMenuOpen}
-                  >
-                    <span>{selectedType?.label || 'Tipo atención'}</span>
-                    <span className={`text-[10px] transition-transform ${isTypeMenuOpen ? 'rotate-180' : ''}`}>▾</span>
-                  </button>
-
-                  {isTypeMenuOpen && typeof document !== 'undefined' && createPortal(
-                    <div
-                      className="fixed z-[120] max-h-44 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg p-0.5 animate-fade-in"
-                      style={{ top: menuStyle.top, left: menuStyle.left, width: menuStyle.width }}
-                    >
-                      {patientTypes.map((patientType) => (
-                        <button
-                          key={patientType.id}
-                          type="button"
-                          onClick={() => {
-                            onSelectType(patientType.id, patientType.label);
-                            handleCloseTypeMenu();
-                          }}
-                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-colors ${typeId === patientType.id
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/60'
-                            }`}
-                        >
-                          <span>{patientType.label}</span>
-                        </button>
-                      ))}
-                    </div>,
-                    document.body
-                  )}
-                </div>
+                <PatientTypeDropdown
+                  typeId={typeId}
+                  patientTypes={patientTypes}
+                  placeholder="Tipo atencion"
+                  onSelectType={onSelectType}
+                  buttonClassName="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-100"
+                />
               </div>
             )}
 
@@ -381,43 +305,13 @@ const PatientForm: React.FC<PatientFormProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             {!compact && (minimalist || superMinimalist) && null}
             <div className="flex-[1.5] min-w-[180px]">
-              <div ref={typeMenuRef} className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsTypeMenuOpen((prev) => !prev)}
-                  className="w-full max-w-[220px] flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-100"
-                  aria-haspopup="listbox"
-                  aria-expanded={isTypeMenuOpen}
-                >
-                  <span>{selectedType?.label || 'Tipo de atención'}</span>
-                  <span className={`text-[10px] transition-transform ${isTypeMenuOpen ? 'rotate-180' : ''}`}>▾</span>
-                </button>
-
-                {isTypeMenuOpen && typeof document !== 'undefined' && createPortal(
-                  <div
-                    className="fixed z-[120] max-h-44 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg p-0.5 animate-fade-in"
-                    style={{ top: menuStyle.top, left: menuStyle.left, width: menuStyle.width }}
-                  >
-                    {patientTypes.map((patientType) => (
-                      <button
-                        key={patientType.id}
-                        type="button"
-                        onClick={() => {
-                          onSelectType(patientType.id, patientType.label);
-                          handleCloseTypeMenu();
-                        }}
-                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-colors ${typeId === patientType.id
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/60'
-                          }`}
-                      >
-                        <span>{patientType.label}</span>
-                      </button>
-                    ))}
-                  </div>,
-                  document.body
-                )}
-              </div>
+              <PatientTypeDropdown
+                typeId={typeId}
+                patientTypes={patientTypes}
+                placeholder="Tipo de atencion"
+                onSelectType={onSelectType}
+                buttonClassName="w-full max-w-[220px] flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-100"
+              />
             </div>
 
             {(compact || minimalist || superMinimalist) && onSave && (

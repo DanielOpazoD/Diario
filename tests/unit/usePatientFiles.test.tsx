@@ -10,8 +10,11 @@ import {
 
 vi.mock('@services/firebaseStorageService', () => ({
   uploadFileToFirebase: vi.fn(async (_file: File, _patientId: string) => ({ id: 'f1', name: 'doc.pdf' })),
+  updateFileInFirebase: vi.fn(async () => ({ id: 'f1', name: 'doc.pdf' })),
+  updateFileInFirebaseById: vi.fn(async () => ({ id: 'f1', name: 'doc.pdf' })),
   deleteFileFromFirebase: vi.fn(async () => undefined),
   downloadFileBlobFromFirebaseUrl: vi.fn(async () => new Blob(['x'], { type: 'application/pdf' })),
+  downloadFileBlobFromFirebaseById: vi.fn(async () => new Blob(['x'], { type: 'application/pdf' })),
 }));
 
 const createWrapper = (client: QueryClient) => {

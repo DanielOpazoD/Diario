@@ -1,5 +1,12 @@
 import { StateCreator } from 'zustand';
 import { PatientRecord } from '@shared/types';
+import {
+  addPatientRecord,
+  deletePatientRecord,
+  setPatientRecords,
+  updatePatientRecord,
+} from '@use-cases/patient/records';
+
 export interface PatientSlice {
   records: PatientRecord[];
   setRecords: (records: PatientRecord[]) => void;
@@ -10,12 +17,8 @@ export interface PatientSlice {
 
 export const createPatientSlice: StateCreator<PatientSlice> = (set) => ({
   records: [],
-  setRecords: (records) => set({ records }),
-  addPatient: (patient) => set((state) => ({ records: [...state.records, { ...patient, updatedAt: Date.now() }] })),
-  updatePatient: (patient) => set((state) => ({
-    records: state.records.map((p) => (p.id === patient.id ? { ...patient, updatedAt: Date.now() } : p)),
-  })),
-  deletePatient: (id) => set((state) => ({
-    records: state.records.filter((p) => p.id !== id),
-  })),
+  setRecords: (records) => set({ records: setPatientRecords(records) }),
+  addPatient: (patient) => set((state) => ({ records: addPatientRecord(state.records, patient) })),
+  updatePatient: (patient) => set((state) => ({ records: updatePatientRecord(state.records, patient) })),
+  deletePatient: (id) => set((state) => ({ records: deletePatientRecord(state.records, id) })),
 });

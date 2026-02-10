@@ -53,13 +53,12 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ isOpen, onClo
     setActiveTab(prev => (prev === initialTab ? prev : initialTab));
   }, [isOpen, record?.id, record?.updatedAt, initialTab, record]);
 
-  if (!isOpen || !record) return null;
-
   const completedTasks = useMemo(() => pendingTasks.filter(t => t.isCompleted), [pendingTasks]);
   const pendingOpenTasks = useMemo(() => pendingTasks.filter(t => !t.isCompleted), [pendingTasks]);
   const { toggleTask, deleteTask, addTask, updateTaskNote } = usePendingTasks({ setPendingTasks });
 
   const handleSave = useCallback(() => {
+    if (!record) return;
     updatePatient({
       ...record,
       pendingTasks,
@@ -69,6 +68,8 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ isOpen, onClo
     });
     addToast('success', 'Historial actualizado');
   }, [addToast, attachedFiles, driveFolderId, pendingTasks, record, updatePatient]);
+
+  if (!isOpen || !record) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden p-0 md:p-6">

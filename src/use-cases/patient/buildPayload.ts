@@ -1,6 +1,7 @@
 import { AttachedFile, PatientCreateInput, PatientRecord, PatientTypeConfig, PatientUpdateInput, PendingTask } from '@shared/types';
 import { sanitizePatientFields } from '@use-cases/patient/sanitizeFields';
 import { resolvePatientType } from '@use-cases/patient/resolveType';
+import { normalizeAttachedFiles, normalizePendingTasks } from '@use-cases/patient/normalizeCollections';
 
 interface BuildPatientPayloadParams {
   initialData?: PatientRecord | null;
@@ -21,32 +22,6 @@ interface BuildPatientPayloadParams {
   patientId: string;
   driveFolderId: string | null;
 }
-
-const normalizePendingTasks = (tasks: PendingTask[]): PendingTask[] =>
-  (tasks ?? []).reduce<PendingTask[]>((acc, task, index) => {
-    if (!task || typeof task.text !== 'string') return acc;
-    const text = task.text.trim();
-    if (!text) return acc;
-
-    acc.push({
-      ...task,
-      id: task.id || `task-${index}`,
-      text,
-      completionNote: task.completionNote?.trim() || undefined,
-    });
-    return acc;
-  }, []);
-
-const normalizeAttachedFiles = (files: AttachedFile[]): AttachedFile[] =>
-  (files ?? []).filter((file): file is AttachedFile =>
-    Boolean(
-      file &&
-      typeof file.id === 'string' &&
-      file.id.trim().length > 0 &&
-      typeof file.name === 'string' &&
-      file.name.trim().length > 0
-    )
-  );
 
 export const buildPatientPayload = ({
   initialData,

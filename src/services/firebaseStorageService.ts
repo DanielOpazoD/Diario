@@ -2,6 +2,7 @@ import { getAuthInstance } from "./firebase/auth";
 import { getStorageInstance } from "./firebase/storage";
 import { AttachedFile } from '@shared/types';
 import { emitStructuredLog } from "./logger";
+import { anonymizeIdentifier, summarizeUrlForLog } from '@shared/utils/privacy';
 
 const getFirebaseContext = async () => {
     const storage = await getStorageInstance();
@@ -16,11 +17,35 @@ const buildPatientStoragePath = (uid: string, patientId: string) => (
     `users/${uid}/patients/${patientId}`
 );
 
+const getFileExtension = (fileName: string) => {
+    const trimmed = fileName.trim();
+    const dotIndex = trimmed.lastIndexOf('.');
+    if (dotIndex <= 0 || dotIndex === trimmed.length - 1) return '';
+    return trimmed.slice(dotIndex + 1).toLowerCase();
+};
+
+const buildStorageObjectName = (fileId: string, fileName?: string) => {
+    const extension = fileName ? getFileExtension(fileName) : '';
+    return extension ? `${fileId}.${extension}` : fileId;
+};
+
+const buildDisplayFileName = (storedName: string) => {
+    const dotIndex = storedName.lastIndexOf('.');
+    if (dotIndex <= 0 || dotIndex === storedName.length - 1) return 'archivo';
+    const extension = storedName.slice(dotIndex + 1).toLowerCase();
+    return `archivo.${extension}`;
+};
+
 const resolveStoredFileName = (fileId: string, storageObjectName: string): string => {
     const prefix = `${fileId}_`;
+    if (storageObjectName === fileId) return 'archivo';
+    if (storageObjectName.startsWith(`${fileId}.`)) {
+        return buildDisplayFileName(storageObjectName);
+    }
     if (!storageObjectName.startsWith(prefix)) return storageObjectName;
     const resolved = storageObjectName.slice(prefix.length);
-    return resolved || storageObjectName;
+    if (resolved) return resolved;
+    return storageObjectName;
 };
 
 const resolveExistingFileStorageRef = async (
@@ -35,10 +60,14 @@ const resolveExistingFileStorageRef = async (
     const patientFolderRef = ref(storage, buildPatientStoragePath(user.uid, patientId));
     try {
         const listing = await listAll(patientFolderRef);
-        const expectedName = trimmedName ? `${fileId}_${trimmedName}` : null;
+        const expectedLegacyName = trimmedName ? `${fileId}_${trimmedName}` : null;
+        const expectedFlatName = trimmedName ? buildStorageObjectName(fileId, trimmedName) : null;
         const matchedRef = (
-            (expectedName ? listing.items.find((item) => item.name === expectedName) : null)
+            (expectedLegacyName ? listing.items.find((item) => item.name === expectedLegacyName) : null)
+            || (expectedFlatName ? listing.items.find((item) => item.name === expectedFlatName) : null)
+            || listing.items.find((item) => item.name === fileId)
             || listing.items.find((item) => item.name.startsWith(`${fileId}_`))
+            || listing.items.find((item) => item.name.startsWith(`${fileId}.`))
         );
         if (matchedRef) {
             return {
@@ -46,13 +75,14 @@ const resolveExistingFileStorageRef = async (
                 fileName: resolveStoredFileName(fileId, matchedRef.name),
             };
         }
-    } catch (error) {
+    } catch (_error) {
         // If listing fails (permissions/network), fallback to deterministic path when filename exists.
     }
 
     if (trimmedName) {
+        const normalizedObjectName = buildStorageObjectName(fileId, trimmedName);
         return {
-            storageRef: ref(storage, `${buildPatientStoragePath(user.uid, patientId)}/${fileId}_${trimmedName}`),
+            storageRef: ref(storage, `${buildPatientStoragePath(user.uid, patientId)}/${normalizedObjectName}`),
             fileName: trimmedName,
         };
     }
@@ -68,7 +98,8 @@ export const uploadFileToFirebase = async (
 
     const fileId = crypto.randomUUID();
     const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
-    const storageRef = ref(storage, `users/${user.uid}/patients/${patientId}/${fileId}_${file.name}`);
+    const objectName = buildStorageObjectName(fileId, file.name);
+    const storageRef = ref(storage, `users/${user.uid}/patients/${patientId}/${objectName}`);
 
     try {
         const snapshot = await uploadBytes(storageRef, file);
@@ -84,7 +115,13 @@ export const uploadFileToFirebase = async (
             isStarred: false
         };
     } catch (error) {
-        emitStructuredLog("error", "FirebaseStorage", "Error uploading file", { error });
+        emitStructuredLog("error", "FirebaseStorage", "Error uploading file", {
+            error,
+            patientId: anonymizeIdentifier(patientId, 'patient'),
+            fileId: anonymizeIdentifier(fileId, 'file'),
+            fileExt: getFileExtension(file.name) || null,
+            fileSizeBytes: file.size,
+        });
         throw error;
     }
 };
@@ -123,25 +160,28 @@ export const updateFileInFirebaseById = async (
             isStarred: false
         };
     } catch (error) {
-        emitStructuredLog("error", "FirebaseStorage", "Error updating file", { error });
+        emitStructuredLog("error", "FirebaseStorage", "Error updating file", {
+            error,
+            patientId: anonymizeIdentifier(patientId, 'patient'),
+            fileId: anonymizeIdentifier(fileId, 'file'),
+            fileExt: getFileExtension(file.name) || null,
+            fileSizeBytes: file.size,
+        });
         throw error;
     }
 };
 
 export const deleteFileFromFirebase = async (patientId: string, fileName: string, fileId: string) => {
-    const storage = await getStorageInstance();
-    const auth = await getAuthInstance();
-    if (!auth || !storage) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const { ref, deleteObject } = await import("firebase/storage");
-    const storageRef = ref(storage, `users/${user.uid}/patients/${patientId}/${fileId}_${fileName}`);
-
     try {
+        const { deleteObject } = await import("firebase/storage");
+        const { storageRef } = await resolveExistingFileStorageRef(patientId, fileId, fileName);
         await deleteObject(storageRef);
     } catch (error) {
-        emitStructuredLog("error", "FirebaseStorage", "Error deleting file", { error });
+        emitStructuredLog("error", "FirebaseStorage", "Error deleting file", {
+            error,
+            patientId: anonymizeIdentifier(patientId, 'patient'),
+            fileId: anonymizeIdentifier(fileId, 'file'),
+        });
     }
 };
 
@@ -178,13 +218,10 @@ const downloadFirebaseHttpUrlViaProxy = async (url: string): Promise<Blob> => {
     let lastError: unknown = null;
     for (const endpoint of STORAGE_PROXY_ENDPOINTS) {
         try {
-            if (typeof console !== 'undefined') {
-                console.info('[ClinicalReportJSON][StorageProxy]', {
-                    stage: 'proxy-request',
-                    endpoint,
-                    url: url.slice(0, 120),
-                });
-            }
+            emitStructuredLog('info', 'StorageProxy', 'Proxy request for storage download', {
+                endpoint,
+                url: summarizeUrlForLog(url),
+            });
             const payload = await fetchStorageProxyPayload(endpoint, url);
             if (!payload?.base64) {
                 throw new Error('Storage proxy returned invalid payload');
@@ -192,13 +229,10 @@ const downloadFirebaseHttpUrlViaProxy = async (url: string): Promise<Blob> => {
             return decodeBase64ToBlob(payload.base64, payload.mimeType || 'application/octet-stream');
         } catch (error) {
             lastError = error;
-            if (typeof console !== 'undefined') {
-                console.warn('[ClinicalReportJSON][StorageProxy]', {
-                    stage: 'proxy-failed',
-                    endpoint,
-                    errorMessage: error instanceof Error ? error.message : String(error),
-                });
-            }
+            emitStructuredLog('warn', 'StorageProxy', 'Proxy endpoint failed', {
+                endpoint,
+                error,
+            });
         }
     }
     throw (lastError || new Error('Storage proxy unavailable'));
@@ -229,14 +263,11 @@ export const downloadFileBlobFromFirebaseById = async (
     fileId: string,
     existingFileName?: string
 ): Promise<Blob> => {
-    if (typeof console !== 'undefined') {
-        console.info('[ClinicalReportJSON][StorageProxy]', {
-            stage: 'by-id-resolve',
-            patientId,
-            fileId,
-            existingFileName: existingFileName || null,
-        });
-    }
+    emitStructuredLog('info', 'StorageProxy', 'Resolving storage object by identifiers', {
+        patientId: anonymizeIdentifier(patientId, 'patient'),
+        fileId: anonymizeIdentifier(fileId, 'file'),
+        hasExistingFileName: Boolean(existingFileName),
+    });
     const { getDownloadURL } = await import("firebase/storage");
     const { storageRef } = await resolveExistingFileStorageRef(patientId, fileId, existingFileName);
     const downloadUrl = await getDownloadURL(storageRef);

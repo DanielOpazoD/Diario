@@ -61,8 +61,6 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     return file.driveUrl;
   }, [file, isImage, isOfficeDoc, isPDF]);
 
-  if (!file || !isOpen) return null;
-
   const formatSize = useCallback((bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -78,6 +76,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
   }, [isImage, isPDF]);
 
   const handleSave = useCallback(() => {
+    if (!file) return;
     const parsedTags = tagsInput
       .split(',')
       .map((tag) => tag.trim())
@@ -93,6 +92,8 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     });
     setIsEditing(false);
   }, [category, customTypeLabel, description, file, onUpdate, tagsInput, title]);
+
+  if (!file || !isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[150] overflow-hidden">

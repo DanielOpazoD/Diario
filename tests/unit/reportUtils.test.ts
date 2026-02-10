@@ -12,9 +12,11 @@ describe('report utils', () => {
     const sections = [
       { title: 'Antecedentes relevantes', content: 'Hipertension' },
       { title: 'Plan terapéutico', content: 'Control en 48h' },
+      { title: 'Diagnósticos', content: 'Insuficiencia cardiaca' },
     ];
 
     expect(findReportSectionContent(sections, ['plan'])).toBe('Control en 48h');
+    expect(findReportSectionContent(sections, ['diagnost'])).toBe('Insuficiencia cardiaca');
     expect(findReportSectionContent(sections, ['examen'])).toBe('');
   });
 });

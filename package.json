@@ -7,14 +7,17 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts,.tsx --rule \"boundaries/entry-points:off\" --rule \"boundaries/element-types:warn\" --rule \"react-hooks/set-state-in-effect:warn\" --rule \"react-hooks/preserve-manual-memoization:warn\" --rule \"no-useless-escape:warn\"",
     "test": "vitest run",
     "test:node": "node --test tests/*.test.js tests/integration/*.test.js tests/e2e/*.test.js",
     "test:all": "npm run test && npm run test:node",
+    "test:coverage": "vitest run --coverage",
+    "test:coverage:gate": "npm run test:coverage",
     "test:critical": "npm run test -- tests/unit/buildPayload.test.ts tests/unit/patientDomain.test.ts tests/unit/patientUseCases.test.ts tests/unit/patientSyncMerge.test.ts tests/unit/patientSyncUseCase.test.ts tests/unit/persistenceInit.test.ts tests/unit/storageService.test.ts tests/unit/logger.test.ts",
     "test:watch": "vitest",
     "boundary:check": "node scripts/check-boundaries.mjs",
     "sync:check": "node scripts/sync-health-check.mjs",
-    "quality:gate": "npm run boundary:check && npm run test:critical && npm run test:node && npm run build"
+    "quality:gate": "npm run boundary:check && npm run lint && npm run test:critical && npm run test:coverage:gate && npm run test:node && npm run build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -27,7 +30,7 @@
     "firebase": "^12.8.0",
     "googleapis": "^144.0.0",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1",
+    "jspdf": "^4.1.0",
     "lucide-react": "^0.344.0",
     "pdfjs-dist": "^4.10.38",
     "puppeteer-core": "^24.37.2",
@@ -39,6 +42,11 @@
     "telegraf": "^4.16.3",
     "zod": "^4.3.5",
     "zustand": "^5.0.8"
+  },
+  "overrides": {
+    "jws": "4.0.1",
+    "qs": "6.14.1",
+    "lodash": "4.17.23"
   },
   "devDependencies": {
     "@netlify/functions": "^2.8.2",
