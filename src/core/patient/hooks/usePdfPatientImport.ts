@@ -1,14 +1,15 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
-  extractPatientDataFromImageAI,
-  extractPatientDataFromTextAI,
-  normalizeExtractedPatientDataUseCase,
-  extractAndNormalizePatientText,
+    extractPatientDataFromImageAI,
+    extractPatientDataFromTextAI,
+    normalizeExtractedPatientDataUseCase,
+    extractAndNormalizePatientText,
+    mergeExtractedFieldsUseCase,
 } from '@use-cases/patient/extraction';
 import { encodeFileToBase64, extractTextFromPdfFile, uploadPatientFile } from '@use-cases/attachments';
 import { logEvent } from '@use-cases/logger';
-import { useAppActions } from '@core/app/state/useAppActions';
-import { PatientRecord } from '@shared/types';
+import useAppStore from '@core/stores/useAppStore';
+import { ExtractedPatientData, PatientRecord } from '@shared/types';
 import { createImportedPatientRecord } from '@use-cases/patient/createImportedPatient';
 import { isMissingCoreExtractedFields } from '@use-cases/patient/validation';
 
@@ -16,7 +17,9 @@ export const usePdfPatientImport = (currentDate: Date) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isImporting, setIsImporting] = useState(false);
 
-    const { addToast, addPatient, updatePatient } = useAppActions();
+    const addToast = useAppStore((state) => state.addToast);
+    const addPatient = useAppStore((state) => state.addPatient);
+    const updatePatient = useAppStore((state) => state.updatePatient);
 
     const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -37,25 +40,50 @@ export const usePdfPatientImport = (currentDate: Date) => {
 
         for (const file of pdfFiles) {
             try {
-                let extractedData: any = null;
+                let extractedData: Partial<ExtractedPatientData> | null = null;
 
                 if (file.type === 'application/pdf') {
-                    const buffer = await file.arrayBuffer();
-                    const text = await extractTextFromPdfFile(buffer);
-                    const localExtracted = extractAndNormalizePatientText(text);
-                    const isMissingCore = isMissingCoreExtractedFields(localExtracted);
-                    let aiExtracted: any = null;
-                    if (isMissingCore) {
-                        try {
-                            aiExtracted = await extractPatientDataFromTextAI(text);
-                        } catch (error) {
-                            addToast('info', 'IA no disponible. Usando solo extracción local del PDF.');
+                    let mergedExtracted: Partial<ExtractedPatientData> = {};
+                    let extractedText = '';
+
+                    try {
+                        const buffer = await file.arrayBuffer();
+                        extractedText = await extractTextFromPdfFile(buffer);
+                    } catch (_error) {
+                        addToast('info', 'No se pudo leer texto del PDF. Probando extracción IA directa.');
+                    }
+
+                    if (extractedText.trim()) {
+                        const localExtracted = extractAndNormalizePatientText(extractedText);
+                        mergedExtracted = mergeExtractedFieldsUseCase(mergedExtracted, localExtracted);
+
+                        if (isMissingCoreExtractedFields(mergedExtracted)) {
+                            try {
+                                const aiFromText = await extractPatientDataFromTextAI(extractedText);
+                                mergedExtracted = mergeExtractedFieldsUseCase(
+                                    mergedExtracted,
+                                    normalizeExtractedPatientDataUseCase(aiFromText || {}),
+                                );
+                            } catch (_error) {
+                                addToast('info', 'IA por texto no disponible. Probando extracción directa desde PDF.');
+                            }
                         }
                     }
-                    extractedData = {
-                        ...localExtracted,
-                        ...normalizeExtractedPatientDataUseCase(aiExtracted || {}),
-                    };
+
+                    if (isMissingCoreExtractedFields(mergedExtracted)) {
+                        try {
+                            const base64 = await encodeFileToBase64(file);
+                            const aiFromPdf = await extractPatientDataFromImageAI(base64, file.type || 'application/pdf');
+                            mergedExtracted = mergeExtractedFieldsUseCase(
+                                mergedExtracted,
+                                normalizeExtractedPatientDataUseCase(aiFromPdf || {}),
+                            );
+                        } catch (_error) {
+                            addToast('info', 'No fue posible extraer datos por IA directa desde PDF.');
+                        }
+                    }
+
+                    extractedData = mergedExtracted;
                 } else {
                     const base64 = await encodeFileToBase64(file);
                     extractedData = normalizeExtractedPatientDataUseCase(await extractPatientDataFromImageAI(base64, file.type) || {});
@@ -107,13 +135,14 @@ export const usePdfPatientImport = (currentDate: Date) => {
                 updatePatient(updatedPatient);
                 successCount++;
 
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
                 logEvent('error', 'Imports', 'PDF import failed', {
                     fileName: file.name,
-                    error,
+                    error: message,
                 });
-                const isTimeout = error.message?.includes('504') || error.message?.includes('demasiado');
-                addToast('error', `Fallo en ${file.name}: ${isTimeout ? 'Tiempo excedido (Timeout)' : error.message}`);
+                const isTimeout = message.includes('504') || message.includes('demasiado');
+                addToast('error', `Fallo en ${file.name}: ${isTimeout ? 'Tiempo excedido (Timeout)' : message}`);
                 errorCount++;
             }
         }
@@ -129,9 +158,9 @@ export const usePdfPatientImport = (currentDate: Date) => {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const triggerPicker = () => {
+    const triggerPicker = useCallback(() => {
         fileInputRef.current?.click();
-    };
+    }, []);
 
     return {
         fileInputRef,

@@ -7,6 +7,10 @@ vi.mock('@use-cases/patient/extraction', () => ({
   extractPatientDataFromTextAI: vi.fn(),
   extractPatientDataFromTextLocalUseCase: vi.fn(),
   normalizeExtractedPatientDataUseCase: (data: any) => data,
+  mergeExtractedFieldsUseCase: (base: Record<string, unknown>, incoming: Record<string, unknown>) => ({
+    ...base,
+    ...incoming,
+  }),
   extractAndNormalizePatientText: vi.fn(),
   extractMultiplePatientsFromImageAI: vi.fn(),
 }));
@@ -25,12 +29,17 @@ const mockAddToast = vi.fn();
 const mockAddPatient = vi.fn();
 const mockUpdatePatient = vi.fn();
 
-vi.mock('@core/app/state/useAppActions', () => ({
-  useAppActions: () => ({
-    addToast: mockAddToast,
-    addPatient: mockAddPatient,
-    updatePatient: mockUpdatePatient,
-  }),
+vi.mock('@core/stores/useAppStore', () => ({
+  default: (selector: (state: {
+    addToast: typeof mockAddToast;
+    addPatient: typeof mockAddPatient;
+    updatePatient: typeof mockUpdatePatient;
+  }) => unknown) =>
+    selector({
+      addToast: mockAddToast,
+      addPatient: mockAddPatient,
+      updatePatient: mockUpdatePatient,
+    }),
 }));
 
 describe('usePdfPatientImport', () => {
@@ -168,6 +177,49 @@ describe('usePdfPatientImport', () => {
     expect(mockAddToast).toHaveBeenCalledWith(
       'error',
       expect.stringContaining('No se pudieron extraer datos válidos')
+    );
+  });
+
+  it('falls back to direct AI PDF extraction when text extraction has no core fields', async () => {
+    const { extractTextFromPdfFile, uploadPatientFile, encodeFileToBase64 } = await import('@use-cases/attachments');
+    const {
+      extractAndNormalizePatientText,
+      extractPatientDataFromTextAI,
+      extractPatientDataFromImageAI,
+    } = await import('@use-cases/patient/extraction');
+
+    (extractTextFromPdfFile as any).mockResolvedValue('');
+    (extractAndNormalizePatientText as any).mockReturnValue({});
+    (extractPatientDataFromTextAI as any).mockResolvedValue(null);
+    (encodeFileToBase64 as any).mockResolvedValue('base64-pdf');
+    (extractPatientDataFromImageAI as any).mockResolvedValue({
+      name: 'Paciente Vision',
+      rut: '12.345.678-5',
+      birthDate: '2001-02-03',
+      gender: 'Femenino',
+      diagnosis: 'Dx vision',
+      clinicalNote: 'Nota vision',
+    });
+    (uploadPatientFile as any).mockResolvedValue({ id: 'f3', name: 'doc.pdf' });
+
+    const { result } = renderHook(() => usePdfPatientImport(new Date('2024-01-02')));
+    const file = {
+      name: 'doc.pdf',
+      type: 'application/pdf',
+      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+    } as unknown as File;
+
+    await act(async () => {
+      await result.current.handlePdfUpload({
+        target: { files: [file] },
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+
+    expect(extractPatientDataFromImageAI).toHaveBeenCalledWith('base64-pdf', 'application/pdf');
+    expect(mockAddPatient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: expect.stringContaining('Paciente'),
+      })
     );
   });
 });

@@ -45,4 +45,62 @@ describe('patientTextExtraction', () => {
     expect(data.diagnosis).toContain('Dolor abdominal');
     expect(data.clinicalNote).toContain('Reposo');
   });
+
+  it('rejects common non-name terms as patient name', () => {
+    const textSocial = `
+      Nombre: Social
+      RUT: 12.345.678-5
+      Sexo: Masculino
+    `;
+    const dataSocial = extractPatientDataFromText(textSocial);
+    expect(dataSocial.name).toBe('');
+
+    const textFonasa = `
+      Nombre: Fonasa
+      RUT: 12.345.678-5
+    `;
+    const dataFonasa = extractPatientDataFromText(textFonasa);
+    expect(dataFonasa.name).toBe('');
+
+    const textCombo = `
+      Nombre: Servicio Hospital
+      RUT: 12.345.678-5
+    `;
+    const dataCombo = extractPatientDataFromText(textCombo);
+    expect(dataCombo.name).toBe('');
+  });
+
+  it('accepts valid multi-word names even if one word is a common term', () => {
+    const text = `
+      Nombre: María Servicio López
+      RUT: 12.345.678-5
+    `;
+    const data = extractPatientDataFromText(text);
+    expect(data.name).toContain('María');
+  });
+
+  it('extracts name from table-format NOMBRES: header with value on next line', () => {
+    const text = `
+      DATOS DEL PACIENTE E INGRESO:
+      NOMBRES: NOMBRE SOCIAL: RUT: NACIMIENTO: EDAD:
+      ELENA ARAKI 5630370-7 26-03-1944 82 años(s)
+      RIROROKO
+      SEXO: IDENTIDAD DE PREVISIÓN: DIRECCIÓN: COMUNA:
+      MUJER GÉNERO: FONASA A AVDA. PONT S/N ISLA DE PASCUA
+    `;
+    const data = extractPatientDataFromText(text);
+    expect(data.name).toContain('Elena');
+    expect(data.name).toContain('Araki');
+    expect(data.name).toContain('Riroroko');
+  });
+
+  it('extracts name from NOMBRES: on same line when value appears before next header', () => {
+    const text = `
+      NOMBRES: ELENA ARAKI RUT: 5630370-7
+      Sexo: Mujer
+    `;
+    const data = extractPatientDataFromText(text);
+    expect(data.name).toContain('Elena');
+    expect(data.name).toContain('Araki');
+  });
 });

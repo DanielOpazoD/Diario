@@ -5,16 +5,24 @@ import { STORAGE_PREFER_INDEXEDDB_READ, STORAGE_VERIFY_ON_READ } from '@shared/c
 import { loadBookmarkCategoriesFromLocal } from '@use-cases/storage';
 import { loadBookmarkCategoriesAsync, loadBookmarksAsync, loadGeneralTasksAsync, loadRecordsAsync } from '@use-cases/storageAsync';
 import { verifyIndexedDbMatchesLocal } from '@use-cases/storageIndexedDb';
-import { useAppActions } from '@core/app/state/useAppActions';
+import useAppStore from '@core/stores/useAppStore';
 
-type AddLog = (level: 'info' | 'warn' | 'error', source: string, message: string, details?: any) => void;
+type AddLog = (
+  level: 'info' | 'warn' | 'error',
+  source: string,
+  message: string,
+  details?: unknown
+) => void;
 
 const ensureCategories = (categories: ReturnType<typeof loadBookmarkCategoriesFromLocal>) =>
   ensureDefaultCategories(categories);
 
 export const useStorageHydration = (addLog: AddLog) => {
   const hasRun = useRef(false);
-  const { setRecords, setGeneralTasks, setBookmarks, setBookmarkCategories } = useAppActions();
+  const setRecords = useAppStore((state) => state.setRecords);
+  const setGeneralTasks = useAppStore((state) => state.setGeneralTasks);
+  const setBookmarks = useAppStore((state) => state.setBookmarks);
+  const setBookmarkCategories = useAppStore((state) => state.setBookmarkCategories);
 
   useEffect(() => {
     if (hasRun.current) return;

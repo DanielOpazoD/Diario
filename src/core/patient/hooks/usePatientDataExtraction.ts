@@ -12,7 +12,7 @@ import { filterSupportedAttachments, hasDriveUrl } from '@use-cases/patient/atta
 import { diffExtractedFields } from '@use-cases/patient/fieldUpdates';
 import { logEvent } from '@use-cases/logger';
 import { encodeFileToBase64, fetchUrlAsBase64, fetchUrlAsArrayBuffer, extractTextFromPdfFile } from '@use-cases/attachments';
-import { AttachedFile, PatientCreateInput, PatientType } from '@shared/types';
+import { AttachedFile, ExtractedPatientData, PatientCreateInput, PatientType } from '@shared/types';
 import { sanitizePatientName } from '@use-cases/patient/sanitizeFields';
 
 interface UsePatientDataExtractionParams {
@@ -47,7 +47,7 @@ const usePatientDataExtraction = ({
   const [isScanningMulti, setIsScanningMulti] = useState(false);
   const [isExtractingFromFiles, setIsExtractingFromFiles] = useState(false);
 
-  const applyExtractedData = useCallback((extractedData: any) => {
+  const applyExtractedData = useCallback((extractedData: Partial<ExtractedPatientData> | null) => {
     if (!extractedData) return;
     const normalized = normalizeExtractedPatientDataUseCase(extractedData);
     if (normalized.name) setName(sanitizePatientName(normalized.name));
@@ -67,19 +67,37 @@ const usePatientDataExtraction = ({
     setIsScanning(true);
     try {
       if (file.type === 'application/pdf') {
-        const buffer = await file.arrayBuffer();
-        const text = await extractTextFromPdfFile(buffer);
-        const localExtracted = extractAndNormalizePatientText(text);
-        let finalExtracted = localExtracted;
+        let finalExtracted: Partial<ExtractedPatientData> = {};
+        let text = '';
 
-        const isMissingCore = isMissingCoreExtractedFieldsUseCase(localExtracted);
+        try {
+          const buffer = await file.arrayBuffer();
+          text = await extractTextFromPdfFile(buffer);
+        } catch (_error) {
+          addToast('info', 'No se pudo leer texto del PDF. Probando extracción IA directa.');
+        }
 
-        if (isMissingCore) {
+        if (text.trim()) {
+          const localExtracted = extractAndNormalizePatientText(text);
+          finalExtracted = mergeExtracted(finalExtracted, localExtracted);
+
+          if (isMissingCoreExtractedFieldsUseCase(finalExtracted)) {
+            try {
+              const aiExtracted = await extractPatientDataFromTextAI(text);
+              finalExtracted = mergeExtracted(finalExtracted, normalizeExtractedPatientDataUseCase(aiExtracted || {}));
+            } catch (_error) {
+              addToast('info', 'IA por texto no disponible. Probando extracción directa desde PDF.');
+            }
+          }
+        }
+
+        if (isMissingCoreExtractedFieldsUseCase(finalExtracted)) {
           try {
-            const aiExtracted = await extractPatientDataFromTextAI(text);
-            finalExtracted = mergeExtracted(localExtracted, normalizeExtractedPatientDataUseCase(aiExtracted || {}));
-          } catch (error) {
-            addToast('info', 'IA no disponible. Usando solo extracción local del PDF.');
+            const base64 = await encodeFileToBase64(file);
+            const aiExtracted = await extractPatientDataFromImageAI(base64, file.type || 'application/pdf');
+            finalExtracted = mergeExtracted(finalExtracted, normalizeExtractedPatientDataUseCase(aiExtracted || {}));
+          } catch (_error) {
+            addToast('info', 'No fue posible extraer datos por IA directa desde PDF.');
           }
         }
 
@@ -93,7 +111,7 @@ const usePatientDataExtraction = ({
           addToast('success', 'Datos extraídos');
         }
       }
-    } catch (error: any) {
+    } catch (_error) {
       addToast('error', 'Error procesando imagen');
     } finally {
       setIsScanning(false);
@@ -124,18 +142,18 @@ const usePatientDataExtraction = ({
       for (const file of supportedFiles) {
         try {
           if (!hasDriveUrl(file)) continue;
-          let extractedData: any = null;
+          let extractedData: Partial<ExtractedPatientData> | null = null;
 
           if (file.mimeType === 'application/pdf') {
             const buffer = await fetchUrlAsArrayBuffer(file.driveUrl);
             const text = await extractTextFromPdfFile(buffer);
             const localExtracted = extractAndNormalizePatientText(text);
             const isMissingCore = isMissingCoreExtractedFieldsUseCase(localExtracted);
-            let aiExtracted: any = null;
+            let aiExtracted: Partial<ExtractedPatientData> | null = null;
             if (isMissingCore) {
               try {
                 aiExtracted = await extractPatientDataFromTextAI(text);
-              } catch (error) {
+              } catch (_error) {
                 addToast('info', 'IA no disponible. Usando solo extracción local del PDF.');
               }
             }
@@ -218,7 +236,7 @@ const usePatientDataExtraction = ({
       } else {
         addToast('info', 'No se encontraron pacientes en la imagen');
       }
-    } catch (error: any) {
+    } catch (_error) {
       addToast('error', 'Error procesando lista');
     } finally {
       setIsScanningMulti(false);

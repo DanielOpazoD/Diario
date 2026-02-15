@@ -92,8 +92,11 @@ module.exports = {
                     },
                     {
                         from: 'core',
-                        disallow: ['app', 'features'],
-                        message: 'Core cannot import from App or Features (circular dependency risk)',
+                        disallow: [
+                            'app',
+                            ['features', { featureName: '!files' }],
+                        ],
+                        message: 'Core cannot import from App or non-files Features (circular dependency risk)',
                     },
                     {
                         from: 'features',

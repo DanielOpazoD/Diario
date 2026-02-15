@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Button } from '@core/ui';
 
@@ -16,6 +16,10 @@ const PdfImportEntry: React.FC<PdfImportEntryProps> = ({ currentDate }) => {
     setIsLoaded(true);
     setOpenOnLoad(true);
   };
+
+  const handleAutoOpenDone = useCallback(() => {
+    setOpenOnLoad(false);
+  }, []);
 
   if (!isLoaded) {
     return (
@@ -39,9 +43,10 @@ const PdfImportEntry: React.FC<PdfImportEntryProps> = ({ currentDate }) => {
         className="w-8 h-8 rounded-lg !p-0 text-gray-500 hover:text-brand-500 hover:bg-brand-500/10"
       />
     }>
-      <PdfImportControl currentDate={currentDate} autoOpen={openOnLoad} />
+      <PdfImportControl currentDate={currentDate} autoOpen={openOnLoad} onAutoOpenDone={handleAutoOpenDone} />
     </Suspense>
   );
 };
 
 export default PdfImportEntry;
+

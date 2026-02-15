@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts,.tsx --rule \"boundaries/entry-points:off\" --rule \"boundaries/element-types:warn\" --rule \"react-hooks/set-state-in-effect:warn\" --rule \"react-hooks/preserve-manual-memoization:warn\" --rule \"no-useless-escape:warn\"",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts,.tsx --rule \"boundaries/entry-points:off\" --rule \"react-hooks/set-state-in-effect:warn\" --rule \"react-hooks/preserve-manual-memoization:warn\" --rule \"no-useless-escape:warn\"",
     "test": "vitest run",
     "test:node": "node --test tests/*.test.js tests/integration/*.test.js tests/e2e/*.test.js",
     "test:all": "npm run test && npm run test:node",

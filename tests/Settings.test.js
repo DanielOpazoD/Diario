@@ -17,34 +17,9 @@ const sampleTypes = [
 ];
 
 test('validateTypeLabel enforces required and duplicate rules', () => {
-  const localStorage = new MemoryStorage();
-  const { validateTypeLabel } = loadTsModule('components/Settings.tsx', {
-    localStorage,
-    window: { matchMedia: () => ({ matches: false }) },
+  const { validateTypeLabel } = loadTsModule('src/features/settings/PatientTypesSettings.tsx', {
     require: (id) => {
       if (id.endsWith('/Button') || id === './Button') return () => null;
-      if (id.includes('useAppStore')) {
-        const mockState = {
-          theme: 'light',
-          toggleTheme: () => {},
-          patientTypes: sampleTypes,
-          addPatientType: () => {},
-          removePatientType: () => {},
-          setPatientTypes: () => {},
-          records: [],
-          setRecords: () => {},
-          addToast: () => {},
-          securityPin: null,
-          autoLockMinutes: 5,
-          setSecurityPin: () => {},
-          setAutoLockMinutes: () => {},
-          highlightPendingPatients: false,
-          setHighlightPendingPatients: () => {},
-          compactStats: false,
-          setCompactStats: () => {},
-        };
-        return (selector) => selector(mockState);
-      }
       return require(id);
     },
   });
@@ -55,34 +30,9 @@ test('validateTypeLabel enforces required and duplicate rules', () => {
 });
 
 test('validateTypeLabel ignores current item when editing', () => {
-  const localStorage = new MemoryStorage();
-  const { validateTypeLabel } = loadTsModule('components/Settings.tsx', {
-    localStorage,
-    window: { matchMedia: () => ({ matches: false }) },
+  const { validateTypeLabel } = loadTsModule('src/features/settings/PatientTypesSettings.tsx', {
     require: (id) => {
       if (id.endsWith('/Button') || id === './Button') return () => null;
-      if (id.includes('useAppStore')) {
-        const mockState = {
-          theme: 'light',
-          toggleTheme: () => {},
-          patientTypes: sampleTypes,
-          addPatientType: () => {},
-          removePatientType: () => {},
-          setPatientTypes: () => {},
-          records: [],
-          setRecords: () => {},
-          addToast: () => {},
-          securityPin: null,
-          autoLockMinutes: 5,
-          setSecurityPin: () => {},
-          setAutoLockMinutes: () => {},
-          highlightPendingPatients: false,
-          setHighlightPendingPatients: () => {},
-          compactStats: false,
-          setCompactStats: () => {},
-        };
-        return (selector) => selector(mockState);
-      }
       return require(id);
     },
   });

@@ -45,19 +45,49 @@ const extractLineValue = (text: string, patterns: RegExp[]) => {
   return '';
 };
 
+const NON_NAME_TERMS = new Set([
+  'social', 'fonasa', 'isapre', 'medico', 'medica', 'prevision',
+  'previsional', 'paciente', 'doctor', 'doctora', 'enfermero', 'enfermera',
+  'hospital', 'clinica', 'servicio', 'urgencia', 'consulta',
+  'ambulatorio', 'hospitalizado', 'policlinico', 'turno',
+  'diagnostico', 'tratamiento', 'indicaciones', 'evolucion',
+  'antecedentes', 'comentario', 'plan', 'fecha', 'ficha',
+  'rut', 'run', 'nombre', 'nombres', 'sexo', 'genero',
+  'edad', 'nacimiento', 'comuna', 'direccion', 'telefono',
+  'nacionalidad', 'identidad', 'datos', 'ingreso', 'registro',
+]);
+
+const isLikelyName = (name: string): boolean => {
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length < 2) return false;
+  // Strip punctuation from each word and keep only meaningful (2+ char) words
+  const words = trimmed.toLowerCase().split(/\s+/)
+    .map(w => w.replace(/[^a-záéíóúüñ]/gi, ''))
+    .filter(w => w.length > 1);
+  // No meaningful words (only single chars or punctuation) => reject
+  if (words.length === 0) return false;
+  // A single word that is a common non-name term is not a valid name
+  if (words.length === 1 && NON_NAME_TERMS.has(words[0])) return false;
+  // All meaningful words are non-name terms — reject
+  if (words.length > 1 && words.every(w => NON_NAME_TERMS.has(w))) return false;
+  return true;
+};
+
 const NAME_LINE_PATTERN = /^(?:Nombre(?:\s+Completo)?|Paciente)\s*[:\-]?\s*(.+)$/i;
 const FALLBACK_NAME_PATTERN =
-  /Nombre\s*(?:Completo|y\s*Apellido)?\s*[:\-]?\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ'\s-]{2,})/i;
+  /Nombre\s*(?:Completo|y\s*Apellido|del\s*Paciente)?\s*[:\-]?\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ'\s-]{2,})/i;
 
 const FIELD_PATTERNS = {
   name: [
     /Nombre\s*(?:Completo|y\s*Apellido)?\s*[:\-]\s*([^\n]+)/i,
+    /Nombre\s*del\s*Paciente\s*[:\-]\s*([^\n]+)/i,
     /Paciente\s*[:\-]\s*([^\n]+)/i,
     /^\s*Nombre\s*(?:Completo|y\s*Apellido)?\s+([^\n]+)/im,
   ],
   rut: [
-    /\b(\d{1,2}\.\d{3}\.\d{3}-[0-9kK])\b/,
-    /\b(\d{7,8}-[0-9kK])\b/,
+    /(?:RUT|RUN)\s*[:\-]?\s*([0-9.\-kK\s]{8,16})/i,
+    /\b(\d{1,2}(?:\.\d{3}){2}\s*-\s*[0-9kK])\b/,
+    /\b(\d{7,8}\s*-\s*[0-9kK])\b/,
   ],
   birthDate: [
     /Fecha\s*de\s*Nacimiento\s*[:\-]\s*([^\n]+)/i,
@@ -70,13 +100,15 @@ const FIELD_PATTERNS = {
   ],
 };
 
+const stripAccents = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 const extractSection = (text: string, startLabels: string[], stopLabels: string[]) => {
-  const lowerText = text.toLowerCase();
+  const normalizedLower = stripAccents(text.toLowerCase());
   let startIndex = -1;
   let foundLabel = '';
 
   for (const label of startLabels) {
-    const idx = lowerText.indexOf(label.toLowerCase());
+    const idx = normalizedLower.indexOf(stripAccents(label.toLowerCase()));
     if (idx !== -1) {
       startIndex = idx;
       foundLabel = label;
@@ -86,16 +118,16 @@ const extractSection = (text: string, startLabels: string[], stopLabels: string[
 
   if (startIndex === -1) return '';
 
-  let endIndex = lowerText.length;
+  let endIndex = normalizedLower.length;
   for (const label of stopLabels) {
-    const idx = lowerText.indexOf(label.toLowerCase(), startIndex + foundLabel.length);
+    const idx = normalizedLower.indexOf(stripAccents(label.toLowerCase()), startIndex + foundLabel.length);
     if (idx !== -1) {
       endIndex = Math.min(endIndex, idx);
     }
   }
 
   const rawSection = text.slice(startIndex + foundLabel.length, endIndex);
-  return normalizeWhitespace(rawSection.replace(/[:\-]/, ''));
+  return normalizeWhitespace(rawSection.replace(/^[:\-\s]+/, ''));
 };
 
 export const normalizeExtractedPatientData = (data: Partial<ExtractedPatientData>): Partial<ExtractedPatientData> => {
@@ -127,7 +159,58 @@ export const extractPatientDataFromText = (text: string): Partial<ExtractedPatie
     }
     return '';
   };
-  const finalName = name || fallbackName || findNameInLines();
+
+  // Table-format extraction for Chilean medical PDFs (e.g., "NOMBRES:" header with value on next line)
+  const extractNameFromTableFormat = (): string => {
+    const lines = normalizedText.split('\n').map((l) => l.trim()).filter(Boolean);
+    for (let i = 0; i < lines.length - 1; i += 1) {
+      if (!/\bNOMBRES?\s*:/i.test(lines[i])) continue;
+
+      // Strategy 1: Name on the same line between NOMBRES: and the next field label
+      const nombresMatch = lines[i].match(/\bNOMBRES?\s*:\s*/i);
+      if (nombresMatch) {
+        const afterLabel = lines[i].slice((nombresMatch.index ?? 0) + nombresMatch[0].length);
+        const sameLineMatch = afterLabel.match(
+          /^([A-Za-zÁÉÍÓÚÜÑáéíóúüñ'\s-]{2,}?)(?=\s+(?:NOMBRE\s*SOCIAL|RUT\b|RUN\b|NACIMIENTO|EDAD|SEXO|PREVISI))/i
+        );
+        if (sameLineMatch?.[1]) {
+          const candidate = normalizeWhitespace(sameLineMatch[1]);
+          if (isLikelyName(candidate) && candidate.length >= 3) return candidate;
+        }
+      }
+
+      // Strategy 2: Name on the next line (table header row / value row format)
+      const nextLine = lines[i + 1];
+      // Skip if next line looks like another header row
+      if (/(?:^SEXO\b|^NACIONALIDAD\b|^IDENTIDAD\b)/i.test(nextLine)) continue;
+      // Extract alphabetic text from the beginning until a number, colon-based label, or end
+      const nextLineMatch = nextLine.match(
+        /^([A-Za-zÁÉÍÓÚÜÑáéíóúüñ'\s-]{2,}?)(?=\s+\d|\s+[A-ZÁÉÍÓÚÜÑ]{3,}\s*:|\s*$)/
+      );
+      if (!nextLineMatch?.[1]) continue;
+      let candidateName = normalizeWhitespace(nextLineMatch[1]);
+
+      // Check for surname continuation on the following line (e.g., "RIROROKO")
+      if (i + 2 < lines.length) {
+        const thirdLine = lines[i + 2].trim();
+        if (
+          /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ'\s-]+$/.test(thirdLine) &&
+          !/\b(?:SEXO|MUJER|HOMBRE|NACIONALIDAD|IDENTIDAD|PREVISI|TELEFONO|DIRECCION)/i.test(thirdLine)
+        ) {
+          const continuation = normalizeWhitespace(thirdLine);
+          if (isLikelyName(continuation)) {
+            candidateName = `${candidateName} ${continuation}`;
+          }
+        }
+      }
+
+      if (isLikelyName(candidateName) && candidateName.length >= 3) return candidateName;
+    }
+    return '';
+  };
+
+  const candidates = [name, fallbackName, findNameInLines(), extractNameFromTableFormat()];
+  const finalName = candidates.find(isLikelyName) || '';
 
   const rut = extractLineValue(normalizedText, FIELD_PATTERNS.rut);
 

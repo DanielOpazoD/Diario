@@ -34,7 +34,7 @@ export const createImportedPatientRecord = ({
     gender: extractedData.gender?.trim() || '',
     type,
     typeId: inferPatientTypeId(type),
-    diagnosis: sanitized.diagnosis || 'Importado desde PDF',
+    diagnosis: sanitized.diagnosis,
     clinicalNote: sanitized.clinicalNote,
     date: format(currentDate, 'yyyy-MM-dd'),
     attachedFiles: [],

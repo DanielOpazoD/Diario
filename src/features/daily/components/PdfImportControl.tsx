@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { FileText } from 'lucide-react';
 import { Button } from '@core/ui';
 import { usePdfPatientImport } from '@core/patient';
@@ -6,9 +6,10 @@ import { usePdfPatientImport } from '@core/patient';
 interface PdfImportControlProps {
   currentDate: Date;
   autoOpen?: boolean;
+  onAutoOpenDone?: () => void;
 }
 
-const PdfImportControl: React.FC<PdfImportControlProps> = ({ currentDate, autoOpen = false }) => {
+const PdfImportControl: React.FC<PdfImportControlProps> = ({ currentDate, autoOpen = false, onAutoOpenDone }) => {
   const {
     fileInputRef,
     isImporting,
@@ -16,11 +17,15 @@ const PdfImportControl: React.FC<PdfImportControlProps> = ({ currentDate, autoOp
     triggerPicker,
   } = usePdfPatientImport(currentDate);
 
+  const autoOpenFired = useRef(false);
+
   useEffect(() => {
-    if (autoOpen) {
+    if (autoOpen && !autoOpenFired.current) {
+      autoOpenFired.current = true;
       triggerPicker();
+      onAutoOpenDone?.();
     }
-  }, [autoOpen, triggerPicker]);
+  }, [autoOpen, triggerPicker, onAutoOpenDone]);
 
   return (
     <>
@@ -45,3 +50,4 @@ const PdfImportControl: React.FC<PdfImportControlProps> = ({ currentDate, autoOp
 };
 
 export default PdfImportControl;
+

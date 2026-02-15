@@ -1,17 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Menu } from 'lucide-react';
-import { DateNavigator } from '@features/daily';
-import { PatientRecord, ViewMode } from '@shared/types';
+import { ViewMode } from '@shared/types';
 import { SESSION_KEYS } from '@shared/constants/sessionKeys';
 import { safeSessionGetItem } from '@shared/utils/safeSessionStorage';
 
 interface MainTopBarProps {
   viewMode: ViewMode;
-  currentDate: Date;
-  records: PatientRecord[];
-  onDateChange: (date: Date) => void;
   onOpenNewPatient: () => void;
   onOpenSidebar: () => void;
+  dailyDateNavigator?: React.ReactNode;
 }
 
 type ReportTopbarContext = {
@@ -35,11 +32,9 @@ const readReportContext = (): ReportTopbarContext | null => {
 
 const MainTopBar: React.FC<MainTopBarProps> = ({
   viewMode,
-  currentDate,
-  records,
-  onDateChange,
   onOpenNewPatient,
   onOpenSidebar,
+  dailyDateNavigator,
 }) => {
   const [reportContext, setReportContext] = useState<ReportTopbarContext | null>(null);
 
@@ -118,7 +113,7 @@ const MainTopBar: React.FC<MainTopBarProps> = ({
 
         {viewMode === 'daily' && (
           <div className="flex-1 w-full flex justify-center items-center">
-            <DateNavigator currentDate={currentDate} onSelectDate={onDateChange} records={records} />
+            {dailyDateNavigator}
           </div>
         )}
 

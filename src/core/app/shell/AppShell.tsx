@@ -15,7 +15,8 @@ import MainLayout from '@core/layouts/MainLayout';
 import { Toast } from '@core/ui';
 import LockScreen from '@core/components/LockScreen';
 import UpdateBanner from '@core/components/UpdateBanner';
-import { AppViews, AppModals } from '@features/daily';
+import { AppViews, AppModals, DateNavigator } from '@features/daily';
+import { BookmarksBar } from '@features/bookmarks';
 import { useAppActions } from '@core/app/state/useAppActions';
 import { useAppState } from '@core/app/state/useAppState';
 import { pathFromView, viewFromPath } from '@shared/routes';
@@ -156,15 +157,15 @@ const AppShell: React.FC = () => {
         viewMode={viewMode}
         onNavigate={handleNavigation}
         user={user}
-        currentDate={currentDate}
-        records={records}
-        onDateChange={setCurrentDate}
         onOpenNewPatient={openNewPatientModal}
-        onOpenBookmarksModal={() => openBookmarksModal(null)}
         onOpenAppMenu={openAppMenu}
         onLogout={handleLogout}
         contentRef={mainScrollRef}
         showBookmarkBar={showBookmarkBar}
+        bookmarkBar={<BookmarksBar onOpenManager={openBookmarksModal} />}
+        dailyDateNavigator={(
+          <DateNavigator currentDate={currentDate} onSelectDate={setCurrentDate} records={records} />
+        )}
         onPrefetchView={prefetchOnHover}
       >
         <AppViews

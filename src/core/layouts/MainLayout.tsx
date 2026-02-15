@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { ViewMode, PatientRecord, User } from '@shared/types';
-import { BookmarksBar } from '@features/bookmarks';
+import { ViewMode, User } from '@shared/types';
 import MainSidebar from '@core/layouts/MainSidebar';
 import MainTopBar from '@core/layouts/MainTopBar';
 
@@ -8,15 +7,13 @@ interface MainLayoutProps {
   viewMode: ViewMode;
   onNavigate: (view: ViewMode) => void;
   user: User;
-  currentDate: Date;
-  records: PatientRecord[];
-  onDateChange: (date: Date) => void;
   onOpenNewPatient: () => void;
   onLogout: () => void;
-  onOpenBookmarksModal: () => void;
   onOpenAppMenu: () => void;
   contentRef?: React.RefObject<HTMLDivElement>;
   showBookmarkBar?: boolean;
+  bookmarkBar?: React.ReactNode;
+  dailyDateNavigator?: React.ReactNode;
   children: React.ReactNode;
   onPrefetchView?: (view: ViewMode) => void;
 }
@@ -25,15 +22,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   viewMode,
   onNavigate,
   user,
-  currentDate,
-  records,
-  onDateChange,
   onOpenNewPatient,
   onLogout,
-  onOpenBookmarksModal,
   onOpenAppMenu,
   contentRef,
   showBookmarkBar = false,
+  bookmarkBar,
+  dailyDateNavigator,
   children,
   onPrefetchView,
 }) => {
@@ -59,7 +54,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500"
       style={{ paddingTop: bookmarkBarOffset ? `${bookmarkBarOffset}px` : undefined }}
     >
-      {showBookmarkBar && <BookmarksBar onOpenManager={onOpenBookmarksModal} />}
+      {showBookmarkBar && bookmarkBar}
 
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
         <MainSidebar
@@ -78,11 +73,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         >
           <MainTopBar
             viewMode={viewMode}
-            currentDate={currentDate}
-            records={records}
-            onDateChange={onDateChange}
             onOpenNewPatient={onOpenNewPatient}
             onOpenSidebar={() => setIsSidebarOpen(true)}
+            dailyDateNavigator={dailyDateNavigator}
           />
 
           <div
