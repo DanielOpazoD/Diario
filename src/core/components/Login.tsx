@@ -1,6 +1,5 @@
 // ... imports ...
 import React, { useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
 import useAppStore from '@core/stores/useAppStore';
 import { logEvent } from '@use-cases/logger';
 
@@ -62,22 +61,11 @@ const Login: React.FC = () => {
                 </>
               )}
             </button>
-
             {error && (
               <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 animate-fade-in">
                 <p className="text-xs text-center text-red-600 dark:text-red-300 font-medium">{error}</p>
               </div>
             )}
-
-
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700/50">
-              <div className="flex items-start space-x-2">
-                <ShieldCheck className="w-4 h-4 text-green-600 mt-0.5" />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  <strong>Privacidad Total:</strong> Los datos se guardan en tu navegador y se sincronizan de forma segura.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
