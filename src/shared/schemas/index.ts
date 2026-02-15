@@ -1,9 +1,14 @@
-
 import { z } from 'zod';
+import { PatientType } from '@shared/types';
 import { inferPatientTypeId, normalizePatientTypeLabel } from '@shared/utils/patientUtils';
 
 // Basic Types
-export const PatientTypeEnum = z.enum(['Hospitalizado', 'Policlínico', 'Extra', 'Turno']);
+export const PatientTypeEnum = z.enum([
+    PatientType.HOSPITALIZADO,
+    PatientType.POLICLINICO,
+    PatientType.EXTRA,
+    PatientType.TURNO
+]);
 
 // Config Interface
 export const PatientTypeConfigSchema = z.object({
@@ -137,7 +142,7 @@ export const PatientRecordSchema = z.object({
     birthDate: z.string().nullable().optional().catch('').transform(v => v ?? ''),
     gender: z.string().nullable().optional().catch('').transform(v => v ?? ''),
     date: z.string().catch(() => new Date().toISOString().split('T')[0]),
-    type: z.string().catch('Hospitalizado').transform((value) => normalizePatientTypeLabel(value, 'Hospitalizado')),
+    type: z.string().catch(PatientType.HOSPITALIZADO).transform((value) => normalizePatientTypeLabel(value, PatientType.HOSPITALIZADO)),
     typeId: z.string().nullish().transform((value) => {
         const trimmed = typeof value === 'string' ? value.trim() : '';
         return trimmed.length > 0 ? trimmed : undefined;
