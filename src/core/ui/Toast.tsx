@@ -23,7 +23,7 @@ const ToastItem: React.FC<{ toast: ToastMessage; onRemove: () => void }> = ({ to
   useEffect(() => {
     const timer = setTimeout(() => {
       onRemove();
-    }, 2000); // Faster duration (2s)
+    }, 1500); // Faster duration (1.5s)
     return () => clearTimeout(timer);
   }, [onRemove]);
 
