@@ -9,6 +9,7 @@ import {
   TasksSkeleton,
   BookmarksSkeleton,
   HistorySkeleton,
+  FeatureErrorBoundary,
 } from '@core/ui';
 
 const DailyView = lazy(() => import('@features/daily/DailyView'));
@@ -47,69 +48,83 @@ const AppViews: React.FC<AppViewsProps> = ({
       <Route
         path={VIEW_ROUTES.daily}
         element={(
-          <Suspense fallback={<ViewSkeleton />}>
-            <DailyView
-              currentDate={currentDate}
-              records={records}
-              patientTypes={patientTypes}
-              onAddPatient={onAddPatient}
-              onEditPatient={onEditPatient}
-              onDeletePatient={onDeletePatient}
-              onMovePatients={onMovePatients}
-              onCopyPatients={onCopyPatients}
-            />
-          </Suspense>
+          <FeatureErrorBoundary featureName="Diario">
+            <Suspense fallback={<ViewSkeleton />}>
+              <DailyView
+                currentDate={currentDate}
+                records={records}
+                patientTypes={patientTypes}
+                onAddPatient={onAddPatient}
+                onEditPatient={onEditPatient}
+                onDeletePatient={onDeletePatient}
+                onMovePatients={onMovePatients}
+                onCopyPatients={onCopyPatients}
+              />
+            </Suspense>
+          </FeatureErrorBoundary>
         )}
       />
       <Route
         path={VIEW_ROUTES.history}
         element={(
-          <Suspense fallback={<HistorySkeleton />}>
-            <PatientsHistoryView onEditPatient={onEditPatient} />
-          </Suspense>
+          <FeatureErrorBoundary featureName="Historial">
+            <Suspense fallback={<HistorySkeleton />}>
+              <PatientsHistoryView onEditPatient={onEditPatient} />
+            </Suspense>
+          </FeatureErrorBoundary>
         )}
       />
       <Route
         path={VIEW_ROUTES.stats}
         element={(
-          <Suspense fallback={<StatsSkeleton />}>
-            <StatsView currentDate={currentDate} />
-          </Suspense>
+          <FeatureErrorBoundary featureName="Estadísticas">
+            <Suspense fallback={<StatsSkeleton />}>
+              <StatsView currentDate={currentDate} />
+            </Suspense>
+          </FeatureErrorBoundary>
         )}
       />
       <Route
         path={VIEW_ROUTES.tasks}
         element={(
-          <Suspense fallback={<TasksSkeleton />}>
-            <TaskDashboard onNavigateToPatient={onEditPatient} />
-          </Suspense>
+          <FeatureErrorBoundary featureName="Tareas">
+            <Suspense fallback={<TasksSkeleton />}>
+              <TaskDashboard onNavigateToPatient={onEditPatient} />
+            </Suspense>
+          </FeatureErrorBoundary>
         )}
       />
       <Route
         path={VIEW_ROUTES.bookmarks}
         element={(
-          <Suspense fallback={<BookmarksSkeleton />}>
-            <BookmarksView
-              onAdd={() => onOpenBookmarksModal(null)}
-              onEdit={(bookmarkId) => onOpenBookmarksModal(bookmarkId)}
-            />
-          </Suspense>
+          <FeatureErrorBoundary featureName="Marcadores">
+            <Suspense fallback={<BookmarksSkeleton />}>
+              <BookmarksView
+                onAdd={() => onOpenBookmarksModal(null)}
+                onEdit={(bookmarkId) => onOpenBookmarksModal(bookmarkId)}
+              />
+            </Suspense>
+          </FeatureErrorBoundary>
         )}
       />
       <Route
         path={VIEW_ROUTES.settings}
         element={(
-          <Suspense fallback={<SettingsSkeleton />}>
-            <Settings />
-          </Suspense>
+          <FeatureErrorBoundary featureName="Configuración">
+            <Suspense fallback={<SettingsSkeleton />}>
+              <Settings />
+            </Suspense>
+          </FeatureErrorBoundary>
         )}
       />
       <Route
         path={VIEW_ROUTES.reports}
         element={(
-          <Suspense fallback={<ViewSkeleton />}>
-            <MedicalReportView />
-          </Suspense>
+          <FeatureErrorBoundary featureName="Informes">
+            <Suspense fallback={<ViewSkeleton />}>
+              <MedicalReportView />
+            </Suspense>
+          </FeatureErrorBoundary>
         )}
       />
       <Route path="*" element={<Navigate to={DEFAULT_ROUTE} replace />} />
