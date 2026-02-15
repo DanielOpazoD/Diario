@@ -1,27 +1,21 @@
 import React from 'react';
 import { Button } from '@core/ui';
+import { useDailyViewContext } from '@features/daily/context/DailyViewContext';
 
-interface BatchOperationsBarProps {
-    selectedCount: number;
-    visibleRecordsCount: number;
-    targetDate: string;
-    setTargetDate: (date: string) => void;
-    onSelectAll: () => void;
-    onClearSelection: () => void;
-    onBatchMove: () => void;
-    onBatchCopy: () => void;
-}
+const BatchOperationsBar: React.FC = () => {
+    const {
+        selectedCount,
+        visibleRecords,
+        targetDate,
+        setTargetDate,
+        selectAll: onSelectAll,
+        clearSelection: onClearSelection,
+        handleBatchMove: onBatchMove,
+        handleBatchCopy: onBatchCopy
+    } = useDailyViewContext();
 
-const BatchOperationsBar: React.FC<BatchOperationsBarProps> = ({
-    selectedCount,
-    visibleRecordsCount,
-    targetDate,
-    setTargetDate,
-    onSelectAll,
-    onClearSelection,
-    onBatchMove,
-    onBatchCopy,
-}) => {
+    const visibleRecordsCount = visibleRecords.length;
+
     return (
         <div className="bg-blue-50/90 dark:bg-blue-900/20 px-4 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 dark:border-blue-800 animate-slide-down text-sm">
             <span className="font-medium text-blue-800 dark:text-blue-200">{selectedCount} seleccionados</span>

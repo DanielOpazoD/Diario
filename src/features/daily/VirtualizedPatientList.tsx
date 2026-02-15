@@ -1,31 +1,22 @@
 import React, { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { PatientRecord } from '@shared/types';
 import ExecutivePatientRow from '@core/patient/components/ExecutivePatientRow';
-
-interface VirtualizedPatientListProps {
-    patients: PatientRecord[];
-    onEdit: (patient: PatientRecord) => void;
-    onDelete: (patientId: string) => void;
-    selectionMode: boolean;
-    selectedPatients: Set<string>;
-    onToggleSelect: (patientId: string) => void;
-    addToast: (type: 'success' | 'error' | 'info', msg: string) => void;
-    selectedDate: string;
-}
+import { useDailyViewContext } from '@features/daily/context/DailyViewContext';
 
 const ESTIMATED_ROW_HEIGHT = 72; // Average height of a patient row in pixels
 
-const VirtualizedPatientList: React.FC<VirtualizedPatientListProps> = ({
-    patients,
-    onEdit,
-    onDelete,
-    selectionMode,
-    selectedPatients,
-    onToggleSelect,
-    addToast,
-    selectedDate,
-}) => {
+const VirtualizedPatientList: React.FC = () => {
+    const {
+        visibleRecords: patients,
+        onEditPatient: onEdit,
+        onDeletePatient: onDelete,
+        selectionMode,
+        selectedPatients,
+        togglePatientSelection: onToggleSelect,
+        addToast,
+        selectedDate,
+    } = useDailyViewContext();
+
     const parentRef = useRef<HTMLDivElement>(null);
 
     const virtualizer = useVirtualizer({
@@ -41,7 +32,6 @@ const VirtualizedPatientList: React.FC<VirtualizedPatientListProps> = ({
         <div
             ref={parentRef}
             className="flex-1 overflow-auto bg-transparent divide-y divide-gray-100/30 dark:divide-gray-800/30 no-scrollbar"
-            style={{ contain: 'strict' }}
         >
             <div
                 style={{

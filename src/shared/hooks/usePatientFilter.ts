@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { PatientRecord, PatientTypeConfig } from '@shared/types';
+import { DEFAULT_PATIENT_TYPE_ID } from '@shared/constants/patientDefaults';
 
 interface PatientFilterResult {
   activeFilter: string;
@@ -10,7 +11,7 @@ interface PatientFilterResult {
   recordMatchesType: (record: PatientRecord, config: PatientTypeConfig) => boolean;
 }
 
-const DEFAULT_TYPE_ORDER = ['hospitalizado', 'policlinico', 'turno', 'extra'];
+const DEFAULT_TYPE_ORDER = ['hospitalizado', DEFAULT_PATIENT_TYPE_ID, 'turno', 'extra'];
 
 export const usePatientFilter = (
   dailyRecords: PatientRecord[],

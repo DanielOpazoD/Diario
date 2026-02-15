@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { inferPatientTypeId } from '@shared/utils/patientUtils';
-import { PatientRecord, PatientType, ExtractedPatientData } from '@shared/types';
+import { PatientRecord, ExtractedPatientData } from '@shared/types';
+import { DEFAULT_PATIENT_TYPE_LABEL } from '@shared/constants/patientDefaults';
 import { sanitizePatientFields } from '@use-cases/patient/sanitizeFields';
 import { normalizeBirthDate } from '@domain/patient/dates';
 
@@ -24,7 +25,7 @@ export const createImportedPatientRecord = ({
     clinicalNote: extractedData.clinicalNote || '',
   });
 
-  const type = PatientType.POLICLINICO;
+  const type = DEFAULT_PATIENT_TYPE_LABEL;
 
   return {
     id,

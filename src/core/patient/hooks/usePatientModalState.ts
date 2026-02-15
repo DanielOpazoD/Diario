@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AttachedFile, PatientRecord, PatientType, PatientTypeConfig, PendingTask } from '@shared/types';
+import { AttachedFile, PatientRecord, PatientTypeConfig, PendingTask } from '@shared/types';
+import { DEFAULT_PATIENT_TYPE_LABEL } from '@shared/constants/patientDefaults';
 
 interface UsePatientModalStateParams {
   isOpen: boolean;
@@ -21,7 +22,7 @@ const usePatientModalState = ({
   const [patientId, setPatientId] = useState<string>('');
   const [birthDate, setBirthDate] = useState('');
   const [gender, setGender] = useState('');
-  const [type, setType] = useState<string>(PatientType.POLICLINICO);
+  const [type, setType] = useState<string>(DEFAULT_PATIENT_TYPE_LABEL);
   const [typeId, setTypeId] = useState<string>(defaultTypeId);
   const [entryTime, setEntryTime] = useState('');
   const [exitTime, setExitTime] = useState('');
@@ -65,7 +66,7 @@ const usePatientModalState = ({
       setRut('');
       setBirthDate('');
       setGender('');
-      setType(PatientType.POLICLINICO);
+      setType(DEFAULT_PATIENT_TYPE_LABEL);
       setTypeId(defaultTypeId);
       setEntryTime('');
       setExitTime('');

@@ -1,3 +1,5 @@
+import { DEFAULT_PATIENT_TYPE_ID, DEFAULT_PATIENT_TYPE_LABEL } from '@shared/constants/patientDefaults';
+
 export const formatTitleCase = (str: string) => {
   if (!str) return '';
   return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -25,7 +27,7 @@ const normalizeComparable = (value: string) =>
 
 export const normalizePatientTypeLabel = (
   value: string | null | undefined,
-  fallback = 'Policlínico',
+  fallback = DEFAULT_PATIENT_TYPE_LABEL,
 ) => {
   const trimmed = typeof value === 'string' ? value.trim() : '';
   if (!trimmed) {
@@ -34,7 +36,7 @@ export const normalizePatientTypeLabel = (
 
   const comparable = normalizeComparable(trimmed);
   if (comparable === 'hospitalizado') return 'Hospitalizado';
-  if (comparable === 'policlinico') return 'Policlínico';
+  if (comparable === DEFAULT_PATIENT_TYPE_ID) return DEFAULT_PATIENT_TYPE_LABEL;
   if (comparable === 'turno') return 'Turno';
   if (comparable === 'extra') return 'Extra';
   return trimmed;
@@ -42,11 +44,11 @@ export const normalizePatientTypeLabel = (
 
 export const inferPatientTypeId = (
   label: string | null | undefined,
-  fallback = 'policlinico',
+  fallback = DEFAULT_PATIENT_TYPE_ID,
 ) => {
   const comparable = normalizeComparable(typeof label === 'string' ? label : '');
   if (comparable === 'hospitalizado') return 'hospitalizado';
-  if (comparable === 'policlinico') return 'policlinico';
+  if (comparable === DEFAULT_PATIENT_TYPE_ID) return DEFAULT_PATIENT_TYPE_ID;
   if (comparable === 'turno') return 'turno';
   if (comparable === 'extra') return 'extra';
   return fallback;

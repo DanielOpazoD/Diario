@@ -1,70 +1,79 @@
 import React, { useEffect, useId, useState } from 'react';
 import { Clock, Users, Save, ChevronUp, Sparkles, UserCog } from 'lucide-react';
 import { AttachedFile, PatientTypeConfig } from '@shared/types';
-import { formatBirthDateDisplay, normalizeBirthDateInput } from '@shared/utils/dateUtils';
+import { formatBirthDateDisplay } from '@shared/utils/dateUtils';
 import { Button } from '@core/ui';
 import PatientTypeDropdown from '@core/patient/components/PatientTypeDropdown';
 
+import { useOptionalPatientModalContext } from '@core/patient/context/PatientModalContext';
+
 interface PatientFormProps {
-  name: string;
-  rut: string;
-  birthDate: string;
-  gender: string;
-  typeId: string;
-  patientTypes: PatientTypeConfig[];
-  isTurno: boolean;
-  entryTime: string;
-  exitTime: string;
-  onNameChange: (value: string) => void;
-  onNameBlur: () => void;
-  onRutChange: (value: string) => void;
-  onBirthDateChange: (value: string) => void;
-  onGenderChange: (value: string) => void;
-  onSelectType: (typeId: string, typeLabel: string) => void;
-  onEntryTimeChange: (value: string) => void;
-  onExitTimeChange: (value: string) => void;
   compact?: boolean;
   onSave?: () => void;
   onClose?: () => void;
-  attachedFiles?: AttachedFile[];
   onExtractFromAttachment?: (attachmentId: string) => void;
-  // Extraction props
-  isExtractingFromFiles?: boolean;
-  onExtractFromAttachments?: () => void;
   defaultExpanded?: boolean;
   minimalist?: boolean;
   superMinimalist?: boolean;
+
+  // Legacy props kept as optional for backward compatibility if needed, 
+  // but we prefer context
+  name?: string;
+  rut?: string;
+  birthDate?: string;
+  gender?: string;
+  typeId?: string;
+  patientTypes?: PatientTypeConfig[];
+  isTurno?: boolean;
+  entryTime?: string;
+  exitTime?: string;
+  onNameChange?: (value: string) => void;
+  onNameBlur?: () => void;
+  onRutChange?: (value: string) => void;
+  onBirthDateChange?: (value: string) => void;
+  onGenderChange?: (value: string) => void;
+  onSelectType?: (typeId: string, typeLabel: string) => void;
+  onEntryTimeChange?: (value: string) => void;
+  onExitTimeChange?: (value: string) => void;
+  attachedFiles?: AttachedFile[];
+  isExtractingFromFiles?: boolean;
+  onExtractFromAttachments?: () => void;
 }
 
-const PatientForm: React.FC<PatientFormProps> = ({
-  name,
-  rut,
-  birthDate,
-  gender,
-  typeId,
-  patientTypes,
-  isTurno,
-  entryTime,
-  exitTime,
-  onNameChange,
-  onNameBlur,
-  onRutChange,
-  onBirthDateChange,
-  onGenderChange,
-  onSelectType,
-  onEntryTimeChange,
-  onExitTimeChange,
-  compact = false,
-  onSave,
-  onClose,
-  attachedFiles = [],
-  onExtractFromAttachment,
-  isExtractingFromFiles = false,
-  onExtractFromAttachments,
-  defaultExpanded = false,
-  minimalist = false,
-  superMinimalist = false,
-}) => {
+const PatientForm: React.FC<PatientFormProps> = (props) => {
+  const context = useOptionalPatientModalContext();
+
+  // Use context values if props are not provided
+  const name = props.name ?? context?.name ?? '';
+  const rut = props.rut ?? context?.rut ?? '';
+  const birthDate = props.birthDate ?? context?.birthDate ?? '';
+  const gender = props.gender ?? context?.gender ?? '';
+  const typeId = props.typeId ?? context?.typeId ?? '';
+  const patientTypes = props.patientTypes ?? context?.patientTypes ?? [];
+  const isTurno = props.isTurno ?? context?.isTurno ?? false;
+  const entryTime = props.entryTime ?? context?.entryTime ?? '';
+  const exitTime = props.exitTime ?? context?.exitTime ?? '';
+  const onNameChange = props.onNameChange ?? context?.setName ?? (() => { });
+  const onNameBlur = props.onNameBlur ?? context?.handleNameBlur ?? (() => { });
+  const onRutChange = props.onRutChange ?? context?.setRut ?? (() => { });
+  const onBirthDateChange = props.onBirthDateChange ?? context?.setBirthDate ?? (() => { });
+  const onGenderChange = props.onGenderChange ?? context?.setGender ?? (() => { });
+  const onSelectType = props.onSelectType ?? context?.handleSelectType ?? (() => { });
+  const onEntryTimeChange = props.onEntryTimeChange ?? context?.setEntryTime ?? (() => { });
+  const onExitTimeChange = props.onExitTimeChange ?? context?.setExitTime ?? (() => { });
+  const attachedFiles = props.attachedFiles ?? context?.attachedFiles ?? [];
+  const isExtractingFromFiles = props.isExtractingFromFiles ?? context?.isExtractingFromFiles ?? false;
+  const onExtractFromAttachments = props.onExtractFromAttachments ?? context?.handleExtractFromAttachments ?? (() => { });
+
+  const {
+    compact = false,
+    onSave,
+    onClose,
+    onExtractFromAttachment,
+    defaultExpanded = false,
+    minimalist = false,
+    superMinimalist = false,
+  } = props;
   const nameId = useId();
   const rutId = useId();
   const birthDateId = useId();
@@ -75,14 +84,14 @@ const PatientForm: React.FC<PatientFormProps> = ({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded || !name || name.trim() === '');
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string>(attachedFiles[0]?.id || '');
 
-  const selectedType = patientTypes.find(t => t.id === typeId);
+  const selectedType = patientTypes.find((t: PatientTypeConfig) => t.id === typeId);
 
   useEffect(() => {
     if (!attachedFiles.length) {
       setSelectedAttachmentId('');
       return;
     }
-    if (!attachedFiles.find(file => file.id === selectedAttachmentId)) {
+    if (!attachedFiles.find((file: AttachedFile) => file.id === selectedAttachmentId)) {
       setSelectedAttachmentId(attachedFiles[0].id);
     }
   }, [attachedFiles, selectedAttachmentId]);
@@ -177,46 +186,42 @@ const PatientForm: React.FC<PatientFormProps> = ({
           </div>
         )}
 
-        {(onExtractFromAttachments || (onExtractFromAttachment && attachedFiles.length > 0)) && (
-          <div className={`flex flex-wrap items-center gap-2 ${superMinimalist ? 'mt-1' : 'mt-2'}`}>
-            {onExtractFromAttachments && (
+        <div className={`flex flex-wrap items-center gap-2 ${superMinimalist ? 'mt-1' : 'mt-2'}`}>
+          <button
+            onClick={onExtractFromAttachments}
+            disabled={isExtractingFromFiles}
+            className={`${superMinimalist ? 'text-[9px] px-2 py-0.5' : 'text-[10px] px-2.5 py-1'} inline-flex items-center gap-1 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 font-black hover:bg-blue-100 transition-all disabled:opacity-50 uppercase tracking-tighter`}
+          >
+            <Sparkles className={`w-3 h-3 ${isExtractingFromFiles ? 'animate-spin' : ''}`} />
+            {isExtractingFromFiles ? 'LECTURA...' : 'IA SCAN'}
+          </button>
+          {onExtractFromAttachment && attachedFiles.length > 0 && (
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedAttachmentId}
+                onChange={(e) => setSelectedAttachmentId(e.target.value)}
+                className={`${superMinimalist ? 'text-[9px] py-0.5' : 'text-[10px] py-1'} px-2 min-w-[160px] max-w-[240px] truncate rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600`}
+              >
+                {attachedFiles.map((file: AttachedFile) => (
+                  <option key={file.id} value={file.id}>
+                    {file.customTitle || file.name}
+                  </option>
+                ))}
+              </select>
               <button
-                onClick={onExtractFromAttachments}
-                disabled={isExtractingFromFiles}
-                className={`${superMinimalist ? 'text-[9px] px-2 py-0.5' : 'text-[10px] px-2.5 py-1'} inline-flex items-center gap-1 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 font-black hover:bg-blue-100 transition-all disabled:opacity-50 uppercase tracking-tighter`}
+                onClick={() => selectedAttachmentId && onExtractFromAttachment(selectedAttachmentId)}
+                disabled={!selectedAttachmentId || isExtractingFromFiles}
+                className={`${superMinimalist ? 'text-[9px] px-2 py-0.5' : 'text-[10px] px-2.5 py-1'} inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 font-black hover:bg-gray-100 transition-all disabled:opacity-50 uppercase tracking-tighter`}
               >
                 <Sparkles className={`w-3 h-3 ${isExtractingFromFiles ? 'animate-spin' : ''}`} />
-                {isExtractingFromFiles ? 'LECTURA...' : 'IA SCAN'}
+                {isExtractingFromFiles ? 'LEYENDO...' : 'ACTUALIZAR'}
               </button>
-            )}
-            {onExtractFromAttachment && attachedFiles.length > 0 && (
-              <div className="flex items-center gap-2">
-                <select
-                  value={selectedAttachmentId}
-                  onChange={(e) => setSelectedAttachmentId(e.target.value)}
-                  className={`${superMinimalist ? 'text-[9px] py-0.5' : 'text-[10px] py-1'} px-2 min-w-[160px] max-w-[240px] truncate rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600`}
-                >
-                  {attachedFiles.map(file => (
-                    <option key={file.id} value={file.id}>
-                      {file.customTitle || file.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => selectedAttachmentId && onExtractFromAttachment(selectedAttachmentId)}
-                  disabled={!selectedAttachmentId || isExtractingFromFiles}
-                  className={`${superMinimalist ? 'text-[9px] px-2 py-0.5' : 'text-[10px] px-2.5 py-1'} inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 font-black hover:bg-gray-100 transition-all disabled:opacity-50 uppercase tracking-tighter`}
-                >
-                  <Sparkles className={`w-3 h-3 ${isExtractingFromFiles ? 'animate-spin' : ''}`} />
-                  {isExtractingFromFiles ? 'LEYENDO...' : 'ACTUALIZAR'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         <div className={compact || minimalist || superMinimalist ? "space-y-1.5" : "space-y-3"}>
-        <div className={superMinimalist ? "flex flex-nowrap items-end gap-1.5" : inlineLayout ? "flex flex-wrap items-end gap-2" : "flex flex-wrap items-end gap-2.5"}>
+          <div className={superMinimalist ? "flex flex-nowrap items-end gap-1.5" : inlineLayout ? "flex flex-wrap items-end gap-2" : "flex flex-wrap items-end gap-2.5"}>
             <div className={superMinimalist ? "flex-[3] min-w-0" : inlineLayout ? "flex-[2.1] basis-0 min-w-0 max-w-[220px]" : "flex-[3] min-w-[240px]"}>
               <label htmlFor={nameId} className={`${superMinimalist ? 'text-[8px]' : compact || minimalist ? 'text-[9px]' : 'text-[10px]'} block font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase tracking-wider ml-1`}>
                 Nombre Completo
@@ -252,7 +257,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
                   id={birthDateId}
                   value={formatBirthDateDisplay(birthDate)}
                   onChange={(e) => onBirthDateChange(e.target.value)}
-                  onBlur={(e) => onBirthDateChange(normalizeBirthDateInput(e.target.value))}
+                  onBlur={onNameBlur}
                   placeholder="dd-mm-aaaa"
                   inputMode="numeric"
                   className={`w-full px-1.5 ${superMinimalist ? 'py-1 text-[10px]' : compact || minimalist ? 'py-1 text-[11px]' : 'py-1.5 text-[12px]'} rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-400 outline-none transition-all font-bold text-gray-900 dark:text-white`}
@@ -299,67 +304,67 @@ const PatientForm: React.FC<PatientFormProps> = ({
       </div>
 
       {!inlineLayout && (
-      <div className={typeClasses}>
-        {!compact && !minimalist && !superMinimalist && null}
+        <div className={typeClasses}>
+          {!compact && !minimalist && !superMinimalist && null}
           <div className={compact || minimalist || superMinimalist ? "space-y-1.5" : "space-y-2"}>
-          <div className="flex flex-wrap items-center gap-2">
-            {!compact && (minimalist || superMinimalist) && null}
-            <div className="flex-[1.5] min-w-[180px]">
-              <PatientTypeDropdown
-                typeId={typeId}
-                patientTypes={patientTypes}
-                placeholder="Tipo de atencion"
-                onSelectType={onSelectType}
-                buttonClassName="w-full max-w-[220px] flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-100"
-              />
+            <div className="flex flex-wrap items-center gap-2">
+              {!compact && (minimalist || superMinimalist) && null}
+              <div className="flex-[1.5] min-w-[180px]">
+                <PatientTypeDropdown
+                  typeId={typeId}
+                  patientTypes={patientTypes}
+                  placeholder="Tipo de atencion"
+                  onSelectType={onSelectType}
+                  buttonClassName="w-full max-w-[220px] flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-100"
+                />
+              </div>
+
+              {(compact || minimalist || superMinimalist) && onSave && (
+                <div className="flex gap-1 ml-auto">
+                  <Button variant="ghost" size="sm" onClick={onClose} className={`${superMinimalist ? 'text-[7px] h-5 px-1.5' : 'text-[8px] h-6 px-2'} font-bold`}>CANCELAR</Button>
+                  <Button size="sm" onClick={onSave} className={`bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-black ${superMinimalist ? 'text-[7px] h-5 px-2' : 'text-[8px] h-6 px-2.5'}`}>
+                    <Save className={`${superMinimalist ? 'w-2.5 h-2.5' : 'w-3 h-3'} mr-1`} /> GUARDAR
+                  </Button>
+                </div>
+              )}
             </div>
 
-            {(compact || minimalist || superMinimalist) && onSave && (
-              <div className="flex gap-1 ml-auto">
-                <Button variant="ghost" size="sm" onClick={onClose} className={`${superMinimalist ? 'text-[7px] h-5 px-1.5' : 'text-[8px] h-6 px-2'} font-bold`}>CANCELAR</Button>
-                <Button size="sm" onClick={onSave} className={`bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-black ${superMinimalist ? 'text-[7px] h-5 px-2' : 'text-[8px] h-6 px-2.5'}`}>
-                  <Save className={`${superMinimalist ? 'w-2.5 h-2.5' : 'w-3 h-3'} mr-1`} /> GUARDAR
-                </Button>
+            {isTurno && (
+              <div className={`grid grid-cols-2 gap-3 animate-fade-in pt-2 ${compact || minimalist ? '' : 'border-t border-blue-100/50 dark:border-blue-800/20'}`}>
+                <div>
+                  <label htmlFor={entryTimeId} className="block text-[8px] font-black text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-[0.2em] ml-1">
+                    Hora Ingreso
+                  </label>
+                  <div className="relative">
+                    <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+                    <input
+                      type="time"
+                      id={entryTimeId}
+                      value={entryTime}
+                      onChange={(e) => onEntryTimeChange(e.target.value)}
+                      className={`w-full pl-8 ${compact || minimalist ? 'p-1.5 text-[10px]' : 'p-2 text-[11px]'} rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 dark:text-white transition-all`}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor={exitTimeId} className="block text-[8px] font-black text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-[0.2em] ml-1">
+                    Hora Egreso
+                  </label>
+                  <div className="relative">
+                    <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+                    <input
+                      type="time"
+                      id={exitTimeId}
+                      value={exitTime}
+                      onChange={(e) => onExitTimeChange(e.target.value)}
+                      className={`w-full pl-8 ${compact || minimalist ? 'p-1.5 text-[10px]' : 'p-2 text-[11px]'} rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 dark:text-white transition-all`}
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
-
-          {isTurno && (
-            <div className={`grid grid-cols-2 gap-3 animate-fade-in pt-2 ${compact || minimalist ? '' : 'border-t border-blue-100/50 dark:border-blue-800/20'}`}>
-              <div>
-                <label htmlFor={entryTimeId} className="block text-[8px] font-black text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-[0.2em] ml-1">
-                  Hora Ingreso
-                </label>
-                <div className="relative">
-                  <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
-                  <input
-                    type="time"
-                    id={entryTimeId}
-                    value={entryTime}
-                    onChange={(e) => onEntryTimeChange(e.target.value)}
-                    className={`w-full pl-8 ${compact || minimalist ? 'p-1.5 text-[10px]' : 'p-2 text-[11px]'} rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 dark:text-white transition-all`}
-                  />
-                </div>
-              </div>
-              <div>
-                <label htmlFor={exitTimeId} className="block text-[8px] font-black text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-[0.2em] ml-1">
-                  Hora Egreso
-                </label>
-                <div className="relative">
-                  <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
-                  <input
-                    type="time"
-                    id={exitTimeId}
-                    value={exitTime}
-                    onChange={(e) => onExitTimeChange(e.target.value)}
-                    className={`w-full pl-8 ${compact || minimalist ? 'p-1.5 text-[10px]' : 'p-2 text-[11px]'} rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 dark:text-white transition-all`}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
-      </div>
       )}
     </div>
   );

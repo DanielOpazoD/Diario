@@ -14,6 +14,7 @@ import { useReportHeaderViewModel } from '@features/reports/hooks/useReportHeade
 import { generateReportPdfBlob } from '@features/reports/services/reportPdfService';
 import type { ReportHostContext } from '@features/reports/host/reportHost';
 import { buildReportPatientPayload } from '@use-cases/reportPatient';
+import { DEFAULT_PATIENT_TYPE_ID } from '@shared/constants/patientDefaults';
 import {
   emitReportJsonConsoleError,
   isCompatibleJsonAttachment,
@@ -120,7 +121,7 @@ export const useMedicalReportController = (host: ReportHostContext): UseMedicalR
   } = useReportEditorState({ record, setRecord });
   const [isResetTemplateModalOpen, setIsResetTemplateModalOpen] = useState(false);
 
-  const defaultTypeId = useMemo(() => patientTypes[0]?.id || 'policlinico', [patientTypes]);
+  const defaultTypeId = useMemo(() => patientTypes[0]?.id || DEFAULT_PATIENT_TYPE_ID, [patientTypes]);
   const [selectedTypeId, setSelectedTypeId] = useState(defaultTypeId);
 
   useEffect(() => {

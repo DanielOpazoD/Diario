@@ -3,51 +3,59 @@ import { Mic, Sparkles, Paperclip, FileText } from 'lucide-react';
 import { PendingTask } from '@shared/types';
 import PendingTasksPanel from '@core/patient/components/PendingTasksPanel';
 
+import { useOptionalPatientModalContext } from '@core/patient/context/PatientModalContext';
+
 interface ClinicalNoteProps {
-  diagnosis: string;
-  clinicalNote: string;
-  pendingTasks: PendingTask[];
-  isListening: boolean;
-  isAnalyzing: boolean;
-  isSummarizing?: boolean;
-  onDiagnosisChange: (value: string) => void;
-  onClinicalNoteChange: (value: string) => void;
-  onToggleListening: () => void;
-  onAnalyze: () => void;
-  onSummary?: () => void;
-  onToggleTask: (taskId: string) => void;
-  onDeleteTask: (taskId: string) => void;
-  onAddTask: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  onUpdateTaskNote: (taskId: string, note: string) => void;
-  activeTab: 'clinical' | 'files';
-  onChangeTab: (tab: 'clinical' | 'files') => void;
-  attachmentsCount: number;
-  attachmentsSection?: React.ReactNode;
   minimal?: boolean;
+  attachmentsSection?: React.ReactNode;
+
+  // Legacy props kept as optional for context fallbacks
+  diagnosis?: string;
+  clinicalNote?: string;
+  pendingTasks?: PendingTask[];
+  isListening?: boolean;
+  isAnalyzing?: boolean;
+  isSummarizing?: boolean;
+  onDiagnosisChange?: (value: string) => void;
+  onClinicalNoteChange?: (value: string) => void;
+  onToggleListening?: () => void;
+  onAnalyze?: () => void;
+  onSummary?: () => void;
+  onToggleTask?: (taskId: string) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onAddTask?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onUpdateTaskNote?: (taskId: string, note: string) => void;
+  activeTab?: 'clinical' | 'files';
+  onChangeTab?: (tab: 'clinical' | 'files') => void;
+  attachmentsCount?: number;
 }
 
-const ClinicalNote: React.FC<ClinicalNoteProps> = ({
-  diagnosis,
-  clinicalNote,
-  pendingTasks,
-  isListening,
-  isAnalyzing,
-  isSummarizing,
-  onDiagnosisChange,
-  onClinicalNoteChange,
-  onToggleListening,
-  onAnalyze,
-  onSummary,
-  onToggleTask,
-  onDeleteTask,
-  onAddTask,
-  onUpdateTaskNote,
-  activeTab,
-  onChangeTab,
-  attachmentsCount,
-  attachmentsSection,
-  minimal = false,
-}) => {
+const ClinicalNote: React.FC<ClinicalNoteProps> = (props) => {
+  const context = useOptionalPatientModalContext();
+
+  const diagnosis = props.diagnosis ?? context?.diagnosis ?? '';
+  const clinicalNote = props.clinicalNote ?? context?.clinicalNote ?? '';
+  const pendingTasks = props.pendingTasks ?? context?.pendingTasks ?? [];
+  const isListening = props.isListening ?? context?.isListening ?? false;
+  const isAnalyzing = props.isAnalyzing ?? context?.isAnalyzing ?? false;
+  const isSummarizing = props.isSummarizing ?? context?.isSummarizing ?? false;
+  const onDiagnosisChange = props.onDiagnosisChange ?? context?.setDiagnosis ?? (() => { });
+  const onClinicalNoteChange = props.onClinicalNoteChange ?? context?.setClinicalNote ?? (() => { });
+  const onToggleListening = props.onToggleListening ?? context?.toggleListening ?? (() => { });
+  const onAnalyze = props.onAnalyze ?? context?.handleAIAnalysis ?? (() => { });
+  const onSummary = props.onSummary ?? context?.handleClinicalSummary ?? (() => { });
+  const onToggleTask = props.onToggleTask ?? context?.toggleTask ?? (() => { });
+  const onDeleteTask = props.onDeleteTask ?? context?.deleteTask ?? (() => { });
+  const onAddTask = props.onAddTask ?? context?.addTask ?? (() => { });
+  const onUpdateTaskNote = props.onUpdateTaskNote ?? context?.updateTaskNote ?? (() => { });
+  const activeTab = props.activeTab ?? context?.activeTab ?? 'clinical';
+  const onChangeTab = props.onChangeTab ?? context?.onChangeTab ?? (() => { });
+  const attachmentsCount = props.attachmentsCount ?? context?.attachedFiles.length ?? 0;
+
+  const {
+    attachmentsSection,
+    minimal = false,
+  } = props;
   const diagnosisId = useId();
   const noteId = useId();
 

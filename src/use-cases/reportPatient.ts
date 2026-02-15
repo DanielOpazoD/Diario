@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { buildClinicalNote, findReportSectionContent, formatDateDMY, REPORT_TEMPLATES } from '@domain/report';
 import { sanitizeFileName } from '@shared/utils/fileNames';
 import type { PatientCreateInput, PatientTypeConfig } from '@shared/types';
+import { DEFAULT_PATIENT_TYPE_LABEL } from '@shared/constants/patientDefaults';
 import type { ReportPatientField, ReportSection } from '@domain/report/entities';
 import type { ReportRecord } from '@domain/report';
 import { normalizeBirthDateInput } from '@shared/utils/dateUtils';
@@ -44,7 +45,7 @@ export const buildReportPatientPayload = ({
   const clinicalNote = buildClinicalNote(sections);
 
   const typeConfig = patientTypes.find((type) => type.id === selectedTypeId) || patientTypes[0];
-  const typeLabel = typeConfig?.label || 'Policlinico';
+  const typeLabel = typeConfig?.label || DEFAULT_PATIENT_TYPE_LABEL;
 
   const patientData: PatientCreateInput = {
     name,

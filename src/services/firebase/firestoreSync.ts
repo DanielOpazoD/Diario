@@ -43,7 +43,7 @@ export const addPendingDeletion = (id: string) => {
 export const isPendingDeletion = (id: string) => {
   const timestamp = pendingDeletions.get(id);
   if (!timestamp) return false;
-  if (Date.now() - timestamp > 30000) {
+  if (Date.now() - timestamp > 60000) {
     pendingDeletions.delete(id);
     return false;
   }
@@ -135,8 +135,8 @@ const normalizeLegacyPatientFields = (raw: Record<string, unknown>) => {
 
 export const subscribeToPatients = (callback: (patients: PatientRecord[]) => void) => {
   let active = true;
-  let unsubPrimary = () => {};
-  let unsubLegacy = () => {};
+  let unsubPrimary = () => { };
+  let unsubLegacy = () => { };
 
   (async () => {
     const deps = await loadFirestoreDeps();
@@ -239,7 +239,7 @@ export const deletePatientFromFirebase = async (patientId: string) => {
     await deps.deleteDoc(docRef);
 
     const legacyRef = deps.doc(deps.db, 'users', user.uid, LEGACY_PATIENTS_COLLECTION, patientId);
-    await deps.deleteDoc(legacyRef).catch(() => {});
+    await deps.deleteDoc(legacyRef).catch(() => { });
   } catch (error) {
     emitStructuredLog('error', 'Firebase', 'Error deleting patient', { error });
   }

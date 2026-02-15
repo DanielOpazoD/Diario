@@ -1,29 +1,31 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Filter } from 'lucide-react';
+import { useDailyViewContext } from '@features/daily/context/DailyViewContext';
 
 interface FilterStat {
   id: string;
   label: string;
   count: number;
-  color: string;
+  color?: string;
 }
 
-interface FilterBarProps {
-  activeFilter: string;
-  onFilterChange: (filter: string) => void;
-  stats: FilterStat[];
-  totalCount: number;
-}
+const FilterBar: React.FC = () => {
+  const {
+    activeFilter,
+    setActiveFilter,
+    summaryStats: stats,
+    dailyRecords: { length: totalCount }
+  } = useDailyViewContext();
 
-const FilterBar: React.FC<FilterBarProps> = ({ activeFilter, onFilterChange, stats, totalCount }) => {
   const options = useMemo(() => ([
     { id: 'all', label: 'Todos', count: totalCount },
-    ...stats.map((stat) => ({
+    ...stats.map((stat: FilterStat) => ({
       id: stat.id,
       label: stat.label,
       count: stat.count,
     })),
   ]), [stats, totalCount]);
+
   const activeOption = useMemo(() => options.find((option) => option.id === activeFilter), [activeFilter, options]);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -69,19 +71,17 @@ const FilterBar: React.FC<FilterBarProps> = ({ activeFilter, onFilterChange, sta
                   type="button"
                   key={option.id}
                   onClick={() => {
-                    onFilterChange(option.id);
+                    setActiveFilter(option.id);
                     handleCloseMenu();
                   }}
-                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${
-                    option.id === activeFilter
-                      ? 'bg-brand-500 text-white'
-                      : 'text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/60'
-                  }`}
+                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${option.id === activeFilter
+                    ? 'bg-brand-500 text-white'
+                    : 'text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/60'
+                    }`}
                 >
                   <span>{option.label}</span>
-                  <span className={`px-1.5 py-0.5 rounded-md text-[9px] ${
-                    option.id === activeFilter ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-                  }`}>
+                  <span className={`px-1.5 py-0.5 rounded-md text-[9px] ${option.id === activeFilter ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                    }`}>
                     {option.count}
                   </span>
                 </button>
@@ -93,7 +93,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ activeFilter, onFilterChange, sta
       {activeFilter !== 'all' && activeOption && (
         <button
           type="button"
-          onClick={() => onFilterChange('all')}
+          onClick={() => setActiveFilter('all')}
           className="flex items-center gap-2 px-2 py-1 rounded-lg bg-gray-900 text-white text-[9px] font-black uppercase tracking-widest shadow-sm"
         >
           {activeOption.label}

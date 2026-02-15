@@ -1,8 +1,8 @@
-
-import React, { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { format, addDays, isSameDay, isToday, addYears, getYear, getMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PatientRecord, PatientType } from '@shared/types';
+import { DEFAULT_PATIENT_TYPE_ID } from '@shared/constants/patientDefaults';
 import { ChevronLeft, ChevronRight, Calendar, Disc } from 'lucide-react';
 
 interface DateNavigatorProps {
@@ -14,18 +14,17 @@ interface DateNavigatorProps {
 const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate, records }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const itemRef = useRef<HTMLDivElement>(null);
-  const [days, setDays] = useState<Date[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerDate, setPickerDate] = useState(currentDate);
 
-  useEffect(() => {
+  const days = useMemo(() => {
     const newDays: Date[] = [];
     // Generate 5 days before and 5 days after (11 total)
     // The logic relies on the selected day being exactly in the middle (index 5)
     for (let i = -5; i <= 5; i++) {
       newDays.push(addDays(currentDate, i));
     }
-    setDays(newDays);
+    return newDays;
   }, [currentDate]);
 
   // Center the selected date (which is always in the middle of the array)
@@ -75,7 +74,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ currentDate, onSelectDate
     const key = format(date, 'yyyy-MM-dd');
     const dayRecords = recordsByDate.get(key) || [];
     const hasHosp = dayRecords.some(r => r.typeId === 'hospitalizado' || (!r.typeId && r.type === PatientType.HOSPITALIZADO));
-    const hasPoli = dayRecords.some(r => r.typeId === 'policlinico' || (!r.typeId && r.type === PatientType.POLICLINICO));
+    const hasPoli = dayRecords.some(r => r.typeId === DEFAULT_PATIENT_TYPE_ID || (!r.typeId && r.type === PatientType.POLICLINICO));
     const hasExtra = dayRecords.some(r => r.typeId === 'extra' || (!r.typeId && r.type === PatientType.EXTRA));
     const hasTurno = dayRecords.some(r => r.typeId === 'turno' || (!r.typeId && r.type === PatientType.TURNO));
     return { hasHosp, hasPoli, hasExtra, hasTurno, count: dayRecords.length };

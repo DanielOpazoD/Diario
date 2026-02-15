@@ -2,42 +2,24 @@ import React from 'react';
 import { Button } from '@core/ui';
 import FilterBar from '@features/daily/FilterBar';
 import PdfImportEntry from '@features/daily/components/PdfImportEntry';
+import { useDailyViewContext } from '@features/daily/context/DailyViewContext';
 
-interface DailyHeaderProps {
-    currentDate: Date;
-    activeFilter: string;
-    setActiveFilter: (filter: string) => void;
-    summaryStats: any;
-    dailyRecordsCount: number;
-    pendingTasks: number;
-    selectionMode: boolean;
-    toggleSelectionMode: () => void;
-    onAddBlankPatient: () => void;
-}
+const DailyHeader: React.FC = () => {
+    const {
+        currentDate,
+        pendingTasks,
+        selectionMode,
+        toggleSelectionMode,
+        handleAddBlankPatient
+    } = useDailyViewContext();
 
-const DailyHeader: React.FC<DailyHeaderProps> = ({
-    currentDate,
-    activeFilter,
-    setActiveFilter,
-    summaryStats,
-    dailyRecordsCount,
-    pendingTasks,
-    selectionMode,
-    toggleSelectionMode,
-    onAddBlankPatient,
-}) => {
     return (
         <div className="sticky top-1 z-20 mb-1.5 group">
             <div className="glass shadow-premium-lg rounded-panel px-3 py-1.5 transition-all duration-500 border-white/40 dark:border-white/10 group-hover:shadow-premium-xl group-hover:border-white/60">
                 <div className="flex items-center justify-between gap-2">
                     {/* Filter Bar - Modern compact layout */}
                     <div className="flex-1 min-w-0">
-                        <FilterBar
-                            activeFilter={activeFilter}
-                            onFilterChange={setActiveFilter}
-                            stats={summaryStats}
-                            totalCount={dailyRecordsCount}
-                        />
+                        <FilterBar />
                     </div>
 
                     {/* Action Buttons - Premium styling */}
@@ -63,7 +45,7 @@ const DailyHeader: React.FC<DailyHeaderProps> = ({
                         </div>
 
                         <Button
-                            onClick={onAddBlankPatient}
+                            onClick={handleAddBlankPatient}
                             size="sm"
                             className="rounded-xl px-3 h-7 font-black bg-brand-500 hover:bg-brand-600 shadow-lg shadow-brand-500/30 text-[10px] transition-all active:scale-95"
                         >

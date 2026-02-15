@@ -2,6 +2,7 @@ import { normalizeBirthDate } from '@domain/patient/dates';
 import { sanitizePatientName, sanitizeRut } from '@shared/utils/sanitization';
 import { formatPatientName } from '@shared/utils/patientUtils';
 import type { ExtractedPatientData } from '@shared/types';
+import { DEFAULT_PATIENT_TYPE_ID } from '@shared/constants/patientDefaults';
 
 const normalizeWhitespace = (value: string) => value.replace(/\s+/g, ' ').trim();
 
@@ -49,7 +50,7 @@ const NON_NAME_TERMS = new Set([
   'social', 'fonasa', 'isapre', 'medico', 'medica', 'prevision',
   'previsional', 'paciente', 'doctor', 'doctora', 'enfermero', 'enfermera',
   'hospital', 'clinica', 'servicio', 'urgencia', 'consulta',
-  'ambulatorio', 'hospitalizado', 'policlinico', 'turno',
+  'ambulatorio', 'hospitalizado', DEFAULT_PATIENT_TYPE_ID, 'turno',
   'diagnostico', 'tratamiento', 'indicaciones', 'evolucion',
   'antecedentes', 'comentario', 'plan', 'fecha', 'ficha',
   'rut', 'run', 'nombre', 'nombres', 'sexo', 'genero',

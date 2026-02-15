@@ -12,7 +12,8 @@ import { filterSupportedAttachments, hasDriveUrl } from '@use-cases/patient/atta
 import { diffExtractedFields } from '@use-cases/patient/fieldUpdates';
 import { logEvent } from '@use-cases/logger';
 import { encodeFileToBase64, fetchUrlAsBase64, fetchUrlAsArrayBuffer, extractTextFromPdfFile } from '@use-cases/attachments';
-import { AttachedFile, ExtractedPatientData, PatientCreateInput, PatientType } from '@shared/types';
+import { AttachedFile, ExtractedPatientData, PatientCreateInput } from '@shared/types';
+import { DEFAULT_PATIENT_TYPE_LABEL } from '@shared/constants/patientDefaults';
 import { sanitizePatientName } from '@use-cases/patient/sanitizeFields';
 
 interface UsePatientDataExtractionParams {
@@ -222,7 +223,7 @@ const usePatientDataExtraction = ({
           rut: p.rut,
           birthDate: p.birthDate,
           gender: p.gender,
-          type: PatientType.POLICLINICO,
+          type: DEFAULT_PATIENT_TYPE_LABEL,
           diagnosis: p.diagnosis || '',
           clinicalNote: p.clinicalNote || '',
           pendingTasks: [],

@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale';
 import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import { PatientRecord, PatientTypeConfig } from '@shared/types';
+import { DEFAULT_PATIENT_TYPE_ID } from '@shared/constants/patientDefaults';
 
 interface ChartTypeEntry {
   id: string;
@@ -171,7 +172,7 @@ export const useStatsData = (currentDate: Date): StatsState => {
 
       if (config?.id === 'extra') return;
 
-      if (config?.id === 'policlinico') {
+      if (config?.id === DEFAULT_PATIENT_TYPE_ID) {
         hoursByType[config.label] += 30;
       } else if (config?.id === 'turno') {
         if (r.entryTime && r.exitTime) {

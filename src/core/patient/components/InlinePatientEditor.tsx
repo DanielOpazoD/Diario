@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Save, X } from 'lucide-react';
 import { PatientRecord, AttachedFile } from '@shared/types';
+import { DEFAULT_PATIENT_TYPE_ID } from '@shared/constants/patientDefaults';
 import { Button } from '@core/ui';
 import useAppStore from '@core/stores/useAppStore';
 import InlinePatientDemographics from '@core/patient/components/InlinePatientDemographics';
@@ -44,7 +45,7 @@ const InlinePatientEditor: React.FC<InlinePatientEditorProps> = ({
     const [exitTime, setExitTime] = useState(patient.exitTime || '');
     const [type, setType] = useState(patient.type);
     const defaultTypeId = useMemo(
-        () => patientTypes.find(t => t.id === 'policlinico')?.id || patientTypes[0]?.id || '',
+        () => patientTypes.find(t => t.id === DEFAULT_PATIENT_TYPE_ID)?.id || patientTypes[0]?.id || '',
         [patientTypes]
     );
     const [typeId, setTypeId] = useState(patient.typeId || patientTypes.find(t => t.label === patient.type)?.id || defaultTypeId);
