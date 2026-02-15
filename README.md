@@ -1,95 +1,99 @@
-# MediDiario AI 🏥✨
+# Medidiario AI
 
-> *"Tu cerebro externo para la práctica clínica diaria."*
+> Sistema de gestión clínica diaria para médicos hospitalarios. PWA offline-first con sincronización Firebase y extracción inteligente de datos desde PDFs.
 
-## 📋 Propósito y Visión
+## Quick Start
 
-**MediDiario AI** nace de una necesidad real en la práctica médica hospitalaria: **llevar un orden personal, consciente y seguro de los pacientes atendidos.**
-
-Esta aplicación **NO** busca reemplazar la Ficha Clínica Oficial ni ser un repositorio legal de antecedentes. Su objetivo es actuar como una **"Mini Ficha Personal"** para:
-
-1.  **Reemplazo Inteligente a las "Notas del Celular":** Ofrecer la agilidad de anotar en el teléfono pero con estructura médica, seguridad y herramientas de gestión que las notas de texto plano no tienen.
-2.  **Continuidad del Cuidado:** Saber exactamente en qué quedó cada caso, qué pacientes se han visto y mantener la consciencia situacional tanto en sala, policlínico o turnos.
-3.  **Gestión de Carga Mental:** Vaciar la mente de pendientes (laboratorios por revisar, interconsultas, evoluciones) para reducir el burnout y ordenar el ejercicio de la profesión.
-
-Diseñado específicamente para el flujo de trabajo de Medicina Interna (Hospitalizados, Policlínico, Extras y Turnos), con la visión de ser completamente funcional tanto en **PC de escritorio** como en **dispositivos móviles**.
-
----
-
-## 🎨 Principios Estéticos: "Medical Glass UI"
-
-La interfaz rechaza la estética tradicional del software médico (estéril, gris, densa) para abrazar una filosofía de diseño que prioriza la claridad mental.
-
-### 1. Filosofía Visual: Profundidad y Calma
-*   **Glassmorphism Funcional:** Utilizamos paneles semitransparentes (`backdrop-blur`) que permiten mantener el contexto visual sin saturar la pantalla.
-*   **Atmósfera (Mesh Gradients):** Fondos orgánicos y sutiles que cambian drásticamente entre el modo **Claro** (Día/Energía clínica) y **Oscuro** (Noche/Guardia), respetando el ciclo circadiano del médico.
-*   **Interacción Táctil:** Botones y tarjetas con áreas de contacto amplias (`touch-friendly`), pensados para ser usados rápidamente con una mano en el celular o con precisión en el mouse.
-
-### 2. Código de Color Semántico
-El color se utiliza como herramienta de triaje visual instantáneo:
-*   🔴 **Hospitalizado:** Atención crítica, pacientes de sala.
-*   🔵 **Policlínico:** Flujo ambulatorio constante.
-*   🟣 **Turno:** Gestión de guardia, urgencia o llamados.
-*   🟢 **Extra:** Procedimientos adicionales o ingresos fuera de lista.
-*   ⚠️ **Pendientes:** Indicadores de tareas no resueltas (ámbar pulsante).
-
----
-
-## ⚡ Principios Funcionales
-
-### 1. Arquitectura "Local-First" & Privacidad 🔒
-*   **Privacidad por Diseño:** Los datos de los pacientes viven **exclusivamente en el dispositivo del médico** (Navegador/LocalStorage). No hay servidores intermedios de la aplicación leyendo la información.
-*   **Soberanía de Datos:** El respaldo y la sincronización se realizan directamente al **Google Drive personal** del usuario. El médico tiene la llave y el control total de su "base de datos".
-
-### 2. IA como Copiloto (Gemini 2.5) 🤖
-La IA no diagnostica, **asiste y estructura**:
-*   **Estructuración de Caos:** Transforma notas rápidas o dictadas en diagnósticos y tareas ordenadas.
-*   **Visión Artificial:** Digitalización de listas de pacientes mediante fotos (OCR contextual) para evitar la transcripción manual.
-
-### 3. Flujo de Trabajo sin Fricción
-*   **Optimistic UI:** Interacciones instantáneas, sin tiempos de carga perceptibles.
-*   **Navegación Temporal:** Sistema de "Cinta de Tiempo" para saltar entre días y revisar guardias pasadas o planificar futuras.
-*   **Reportabilidad:** Generación de PDFs de entrega de turno en un clic.
-
----
-
-## 🛠️ Stack Tecnológico
-
-*   **Core:** React 18, Vite, TypeScript.
-*   **Estilos:** Tailwind CSS (Animaciones fluidas, Modo Oscuro nativo).
-*   **Inteligencia:** Google GenAI SDK (`gemini-2.5-flash`).
-*   **Almacenamiento:** Google Drive API v3 (Client-side integration).
-*   **Visualización:** Recharts.
-
----
-
-## 🧩 Configuración local (env)
-
-Para iniciar sesión con Google en local, crea un archivo `.env` con las claves de Firebase:
-
-```
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_STORAGE_BUCKET=...
-VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=...
+```bash
+npm install
+npm run dev          # http://localhost:5173
+npm run test         # Vitest (350+ tests)
+npm run lint         # ESLint + boundary checks
+npm run build        # TypeScript check + Vite production build
+npm run quality:gate # Full CI pipeline (lint + tests + build)
 ```
 
----
+## Tech Stack
 
-## ✅ Tests
+| Category | Technology |
+|----------|------------|
+| UI | React 18 + TypeScript 5.4 |
+| State | Zustand 5 (slice pattern) |
+| Styling | Tailwind CSS 3.4 |
+| Validation | Zod 4 |
+| Build | Vite 5 + PWA |
+| Testing | Vitest 4 + Testing Library |
+| Backend | Firebase (Auth + Firestore + Storage) |
+| AI | Google Gemini API |
+| PDF | pdfjs-dist |
+| Deploy | Netlify (serverless functions) |
 
-- `npm run test` ejecuta suites Vitest (`*.test.ts/tsx`).
-- `npm run test:node` ejecuta suites Node (`*.test.js`).
-- `npm run test:all` ejecuta ambos.
-- `npm run test:critical` ejecuta la suite crítica de dominio/sync/logging.
-- `npm run boundary:check` valida reglas de arquitectura por capas.
-- `npm run quality:gate` ejecuta el gate completo (`boundary + test:critical + test:node`).
-- Los tests Node resuelven rutas legacy con `tests/utils/legacyPaths.js`.
+## Architecture Overview
 
-## 🔐 Quality Gate en CI
+```
+src/
+├── shared/          # Types, constants, utils, schemas (no dependencies)
+├── domain/          # Pure business logic (depends only on shared/)
+├── data/            # Ports (interfaces) + Adapters (implementations)
+├── use-cases/       # Application logic orchestrating domain + data
+├── services/        # Infrastructure (Firebase, Gemini, Storage, HTTP)
+├── core/            # React integration (stores, hooks, providers, UI)
+└── features/        # Feature modules (daily, reports, stats, etc.)
+```
 
-- Workflow: `.github/workflows/quality-gate.yml`
-- Se ejecuta en `push` y `pull_request` a `main`/`master`.
-- Usa `npm ci` y luego `npm run quality:gate`.
+> **Dependency Rule:** Each layer may only import from layers above it in this list. This is enforced by `scripts/check-boundaries.mjs`.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the detailed architecture guide.
+
+## Key Features
+
+- **Daily Patient Management** — Add, edit, filter, batch-move patients by date
+- **PDF Import** — Automatic name/RUT/diagnosis extraction from Chilean medical PDFs
+- **AI Integration** — Gemini-powered clinical analysis and data extraction
+- **File Attachments** — Firebase Storage upload, preview, and management
+- **Medical Reports** — Rich text editor with PDF/print export
+- **Statistics** — Occupancy trends, bed rotation index, census data
+- **Offline-First** — LocalStorage + IndexedDB shadow + Firebase sync
+- **Security** — PIN lock, auto-lock, encrypted credentials
+
+## Documentation Index
+
+| Document | Purpose |
+|----------|---------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Clean Architecture layers, dependency rules, data flow |
+| [src/README.md](src/README.md) | Source code map with every directory explained |
+| [src/shared/README.md](src/shared/README.md) | Types, schemas, constants, utility functions |
+| [src/domain/README.md](src/domain/README.md) | Pure business rules (patient, report, bookmarks) |
+| [src/data/README.md](src/data/README.md) | Ports & Adapters pattern (hexagonal architecture) |
+| [src/use-cases/README.md](src/use-cases/README.md) | Application-level orchestration logic |
+| [src/services/README.md](src/services/README.md) | Infrastructure integrations (Firebase, Gemini, Storage) |
+| [src/core/README.md](src/core/README.md) | React layer (Zustand store, hooks, providers, UI kit) |
+| [src/features/README.md](src/features/README.md) | Feature modules (daily, reports, stats, AI, etc.) |
+
+## Path Aliases
+
+Configured in `tsconfig.json`:
+
+```
+@shared/*     → src/shared/*
+@domain/*     → src/domain/*
+@data/*       → src/data/*
+@use-cases/*  → src/use-cases/*
+@services/*   → src/services/*
+@core/*       → src/core/*
+@features/*   → src/features/*
+```
+
+## Testing
+
+```bash
+npm test                # Run all Vitest tests
+npm run test:critical   # Critical path tests only
+npm run test:coverage   # With V8 coverage
+npm run test:node       # Node.js native test runner (integration/e2e)
+npm run test:all        # Vitest + Node tests
+```
+
+## Maintaining Documentation
+
+> **⚠️ IMPORTANT:** When modifying any layer, update the corresponding `README.md` in that directory. If you add a new feature module, create a `README.md` inside it.

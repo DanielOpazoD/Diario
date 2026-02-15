@@ -1,61 +1,130 @@
-# Medidiario Architecture Map
+# Architecture Guide
 
-This document defines the target module boundaries to keep the codebase maintainable, portable, and scalable.
+## Clean Architecture
 
-## Layer map
+Medidiario uses a strict layered architecture inspired by Clean Architecture and Hexagonal Architecture (Ports & Adapters). The fundamental rule is:
 
-- `src/domain`
-  - Pure business rules and entities.
-  - No framework/store/network dependencies.
-- `src/use-cases`
-  - Application workflows and orchestration of domain + data ports.
-  - No UI framework dependencies.
-- `src/data`
-  - Concrete adapters and ports for external systems (firebase, storage, ai).
-  - Adapter details are hidden behind use-cases.
-- `src/core`
-  - App shell, global store wiring, cross-feature infrastructure.
-  - Should not contain feature business rules.
-- `src/features`
-  - Feature UI modules and local view state.
-  - Should call use-cases, not data adapters.
-- `src/shared`
-  - Cross-cutting utility modules, constants, schemas, basic types.
+> **Inner layers never depend on outer layers.**
 
-## Dependency direction
+```
+┌─────────────────────────────────────────────────────────┐
+│  features/         UI feature modules (React components)│
+│  core/             React integration (stores, hooks, UI)│
+├─────────────────────────────────────────────────────────┤
+│  use-cases/        Application logic (orchestration)    │
+├─────────────────────────────────────────────────────────┤
+│  data/             Ports (interfaces) + Adapters (impl) │
+├─────────────────────────────────────────────────────────┤
+│  services/         Infrastructure (Firebase, HTTP, etc.)│
+├─────────────────────────────────────────────────────────┤
+│  domain/           Pure business logic (no deps)        │
+│  shared/           Types, constants, utilities          │
+└─────────────────────────────────────────────────────────┘
+```
 
-Allowed direction:
+## Dependency Rules
 
-`features/core -> use-cases -> domain`
+These rules are **enforced at CI** by `scripts/check-boundaries.mjs`:
 
-`use-cases -> data/ports|adapters -> services`
+| Layer | Can Import | Cannot Import |
+|-------|-----------|---------------|
+| `shared/` | Nothing | — |
+| `domain/` | `@shared/*` | `@core/*`, `@features/*`, `@services/*` |
+| `data/adapters` | `@services/*`, `@shared/*` | `@core/*`, `@features/*` |
+| `use-cases/` | `@domain/*`, `@data/*`, `@shared/*` | `@core/*`, `@features/*` |
+| `core/stores` | `@shared/*`, `@use-cases/*` | `@features/*`, `@services/*` |
+| `core/`, `features/` | `@use-cases/*`, `@shared/*`, `@core/*` | `@services/*` (direct) |
 
-`core -> use-cases + shared + domain`
+## Data Flow
 
-Forbidden direction (examples):
+### Write Path (User Action → Firebase)
+```
+User clicks "Save" in DailyView
+  → Zustand store.addPatient(record)
+    → persistence.ts detects change (subscription)
+      → saveRecordsToLocal(records)          // LocalStorage
+      → shadowWriteToIndexedDb(records)       // IndexedDB backup
+      → syncPatientsWithRetry(dirtyPatients)  // Firebase Firestore
+```
 
-- `domain -> use-cases/core/features/services`
-- `use-cases -> core/features/stores`
-- `features -> data/adapters`
-- `data/adapters -> features/core`
+### Read Path (Firebase → UI)
+```
+Firebase onSnapshot listener fires
+  → useFirebaseSync hook receives doc changes
+    → mergeIncomingPatients (conflict resolution)
+      → Zustand store.setRecords(merged)
+        → React re-renders subscribed components
+```
 
-## Module contracts
+### PDF Import Path
+```
+User selects PDF file
+  → extractTextFromPdf (pdfjs-dist with Y-coordinate line detection)
+    → extractPatientDataFromText (regex + table-format + blocklist)
+      → isLikelyName filter (accent-normalized, punctuation-stripped)
+      → extractSection (accent-normalized label matching)
+    → createImportedPatientRecord
+      → uploadFileToFirebase (preserves original filename)
+        → store.addPatient + store.updatePatient with attachedFile
+```
 
-- `features/*`
-  - Should expose UI components/hooks only.
-  - Business logic should be extracted to `use-cases` or `domain`.
-- `use-cases/*`
-  - Should expose pure functions/services that can be unit-tested without React.
-  - Prefer typed inputs/outputs (no implicit state reads).
-- `data/adapters/*`
-  - Should implement ports and wrap external SDKs.
-  - No business decisions here.
+## State Management
 
-## Governance
+Zustand store with **8 slices**:
 
-- Boundary checks are enforced by `npm run boundary:check`.
-- CI gate uses `npm run quality:gate`.
-- New modules should include:
-  - clear ownership layer,
-  - unit tests for business logic,
-  - no boundary violations.
+| Slice | Purpose |
+|-------|---------|
+| `patientSlice` | Patient records CRUD |
+| `taskSlice` | General tasks management |
+| `userSlice` | Auth user info + theme |
+| `patientTypesSlice` | Configurable patient categories |
+| `securitySlice` | PIN lock settings |
+| `preferencesSlice` | UI preferences (compact stats, etc.) |
+| `bookmarkSlice` | Quick-access URL bookmarks |
+| `uiSlice` | Toast notifications + sync status |
+
+## Persistence Strategy
+
+```
+                ┌─────────────┐
+                │ Zustand Store│
+                └──────┬──────┘
+                       │ subscribe (500ms debounce)
+              ┌────────┴────────┐
+              ▼                 ▼
+    ┌─────────────────┐  ┌──────────────┐
+    │  LocalStorage    │  │  IndexedDB   │
+    │  (primary)       │  │  (shadow)    │
+    └────────┬────────┘  └──────────────┘
+             │
+             ▼ only dirty patients
+    ┌─────────────────┐
+    │  Firebase        │
+    │  Firestore       │
+    └─────────────────┘
+```
+
+**Conflict Resolution:** When incoming Firebase data conflicts with local changes, the record with the most recent `updatedAt` timestamp wins. See `patientSyncMerge.ts`.
+
+## Feature Modules
+
+Each feature is a self-contained vertical slice under `src/features/`:
+
+| Module | Purpose |
+|--------|---------|
+| `daily/` | Main patient list view with date navigation |
+| `reports/` | Medical report editor, PDF/JSON export |
+| `stats/` | Clinical statistics and occupancy charts |
+| `files/` | File attachment manager and viewer |
+| `ai/` | AI chat assistant and file analysis |
+| `history/` | Historical patient record browser |
+| `bookmarks/` | Quick-access URL manager |
+| `settings/` | App configuration and security |
+| `search/` | Cross-date patient search |
+
+## Testing Strategy
+
+- **Unit Tests** (Vitest): 94 test files covering domain, use-cases, slices, hooks, and components
+- **Boundary Checks** (Node script): Prevent architectural violations at CI
+- **Coverage Gate**: Integrated V8 coverage with `npm run test:coverage`
+- **Quality Gate**: `npm run quality:gate` runs boundary check → lint → critical tests → coverage → node tests → build
