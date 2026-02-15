@@ -74,7 +74,7 @@ describe('firebaseStorageService', () => {
     );
   });
 
-  it('stores uploads using opaque object name (without original filename)', async () => {
+  it('stores uploads using {uuid}_{filename} object name to preserve original filename', async () => {
     const { getStorageInstance } = await import('@services/firebase/storage');
     const { getAuthInstance } = await import('@services/firebase/auth');
     const { uploadBytes } = await import('firebase/storage');
@@ -88,8 +88,7 @@ describe('firebaseStorageService', () => {
     );
 
     const storageRef = (uploadBytes as any).mock.calls[0]?.[0];
-    expect(storageRef.path).toContain('/uuid-1.pdf');
-    expect(storageRef.path).not.toContain('elena_araki_16-01');
+    expect(storageRef.path).toContain('/uuid-1_elena_araki_16-01.pdf');
   });
 
   it('updates existing file and keeps file identity', async () => {

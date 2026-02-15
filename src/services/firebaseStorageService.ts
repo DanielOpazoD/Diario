@@ -25,8 +25,11 @@ const getFileExtension = (fileName: string) => {
 };
 
 const buildStorageObjectName = (fileId: string, fileName?: string) => {
-    const extension = fileName ? getFileExtension(fileName) : '';
-    return extension ? `${fileId}.${extension}` : fileId;
+    if (fileName) {
+        const sanitized = fileName.trim().replace(/[#$[\]*?]/g, '_');
+        return `${fileId}_${sanitized}`;
+    }
+    return fileId;
 };
 
 const buildDisplayFileName = (storedName: string) => {
