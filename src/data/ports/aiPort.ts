@@ -18,4 +18,9 @@ export interface AIPort {
     query: string,
     patientData: { id: string; context: string }[]
   ) => Promise<string[]>;
+  extractLaboratoryResults: (params: {
+    base64Image?: string;
+    mimeType?: string;
+    extractedText?: string;
+  }) => Promise<string>;
 }

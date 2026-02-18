@@ -1,6 +1,8 @@
 import React, { useCallback, useState, useMemo } from 'react';
 import type { ReportSection } from '@domain/report/entities';
 import RichTextEditor from '@features/reports/components/RichTextEditor';
+import type { AttachedFile } from '@shared/types';
+import LabResultsUploader from '@features/reports/components/LabResultsUploader';
 
 interface ClinicalSectionProps {
   section: ReportSection;
@@ -14,6 +16,9 @@ interface ClinicalSectionProps {
   onSectionTitleChange: (index: number, title: string) => void;
   onRemoveSection: (index: number) => void;
   onUpdateSectionMeta?: (index: number, meta: Partial<ReportSection>) => void;
+  patientId?: string;
+  addToast: (type: 'success' | 'error' | 'info', message: string) => void;
+  uploadPatientFile: (file: File, patientId: string) => Promise<AttachedFile>;
 }
 
 const ClinicalSection: React.FC<ClinicalSectionProps> = ({
@@ -28,6 +33,9 @@ const ClinicalSection: React.FC<ClinicalSectionProps> = ({
   onSectionTitleChange,
   onRemoveSection,
   onUpdateSectionMeta,
+  patientId,
+  addToast,
+  uploadPatientFile,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const isClinicalUpdate = section.kind === 'clinical-update';
@@ -44,15 +52,33 @@ const ClinicalSection: React.FC<ClinicalSectionProps> = ({
 
   const isActiveSectionTitle = activeEditTarget?.type === 'section-title' && activeEditTarget.index === index;
 
+  const isLabSection = useMemo(() => {
+    const t = section.title.toLowerCase();
+    // Match "Exámenes complementarios", "Laboratorio", "Examenes", etc.
+    return /ex[áa]m/i.test(t) || t.includes('lab') || t.includes('complem');
+  }, [section.title]);
+
+  const labUploader = isLabSection && (
+    <LabResultsUploader
+      patientId={patientId}
+      onExtractionComplete={(text) => onSectionContentChange(index, (section.content || '') + (section.content ? '\n\n' : '') + text)}
+      uploadPatientFile={uploadPatientFile}
+      addToast={addToast}
+    />
+  );
+
   const sectionTitle = (
-    <div
-      className="subtitle"
-      contentEditable={isEditing && isActiveSectionTitle}
-      suppressContentEditableWarning
-      onDoubleClick={() => onActivateEdit({ type: 'section-title', index })}
-      onBlur={e => onSectionTitleChange(index, e.currentTarget.innerText)}
-    >
-      {section.title}
+    <div className="flex items-center gap-4">
+      <div
+        className="subtitle"
+        contentEditable={isEditing && isActiveSectionTitle}
+        suppressContentEditableWarning
+        onDoubleClick={() => onActivateEdit({ type: 'section-title', index })}
+        onBlur={e => onSectionTitleChange(index, e.currentTarget.innerText)}
+      >
+        {section.title}
+      </div>
+      {labUploader}
     </div>
   );
 

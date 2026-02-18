@@ -6,6 +6,7 @@ import ClinicalSection from '@features/reports/components/ClinicalSection';
 import Footer from '@features/reports/components/Footer';
 import type { ReportEditTarget } from '@features/reports/hooks/useReportEditorState';
 import { reportLogoStyle } from '@features/reports/utils/reportJsonImport';
+import type { AttachedFile } from '@shared/types';
 
 type PatientInfoTarget = { type: 'patient-section-title' | 'patient-field-label'; index?: number };
 
@@ -27,6 +28,9 @@ type ReportSheetProps = {
   onUpdateSectionMeta: (index: number, meta: Partial<ReportSection>) => void;
   onMedicoChange: (value: string) => void;
   onEspecialidadChange: (value: string) => void;
+  patientId?: string;
+  addToast: (type: 'success' | 'error' | 'info', message: string) => void;
+  uploadPatientFile: (file: File, patientId: string) => Promise<AttachedFile>;
 };
 
 const ReportSheet: React.FC<ReportSheetProps> = ({
@@ -47,6 +51,9 @@ const ReportSheet: React.FC<ReportSheetProps> = ({
   onUpdateSectionMeta,
   onMedicoChange,
   onEspecialidadChange,
+  patientId,
+  addToast,
+  uploadPatientFile,
 }) => {
   return (
     <div
@@ -119,6 +126,9 @@ const ReportSheet: React.FC<ReportSheetProps> = ({
             onSectionTitleChange={onSectionTitleChange}
             onRemoveSection={onRemoveSection}
             onUpdateSectionMeta={onUpdateSectionMeta}
+            patientId={patientId}
+            addToast={addToast}
+            uploadPatientFile={uploadPatientFile}
           />
         ))}
       </div>

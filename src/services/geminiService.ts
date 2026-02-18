@@ -58,7 +58,7 @@ export const validateEnvironment = async (): Promise<GeminiStatus> => {
 export const analyzeClinicalNote = async (noteText: string): Promise<AIAnalysisResult> => {
   try {
     return await callGemini<AIAnalysisResult>({ action: "analyzeNote", noteText });
-  } catch (error: any) {
+  } catch (error: unknown) {
     emitStructuredLog("error", "Gemini", "Analyze note failed", { error: String(error) });
     throw new Error("Error al analizar la nota clínica.");
   }
@@ -74,7 +74,7 @@ export const extractPatientDataFromImage = async (
       base64Image,
       mimeType,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     emitStructuredLog("error", "Gemini", "Vision extraction failed", { error: String(error) });
     throw error;
   }
@@ -91,7 +91,7 @@ export const extractMultiplePatientsFromImage = async (
       mimeType,
     });
     return result.patients || [];
-  } catch (error: any) {
+  } catch (error: unknown) {
     emitStructuredLog("error", "Gemini", "Vision list extraction failed", { error: String(error) });
     throw new Error("Error al procesar la lista de pacientes.");
   }
@@ -105,7 +105,7 @@ export const extractPatientDataFromText = async (
       action: "extractPatientFromText",
       extractedText,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     emitStructuredLog("error", "Gemini", "Text extraction failed", { error: String(error) });
     throw error;
   }
@@ -114,10 +114,10 @@ export const extractPatientDataFromText = async (
 export const askAboutImages = async (prompt: string, images: FileContent[]): Promise<string> => {
   try {
     return await callGemini<string>({ action: "askAboutImages", prompt, images });
-  } catch (error: any) {
-    const message = error?.message || "No se pudo generar respuesta sobre las imágenes.";
+  } catch (error: unknown) {
+    const errorMsg = (error as { message?: string })?.message || "No se pudo generar respuesta sobre las imágenes.";
     emitStructuredLog("error", "Gemini", "Ask about images failed", { error: String(error) });
-    throw new Error(`${message} Verifica la clave de Gemini y que los archivos sean compatibles (imágenes o PDF).`);
+    throw new Error(`${errorMsg} Verifica la clave de Gemini y que los archivos sean compatibles (imágenes o PDF).`);
   }
 };
 
@@ -128,7 +128,7 @@ export const generateClinicalSummary = async (patientName: string, notes: string
       patientName,
       notes: notes.join("\n---\n")
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     emitStructuredLog("error", "Gemini", "Clinical summary failed", { error: String(error) });
     throw new Error("Error al generar el resumen clínico.");
   }
@@ -141,8 +141,24 @@ export const searchPatientsSemantically = async (query: string, patientData: { i
       query,
       patientData
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     emitStructuredLog("error", "Gemini", "Semantic search failed", { error: String(error) });
     throw new Error("Error en la búsqueda semántica.");
+  }
+};
+
+export const extractLaboratoryResults = async (params: {
+  base64Image?: string;
+  mimeType?: string;
+  extractedText?: string;
+}): Promise<string> => {
+  try {
+    return await callGemini<string>({
+      action: "extractLabResults",
+      ...params,
+    });
+  } catch (error: unknown) {
+    emitStructuredLog("error", "Gemini", "Lab extraction failed", { error: String(error) });
+    throw new Error("Error al extraer resultados de laboratorio.");
   }
 };

@@ -7,6 +7,7 @@ import {
   generateClinicalSummary,
   searchPatientsSemantically,
   validateEnvironment,
+  extractLaboratoryResults,
 } from '@services/geminiService';
 import type { AIPort } from '@data/ports/aiPort';
 
@@ -19,4 +20,5 @@ export const geminiAdapter: AIPort = {
   askAboutImages,
   generateClinicalSummary,
   searchPatientsSemantically,
+  extractLaboratoryResults,
 };

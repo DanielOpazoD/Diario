@@ -7,7 +7,8 @@ type GeminiAction =
   | 'extractPatient'
   | 'extractPatientFromText'
   | 'extractPatientList'
-  | 'askAboutImages';
+  | 'askAboutImages'
+  | 'extractLabResults';
 
 type GeminiRequest =
   | { action: 'status' }
@@ -15,7 +16,8 @@ type GeminiRequest =
   | { action: 'extractPatient'; base64Image: string; mimeType: string }
   | { action: 'extractPatientFromText'; extractedText: string }
   | { action: 'extractPatientList'; base64Image: string; mimeType: string }
-  | { action: 'askAboutImages'; prompt: string; images: any[] };
+  | { action: 'askAboutImages'; prompt: string; images: any[] }
+  | { action: 'extractLabResults'; base64Image?: string; mimeType?: string; extractedText?: string };
 
 const MODEL_NAME = 'gemini-2.0-flash';
 const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.VITE_API_KEY || '';
@@ -218,6 +220,43 @@ const handler: Handler = async (event) => {
           ],
         });
 
+        return { statusCode: 200, body: JSON.stringify({ result: result.response.text() }) };
+      }
+
+      case 'extractLabResults': {
+        const textPart = payload.extractedText ? { text: payload.extractedText } : null;
+        const imagePart = (payload.base64Image && payload.mimeType)
+          ? { inlineData: { data: payload.base64Image, mimeType: payload.mimeType } }
+          : null;
+
+        if (!textPart && !imagePart) {
+          throw new Error('Se requiere texto o imagen para extraer resultados de laboratorio.');
+        }
+
+        const prompt = `Extrae los resultados de exámenes de laboratorio de forma notificativa y resumida en un párrafo continuo (formato clínico). 
+Usa estrictamente las siguientes abreviaturas si los datos están presentes:
+Fecha examenes (dia-mes-año): HTO Hg RGB %PMN Plaquetas Creat BUN Na K Cl HCO3 GOT GPT GGT FA BT BD Hbglic RAC
+Colesterol total LDL TG HDL TSH T4L
+Sedimento de orina: GR LEU Bacterias.
+
+Explicación de abreviaturas para tu conocimiento:
+HTO=hematocrito, Hg=hemoglobina, RGB=recuento de glóbulos blancos, %PMN=polimorfonucleares, Plaquetas, Creat=creatinina, BUN=nitrógeno ureico, Na=sodio, K=potasio, Cl=cloro, HCO3=bicarbonato, GOT/GPT/GGT/FA=pruebas hepáticas, BT/BD=bilirrubina total/directa, Hbglic=hemoglobina glicosilada, RAC=relación albúmina/creatinina, TSH/T4L=perfil tiroideo.
+
+Si algún examen no está en el documento, simplemente omítelo del párrafo. No inventes datos. 
+La respuesta debe ser SOLO el párrafo con los resultados.`;
+
+        const contents = [
+          {
+            role: 'user',
+            parts: [
+              { text: prompt },
+              ...(textPart ? [textPart] : []),
+              ...(imagePart ? [imagePart] : [])
+            ] as any,
+          },
+        ];
+
+        const result = await model.generateContent({ contents });
         return { statusCode: 200, body: JSON.stringify({ result: result.response.text() }) };
       }
 

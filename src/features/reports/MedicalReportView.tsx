@@ -67,6 +67,9 @@ export const MedicalReportViewContent: React.FC<MedicalReportViewProps> = ({ hos
               onUpdateSectionMeta={controller.sheet.onUpdateSectionMeta}
               onMedicoChange={controller.sheet.onMedicoChange}
               onEspecialidadChange={controller.sheet.onEspecialidadChange}
+              patientId={controller.sheet.patientId}
+              addToast={controller.sheet.addToast}
+              uploadPatientFile={controller.sheet.uploadPatientFile}
             />
           </div>
           {controller.isGlobalStructureEditing && (

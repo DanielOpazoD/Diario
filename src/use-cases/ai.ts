@@ -8,5 +8,6 @@ export const extractMultiplePatientsFromImage = geminiAdapter.extractMultiplePat
 export const askAboutImages = geminiAdapter.askAboutImages;
 export const generateClinicalSummary = geminiAdapter.generateClinicalSummary;
 export const searchPatientsSemantically = geminiAdapter.searchPatientsSemantically;
+export const extractLaboratoryResults = geminiAdapter.extractLaboratoryResults;
 
 export type { FileContent } from '@shared/types';

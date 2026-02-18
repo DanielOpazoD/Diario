@@ -19,6 +19,7 @@ import {
   emitReportJsonConsoleError,
   isCompatibleJsonAttachment,
 } from '@features/reports/utils/reportJsonImport';
+import { AttachedFile } from '@shared/types';
 
 const createTemplate = (templateId: string): ReportRecord => createTemplateBaseline(templateId);
 
@@ -63,6 +64,9 @@ type UseMedicalReportControllerResult = {
     onUpdateSectionMeta: (index: number, meta: Partial<ReportRecord['sections'][number]>) => void;
     onMedicoChange: (medico: string) => void;
     onEspecialidadChange: (especialidad: string) => void;
+    patientId?: string;
+    addToast: (type: 'success' | 'error' | 'info', message: string) => void;
+    uploadPatientFile: (file: File, patientId: string) => Promise<AttachedFile>;
   };
   isGlobalStructureEditing: boolean;
   onAddSection: () => void;
@@ -302,6 +306,9 @@ export const useMedicalReportController = (host: ReportHostContext): UseMedicalR
       onUpdateSectionMeta: handleUpdateSectionMeta,
       onMedicoChange: handleMedicoChange,
       onEspecialidadChange: handleEspecialidadChange,
+      patientId: resolvedLinkedJsonSource?.patientId,
+      addToast,
+      uploadPatientFile,
     },
     isGlobalStructureEditing,
     onAddSection: handleAddSection,
