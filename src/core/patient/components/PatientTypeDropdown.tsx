@@ -26,6 +26,7 @@ const PatientTypeDropdown: React.FC<PatientTypeDropdownProps> = ({
     width: 0,
   });
   const menuRef = useRef<HTMLDivElement>(null);
+  const portalContentRef = useRef<HTMLDivElement>(null);
   const selectedType = useMemo(() => patientTypes.find((type) => type.id === typeId), [patientTypes, typeId]);
 
   const closeMenu = useCallback(() => {
@@ -48,7 +49,11 @@ const PatientTypeDropdown: React.FC<PatientTypeDropdownProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const isInsideTrigger = menuRef.current?.contains(target);
+      const isInsidePortal = portalContentRef.current?.contains(target);
+
+      if (!isInsideTrigger && !isInsidePortal) {
         closeMenu();
       }
     };
@@ -82,6 +87,7 @@ const PatientTypeDropdown: React.FC<PatientTypeDropdownProps> = ({
 
       {isOpen && typeof document !== 'undefined' && createPortal(
         <div
+          ref={portalContentRef}
           className={`fixed z-[120] max-h-44 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg p-0.5 animate-fade-in ${menuClassName || ''}`}
           style={{ top: menuStyle.top, left: menuStyle.left, width: menuStyle.width }}
         >
