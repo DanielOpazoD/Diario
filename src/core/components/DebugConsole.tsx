@@ -73,8 +73,8 @@ const DebugConsole: React.FC = () => {
             )}
             {logs.map(log => (
               <div key={log.id} className={`flex gap-2 p-2 rounded border-l-2 ${log.level === 'error' ? 'bg-red-900/10 border-red-500 text-red-200' :
-                  log.level === 'warn' ? 'bg-yellow-900/10 border-yellow-500 text-yellow-200' :
-                    'bg-blue-900/10 border-blue-500 text-blue-200'
+                log.level === 'warn' ? 'bg-yellow-900/10 border-yellow-500 text-yellow-200' :
+                  'bg-blue-900/10 border-blue-500 text-blue-200'
                 }`}>
                 <div className="flex flex-col gap-1 min-w-[80px]">
                   <span className="opacity-50">{format(log.timestamp, 'HH:mm:ss')}</span>
@@ -84,9 +84,9 @@ const DebugConsole: React.FC = () => {
                 <div className="flex-1 break-all">
                   <p className="font-bold mb-0.5 text-[11px] text-gray-400">[{log.source}]</p>
                   <p>{log.message}</p>
-                  {log.details && (
+                  {!!log.details && (
                     <pre className="mt-1 p-1 bg-black/30 rounded text-[10px] text-gray-400 overflow-x-auto whitespace-pre-wrap">
-                      {typeof log.details === 'object' ? JSON.stringify(log.details, null, 2) : log.details}
+                      {typeof log.details === 'object' && log.details !== null ? JSON.stringify(log.details, null, 2) : String(log.details)}
                     </pre>
                   )}
                 </div>

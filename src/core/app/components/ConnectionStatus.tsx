@@ -38,9 +38,10 @@ const ConnectionStatus: React.FC = () => {
             // However, useFirebaseSync handles the state update via subscribeToAuthChanges.
             addToast('success', 'Sesión reestablecida correctamente');
             logEvent('info', 'Auth', 'Manual reconnection successful');
-        } catch (error: any) {
-            logEvent('error', 'Auth', 'Manual reconnection failed', { error });
-            addToast('error', error.message || 'Error al reconectar');
+        } catch (error: unknown) {
+            logEvent('error', 'Auth', 'Manual reconnection failed', { error: String(error) });
+            const errorMsg = error instanceof Error ? error.message : 'Error al reconectar';
+            addToast('error', errorMsg);
         } finally {
             setIsReconnecting(false);
         }

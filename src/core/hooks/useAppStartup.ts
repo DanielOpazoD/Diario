@@ -9,7 +9,7 @@ import { loadJson, saveJson } from '@shared/utils/storageJson';
 
 
 const useAppStartup = (
-  addLog: (level: LogEntry['level'], source: string, message: string, details?: any) => void
+  addLog: (level: LogEntry['level'], source: string, message: string, details?: unknown) => void
 ) => {
   useEffect(() => {
     validateEnvironment()

@@ -94,11 +94,11 @@ export function useUploadPatientFile(options: UseUploadPatientFileMutationOption
   return useUploadPatientFileFirebase({ ...options, patientId: 'deprecated' }); // Should not be used
 }
 
-export function useDeletePatientFile(_options: any) {
+export function useDeletePatientFile(_options: unknown) {
   return { mutateAsync: async () => { } };
 }
 
-export function useCreatePatientFolder(_options: any) {
+export function useCreatePatientFolder(_options: unknown) {
   return { mutateAsync: async () => { } };
 }
 

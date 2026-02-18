@@ -96,10 +96,10 @@ export const useAIChat = () => {
 
             const response = await askAboutImages(text, imageParts);
             setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'ai', content: response }]);
-        } catch (err: any) {
-            const message = err?.message || 'Ocurrió un error al contactar con el asistente.';
-            setError(message);
-            setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'ai', content: `Error: ${message}` }]);
+        } catch (err: unknown) {
+            const errorMsg = err instanceof Error ? err.message : 'Ocurrió un error al contactar con el asistente.';
+            setError(errorMsg);
+            setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'ai', content: `Error: ${errorMsg}` }]);
         } finally {
             setIsLoading(false);
         }
@@ -123,8 +123,8 @@ export const useAIChat = () => {
         try {
             const status = await validateEnvironment();
             setGeminiStatus(`${status.status} (preview: ${status.keyPreview || '-'})`);
-        } catch (statusError: any) {
-            setGeminiStatus(statusError?.message || 'No se pudo verificar el estado de Gemini.');
+        } catch (statusError: unknown) {
+            setGeminiStatus(statusError instanceof Error ? statusError.message : 'No se pudo verificar el estado de Gemini.');
         } finally {
             setIsCheckingStatus(false);
         }

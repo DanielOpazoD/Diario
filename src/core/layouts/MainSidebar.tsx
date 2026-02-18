@@ -33,82 +33,88 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
     <aside
       key="main-sidebar"
-      className={`fixed inset-y-0 left-0 z-50 w-72 glass border-r-0 transform transition-all duration-300 ease-out flex flex-col h-full ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-        } md:translate-x-0 md:bg-white/80 md:dark:bg-gray-900/80 md:backdrop-blur-lg md:h-screen md:z-40 md:border-r md:border-gray-200/60 md:dark:border-gray-800/60 md:shadow-sm flex-shrink-0`}
+      className={`fixed inset-y-0 left-0 z-50 w-72 transform transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col h-full ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        } md:translate-x-0 md:bg-white/90 md:dark:bg-gray-900/90 md:backdrop-blur-2xl md:h-screen md:z-40 md:border-r md:border-gray-200/50 md:dark:border-white/5 md:shadow-sm flex-shrink-0`}
     >
-      <div className="pt-6 px-6 pb-2 flex items-center justify-between">
+      <div className="pt-8 px-7 pb-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <button
             onClick={onOpenAppMenu}
-            className="flex items-center space-x-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl"
+            className="flex items-center space-x-3 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-brand-500/20 rounded-2xl group"
           >
-            <img
-              src="/icon.svg"
-              alt="MediDiario icon"
-              className="w-9 h-9 rounded-xl shadow-lg shadow-blue-500/20"
-              loading="lazy"
-              decoding="async"
-            />
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">MediDiario</h1>
+            <div className="relative">
+              <div className="absolute inset-0 bg-brand-500 blur-lg opacity-20 group-hover:opacity-40 transition-opacity rounded-xl"></div>
+              <img
+                src="/icon.svg"
+                alt="MediDiario icon"
+                className="w-10 h-10 rounded-xl shadow-premium relative z-10 transform group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <h1 className="text-2xl font-extrabold text-gray-950 dark:text-white tracking-tightest">MediDiario</h1>
           </button>
         </div>
         <button
           onClick={onCloseSidebar}
-          className="md:hidden p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+          className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
         >
-          <X className="w-5 h-5 text-gray-500" />
+          <X className="w-5 h-5 text-gray-400" />
         </button>
       </div>
 
-      <div className="px-6 mb-2 -mt-1">
+      <div className="px-7 mb-4">
         <ConnectionStatus />
       </div>
 
-      <nav className="px-4 py-2 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
-        <p className="px-4 text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-2 mt-2">Menu Principal</p>
+      <nav className="px-4 py-2 space-y-1.5 flex-1 overflow-y-auto custom-scrollbar">
+        <p className="px-4 text-[10px] uppercase tracking-[0.2em] font-extrabold text-gray-400/80 mb-3 mt-4">Navegación</p>
         {[
           { id: 'daily', label: 'Agenda Diaria', icon: CalendarIcon },
           { id: 'tasks', label: 'Mis Tareas', icon: CheckSquare },
-          { id: 'history', label: 'Historial de Pacientes', icon: Users },
-          { id: 'reports', label: 'Informes Clínicos', icon: FileText },
+          { id: 'history', label: 'Historial', icon: Users },
+          { id: 'reports', label: 'Informes', icon: FileText },
         ].map((item) => (
           <button
             key={item.id}
             onClick={() => onNavigate(item.id as ViewMode)}
             onMouseEnter={() => onPrefetchView?.(item.id as ViewMode)}
             onFocus={() => onPrefetchView?.(item.id as ViewMode)}
-            className={`w-full flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${viewMode === item.id
-              ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 hover:translate-x-1'
+            className={`w-full flex items-center px-4 py-3.5 rounded-2xl text-[13px] font-semibold transition-all duration-300 group relative overflow-hidden ${viewMode === item.id
+              ? 'bg-brand-500/10 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 shadow-premium-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:translate-x-1'
               }`}
           >
             <item.icon
-              className={`w-5 h-5 mr-3 transition-colors ${viewMode === item.id
-                ? 'text-blue-600 dark:text-blue-400'
+              className={`w-5 h-5 mr-3 transition-all duration-300 ${viewMode === item.id
+                ? 'text-brand-500 scale-110'
                 : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'
                 }`}
             />
-            {item.label}
+            <span className="relative z-10">{item.label}</span>
+            {viewMode === item.id && (
+              <div className="absolute left-0 top-3 bottom-3 w-1 bg-brand-500 rounded-r-full animate-fade-in" />
+            )}
           </button>
         ))}
       </nav>
 
-      <div className="p-4 m-4 rounded-2xl bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/30 backdrop-blur-md">
-        <div className="flex items-center mb-4">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-lg font-bold ring-2 ring-white dark:ring-gray-700 shadow-sm">
+      <div className="p-5 m-5 rounded-[22px] bg-gray-50/60 dark:bg-white/5 border border-gray-100 dark:border-white/5 backdrop-blur-md shadow-premium-sm">
+        <div className="flex items-center mb-5">
+          <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 text-white flex items-center justify-center text-lg font-bold ring-4 ring-white dark:ring-gray-900 shadow-premium">
             {(user.name?.[0] || user.email?.[0] || '?').toUpperCase()}
           </div>
-          <div className="ml-3 overflow-hidden">
-            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.name || 'Usuario'}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate opacity-80">{user.email || 'Sin email'}</p>
+          <div className="ml-3.5 overflow-hidden">
+            <p className="text-sm font-bold text-gray-950 dark:text-white truncate tracking-tight">{user.name || 'Usuario'}</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate opacity-70 font-medium uppercase tracking-wider">{user.email || 'Sin email'}</p>
           </div>
         </div>
 
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center px-3 py-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors mt-2"
+          className="w-full flex items-center justify-center px-4 py-2.5 text-[11px] font-bold text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all active:scale-95 border border-transparent hover:border-red-100 dark:hover:border-red-900/30"
         >
-          <LogOut className="w-3.5 h-3.5 mr-2" /> Salir
+          <LogOut className="w-3.5 h-3.5 mr-2" /> CERRAR SESIÓN
         </button>
       </div>
     </aside>

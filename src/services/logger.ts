@@ -11,7 +11,7 @@ export interface StructuredLog {
   level: LogLevel;
   source: string;
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 const SENSITIVE_KEYS = new Set([
@@ -105,7 +105,7 @@ export const emitStructuredLog = (
   level: LogLevel,
   source: string,
   message: string,
-  details?: any
+  details?: unknown
 ): StructuredLog => {
   const safeDetails = redactDetails(details);
   const entry: StructuredLog = {

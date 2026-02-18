@@ -76,23 +76,24 @@ export const loginWithGoogle = async (): Promise<User> => {
         // Validate with Zod (Optional but good practice)
         return UserSchema.parse(appUser);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         emitStructuredLog('error', 'Auth', 'Auth Service Error', { error });
         if (error instanceof AuthError) throw error;
 
         let message = "Error desconocido al iniciar sesión";
-        if (error.code === 'auth/popup-closed-by-user') {
+        const err = error as { code?: string; message?: string };
+        if (err.code === 'auth/popup-closed-by-user') {
             message = "Inicio de sesión cancelado por el usuario";
-        } else if (error.code === 'auth/popup-blocked') {
+        } else if (err.code === 'auth/popup-blocked') {
             message = "El navegador bloqueó la ventana emergente. Permite popups para continuar.";
-        } else if (error.code === 'auth/unauthorized-domain') {
+        } else if (err.code === 'auth/unauthorized-domain') {
             message = "Dominio no autorizado en Firebase Auth. Agrega localhost en dominios autorizados.";
-        } else if (error.code === 'auth/network-request-failed') {
+        } else if (err.code === 'auth/network-request-failed') {
             message = "Error de red al iniciar sesión. Revisa tu conexión e intenta nuevamente.";
-        } else if (error.message) {
-            message = error.message;
+        } else if (err.message) {
+            message = err.message;
         }
-        throw new AuthError(message, error.code);
+        throw new AuthError(message, err.code);
     }
 };
 
@@ -105,7 +106,7 @@ export const loginAsGuest = async (): Promise<User> => {
         }
 
         return UserSchema.parse(DEFAULT_GUEST_USER);
-    } catch (error: any) {
+    } catch (error: unknown) {
         emitStructuredLog('error', 'Auth', 'Guest Logic Error', { error });
         return DEFAULT_GUEST_USER;
     }

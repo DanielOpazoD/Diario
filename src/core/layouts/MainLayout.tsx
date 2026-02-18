@@ -80,7 +80,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
           <div
             ref={contentRef}
-            className="flex-1 overflow-y-auto custom-scrollbar px-3 md:px-6 pt-2 md:pt-3 pb-4 md:pb-6 relative scroll-smooth min-h-0"
+            className="flex-1 overflow-y-auto custom-scrollbar px-1 md:px-2 pt-2 md:pt-3 pb-4 md:pb-6 relative scroll-smooth min-h-0"
           >
             {children}
           </div>

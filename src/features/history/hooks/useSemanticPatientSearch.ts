@@ -45,8 +45,8 @@ export const useSemanticPatientSearch = ({
       } else {
         onSuccess(`Se encontraron ${resultIds.length} pacientes.`);
       }
-    } catch (error: any) {
-      onError(`Error en búsqueda IA: ${error.message}`);
+    } catch (error: unknown) {
+      onError(`Error en búsqueda IA: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsSearching(false);
     }

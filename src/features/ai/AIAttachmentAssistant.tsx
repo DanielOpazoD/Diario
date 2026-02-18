@@ -122,10 +122,11 @@ const AIAttachmentAssistant: React.FC<AIAttachmentAssistantProps> = ({ isOpen, o
         return [...filtered, { id: crypto.randomUUID(), role: 'ai', text: responseText }];
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       setMessages(prev => {
         const filtered = prev.filter(m => m.id !== 'processing');
-        return [...filtered, { id: crypto.randomUUID(), role: 'ai', text: `Error: ${error.message}` }];
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        return [...filtered, { id: crypto.randomUUID(), role: 'ai', text: `Error: ${errorMsg}` }];
       });
     } finally {
       setIsLoading(false);

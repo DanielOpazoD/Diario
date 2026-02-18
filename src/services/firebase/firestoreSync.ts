@@ -15,7 +15,7 @@ const CONFLICT_LOG_WINDOW_MS = 10000;
 const recentConflictLogs = new Map<string, number>();
 let lastSyncedStateHash: string | null = null;
 
-const sanitizeForFirestore = (data: any) => {
+const sanitizeForFirestore = (data: unknown) => {
   return JSON.parse(JSON.stringify(data, (_, v) => (v === undefined ? null : v)));
 };
 
@@ -180,9 +180,9 @@ export const subscribeToPatients = (callback: (patients: PatientRecord[]) => voi
       callback(Array.from(mergedMap.values()));
     };
 
-    const processSnapshot = (snapshot: any, source: 'primary' | 'legacy') => {
+    const processSnapshot = (snapshot: { forEach: (cb: (doc: { id: string; data: () => unknown }) => void) => void }, source: 'primary' | 'legacy') => {
       const patients: PatientRecord[] = [];
-      snapshot.forEach((doc: any) => {
+      snapshot.forEach((doc) => {
         const data = normalizeLegacyPatientFields(doc.data() as Record<string, unknown>);
         const result = PatientRecordSchema.safeParse(data);
 

@@ -124,8 +124,8 @@ const usePatientVoiceAndAI = ({
       const newTasks: PendingTask[] = buildTasksFromText(result.extractedTasks);
       setPendingTasks(prev => [...prev, ...newTasks]);
       addToast('success', 'Análisis IA completado');
-    } catch (error: any) {
-      addToast('error', `Error AI: ${error.message}`);
+    } catch (error: unknown) {
+      addToast('error', `Error AI: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -138,8 +138,8 @@ const usePatientVoiceAndAI = ({
       const summary = await generateClinicalSummary(patientName || 'Paciente', [clinicalNote]);
       setClinicalNote(prev => `${prev}\n\n[RESUMEN IA]: ${summary}`);
       addToast('success', 'Resumen generado');
-    } catch (error: any) {
-      addToast('error', `Error Summary: ${error.message}`);
+    } catch (error: unknown) {
+      addToast('error', `Error Summary: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsSummarizing(false);
     }

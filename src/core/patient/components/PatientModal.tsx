@@ -20,6 +20,9 @@ interface PatientModalProps {
   selectedDate: string;
   initialTab?: 'clinical' | 'files';
   mode?: 'daily' | 'history';
+  headerSlot?: React.ReactNode;
+  bodySlot?: React.ReactNode;
+  footerSlot?: React.ReactNode;
 }
 
 const PatientModalContent: React.FC<PatientModalProps> = ({
@@ -30,6 +33,9 @@ const PatientModalContent: React.FC<PatientModalProps> = ({
   initialData,
   selectedDate,
   mode = 'daily',
+  headerSlot,
+  bodySlot,
+  footerSlot,
 }) => {
   const {
     name, rut, birthDate, gender, type, typeId, entryTime, exitTime,
@@ -224,31 +230,35 @@ const PatientModalContent: React.FC<PatientModalProps> = ({
 
       <div className="relative w-full md:max-w-4xl glass md:rounded-panel shadow-premium-xl flex flex-col h-full md:h-auto md:max-h-[92vh] overflow-hidden animate-slide-up border-white/40 dark:border-white/10">
 
-        <PatientModalHeader
-          isNewPatient={!initialData}
-          name={name}
-          rut={rut}
-          age={calculateAge(birthDate)}
-          gender={gender}
-          date={initialData ? initialData.date : selectedDate}
-          isEditing={isEditingDemographics}
-          onEditToggle={handleEditToggle}
-          isScanning={isScanning}
-          isScanningMulti={isScanningMulti}
-          fileInputRef={fileInputRef}
-          multiFileInputRef={multiFileInputRef}
-          onFileUpload={handleImageUpload}
-          onMultiFileUpload={handleMultiImageUpload}
-          onClose={onClose}
-        />
+        {headerSlot || (
+          <PatientModalHeader
+            isNewPatient={!initialData}
+            name={name}
+            rut={rut}
+            age={calculateAge(birthDate)}
+            gender={gender}
+            date={initialData ? initialData.date : selectedDate}
+            isEditing={isEditingDemographics}
+            onEditToggle={handleEditToggle}
+            isScanning={isScanning}
+            isScanningMulti={isScanningMulti}
+            fileInputRef={fileInputRef}
+            multiFileInputRef={multiFileInputRef}
+            onFileUpload={handleImageUpload}
+            onMultiFileUpload={handleMultiImageUpload}
+            onClose={onClose}
+          />
+        )}
 
-        <PatientModalBody />
+        {bodySlot || <PatientModalBody />}
 
-        <PatientModalFooter
-          onCancel={onClose}
-          onSave={handleSave}
-          showSave={false}
-        />
+        {footerSlot || (
+          <PatientModalFooter
+            onCancel={onClose}
+            onSave={handleSave}
+            showSave={false}
+          />
+        )}
       </div>
     </div>
   );

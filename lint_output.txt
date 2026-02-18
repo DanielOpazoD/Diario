@@ -1,0 +1,52 @@
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/DailyView.tsx
+   2:8   warning  'ExecutivePatientRow' is defined but never used       @typescript-eslint/no-unused-vars
+  26:5   warning  'selectedCount' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  27:5   warning  'onEditPatient' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  28:5   warning  'onDeletePatient' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  29:20  warning  '_unused' is assigned a value but never used          @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/DateNavigator.tsx
+  29:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/DateNavigator.tsx:29:5
+  27 |       newDays.push(addDays(currentDate, i));
+  28 |     }
+> 29 |     setDays(newDays);
+     |     ^^^^^^^ Avoid calling setState() directly within an effect
+  30 |   }, [currentDate]);
+  31 |
+  32 |   // Center the selected date (which is always in the middle of the array)  react-hooks/set-state-in-effect
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/FilterBar.tsx
+  15:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/VirtualizedPatientList.tsx
+  22:25  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/VirtualizedPatientList.tsx:22:25
+  20 |     const parentRef = useRef<HTMLDivElement>(null);
+  21 |
+> 22 |     const virtualizer = useVirtualizer({
+     |                         ^^^^^^^^^^^^^^ TanStack Virtual's `useVirtualizer()` API returns functions that cannot be memoized safely
+  23 |         count: patients.length,
+  24 |         getScrollElement: () => parentRef.current,
+  25 |         estimateSize: () => ESTIMATED_ROW_HEIGHT,  react-hooks/incompatible-library
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/context/DailyViewContext.tsx
+  22:19  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  47:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+✖ 10 problems (0 errors, 10 warnings)
+
+(node:25397) ESLintRCWarning: You are using an eslintrc configuration file, which is deprecated and support will be removed in v10.0.0. Please migrate to an eslint.config.js file. See https://eslint.org/docs/latest/use/configure/migration-guide for details. An eslintrc configuration file is used because you have the ESLINT_USE_FLAT_CONFIG environment variable set to false. If you want to use an eslint.config.js file, remove the environment variable. If you want to find the location of the eslintrc configuration file, use the --debug flag.
+(Use `node --trace-warnings ...` to show where the warning was created)

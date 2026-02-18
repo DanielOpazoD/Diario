@@ -31,7 +31,8 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
           },
           spacing: {
             gutter: '0.75rem',
@@ -40,9 +41,9 @@
           },
           borderRadius: {
             pill: '999px',
-            card: '16px',
-            panel: '20px',
-            control: '12px'
+            card: '18px',
+            panel: '24px',
+            control: '14px'
           },
           colors: {
             brand: {
@@ -60,17 +61,19 @@
             },
           },
           boxShadow: {
-            'premium-sm': '0 1px 2px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.02)',
-            'premium': '0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.1)',
-            'premium-lg': '0 20px 25px -5px rgba(0,0,0,0.08), 0 10px 10px -5px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.15)',
-            'premium-xl': '0 25px 50px -12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.2)',
-            'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 1px 0 rgba(255,255,255,0.1)',
-            'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+            'premium-sm': '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
+            'premium': '0 12px 20px -5px rgba(0,0,0,0.06), 0 5px 10px -2px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.1)',
+            'premium-lg': '0 25px 35px -8px rgba(0,0,0,0.1), 0 12px 15px -5px rgba(0,0,0,0.03), inset 0 1px 1px rgba(255,255,255,0.15)',
+            'premium-xl': '0 30px 60px -15px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+            'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.08), inset 0 0 0 1px rgba(255,255,255,0.15)',
+            'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255,255,255,0.05)',
           },
           animation: {
-            'fade-in': 'fadeIn 0.3s ease-out',
-            'slide-down': 'slideDown 0.2s ease-out',
-            'slide-up': 'slideUp 0.3s ease-out forwards',
+            'fade-in': 'fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+            'slide-down': 'slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+            'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'bounce-subtle': 'bounceSubtle 2s infinite ease-in-out',
+            'shimmer': 'shimmer 2s infinite linear',
           },
           keyframes: {
             fadeIn: {
@@ -78,12 +81,20 @@
               '100%': { opacity: '1' },
             },
             slideDown: {
-              '0%': { transform: 'translateY(-10px)', opacity: '0' },
+              '0%': { transform: 'translateY(-12px)', opacity: '0' },
               '100%': { transform: 'translateY(0)', opacity: '1' },
             },
             slideUp: {
-              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '0%': { transform: 'translateY(24px)', opacity: '0' },
               '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            bounceSubtle: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-3px)' },
+            },
+            shimmer: {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' },
             }
           }
         }
@@ -97,27 +108,38 @@
       -webkit-font-smoothing: antialiased;
     }
 
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation-duration: 0.4s;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Shared Element Transitions */
+    [style*="view-transition-name"] {
+      view-transition-name: attr(style);
+    }
+
     .glass {
-      background: rgba(255, 255, 255, 0.75);
-      backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(24px) saturate(190%);
       border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
     .dark .glass {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(20px) saturate(160%);
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(24px) saturate(170%);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .glass-card {
-      background: rgba(255, 255, 255, 0.4);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 0 10px 35px 0 rgba(31, 38, 135, 0.06);
     }
 
     .dark .glass-card {
-      background: rgba(30, 41, 59, 0.3);
+      background: rgba(30, 41, 59, 0.35);
       border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
@@ -133,8 +155,8 @@
 
     /* Custom Scrollbar for panels */
     .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 7px;
+      height: 7px;
     }
 
     .custom-scrollbar::-webkit-scrollbar-track {
@@ -142,29 +164,51 @@
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background-color: rgba(156, 163, 175, 0.5);
+      background-color: rgba(156, 163, 175, 0.4);
       border-radius: 20px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
     }
 
     .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-      background-color: rgba(75, 85, 99, 0.5);
+      background-color: rgba(75, 85, 99, 0.4);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(59, 130, 246, 0.5);
+    }
+
+    .shimmer-bg {
+      background: linear-gradient(90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.4) 50%,
+          rgba(255, 255, 255, 0) 100%);
+      background-size: 200% 100%;
+    }
+
+    .dark .shimmer-bg {
+      background: linear-gradient(90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.08) 50%,
+          rgba(255, 255, 255, 0) 100%);
+      background-size: 200% 100%;
     }
 
     /* Mesh Gradient Background */
     .mesh-bg {
       background-color: #ffffff;
       background-image:
-        radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
-        radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
-        radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+        radial-gradient(at 0% 0%, hsla(217, 33%, 95%, 1) 0, transparent 50%),
+        radial-gradient(at 50% 0%, hsla(210, 100%, 96%, 1) 0, transparent 50%),
+        radial-gradient(at 100% 0%, hsla(217, 33%, 95%, 1) 0, transparent 50%);
     }
 
     .dark .mesh-bg {
-      background-color: #000000;
+      background-color: #020617;
       background-image:
-        radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
-        radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
-        radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+        radial-gradient(at 0% 0%, hsla(222, 47%, 11%, 1) 0, transparent 50%),
+        radial-gradient(at 50% 0%, hsla(217, 91%, 60%, 0.1) 0, transparent 50%),
+        radial-gradient(at 100% 0%, hsla(222, 47%, 11%, 1) 0, transparent 50%);
     }
   </style>
   <script type="importmap">

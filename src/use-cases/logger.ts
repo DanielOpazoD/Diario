@@ -5,7 +5,7 @@ export const logEvent = (
   level: LogLevel,
   source: string,
   message: string,
-  details?: any,
+  details?: unknown,
 ) => emitStructuredLog(level, source, message, details);
 export { getSessionId };
 export type { LogLevel };

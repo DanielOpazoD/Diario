@@ -149,8 +149,9 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
       };
       onFilesChange([...files, enrichedFile]);
       addToast('success', 'Imagen pegada subida correctamente.');
-    } catch (error: any) {
-      addToast('error', `Error al subir imagen pegada: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+      addToast('error', `Error al subir imagen pegada: ${errorMsg}`);
     } finally {
       setIsUploading(false);
     }
@@ -244,12 +245,13 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
         newAttachments.push(attachedFile);
         successCount++;
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
-      } catch (error: any) {
+      } catch (error: unknown) {
         logEvent('error', 'Files', 'Error uploading attachment', {
           fileName: file.name,
-          error,
+          error: String(error),
         });
-        addToast('error', `Error subiendo ${file.name}: ${error.message}`);
+        const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+        addToast('error', `Error subiendo ${file.name}: ${errorMsg}`);
       }
     }
 
@@ -367,7 +369,7 @@ const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   // Compact mode render
   if (compact) {
     return (
-    <div ref={containerRef} className="flex flex-col space-y-2 animate-fade-in">
+      <div ref={containerRef} className="flex flex-col space-y-2 animate-fade-in">
         {fileInput}
         <FileDropzone
           isDragging={isDragging}

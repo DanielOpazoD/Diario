@@ -5,7 +5,7 @@ import type { ReportRecord } from '@domain/report/entities';
 
 const REPORTS_COLLECTION = 'reportDrafts';
 
-const sanitizeForFirestore = (data: any) => {
+const sanitizeForFirestore = (data: unknown) => {
   return JSON.parse(JSON.stringify(data, (_, v) => (v === undefined ? null : v)));
 };
 

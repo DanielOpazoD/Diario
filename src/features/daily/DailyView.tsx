@@ -26,7 +26,7 @@ const DailyViewContent: React.FC = () => {
   } = useDailyViewContext();
 
   return (
-    <div className="h-full min-h-0 flex flex-col max-w-5xl mx-auto px-3 md:px-5">
+    <div className="h-full min-h-0 flex flex-col w-full max-w-full">
       <DailyHeader />
 
       {selectionMode && <BatchOperationsBar />}

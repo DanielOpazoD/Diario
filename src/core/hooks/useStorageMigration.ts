@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { STORAGE_AUTO_MIGRATE, STORAGE_AUTO_VERIFY } from '@shared/config/storageConfig';
 import { getIndexedDbMigrationMeta, hasIndexedDbMigration, migrateLocalStorageToIndexedDb, verifyIndexedDbMatchesLocal } from '@use-cases/storageIndexedDb';
 
-type AddLog = (level: 'info' | 'warn' | 'error', source: string, message: string, details?: any) => void;
+type AddLog = (level: 'info' | 'warn' | 'error', source: string, message: string, details?: unknown) => void;
 
 export const useStorageMigration = (addLog: AddLog) => {
   const hasRun = useRef(false);

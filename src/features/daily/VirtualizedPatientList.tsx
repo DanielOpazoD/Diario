@@ -54,15 +54,15 @@ const VirtualizedPatientList: React.FC = () => {
                                 width: '100%',
                                 transform: `translateY(${virtualRow.start}px)`,
                             }}
-                            className="border-b border-gray-100 dark:border-gray-800"
+                            className="border-b border-gray-100 dark:border-gray-800 w-full"
                         >
                             <ExecutivePatientRow
                                 patient={patient}
-                                onEdit={(p) => onEdit(p)}
-                                onDelete={() => onDelete(patient.id)}
+                                onEdit={onEdit}
+                                onDelete={onDelete}
                                 selectionMode={selectionMode}
                                 selected={selectedPatients.has(patient.id)}
-                                onToggleSelect={() => onToggleSelect(patient.id)}
+                                onToggleSelect={onToggleSelect}
                                 addToast={addToast}
                                 selectedDate={selectedDate}
                             />

@@ -32,6 +32,8 @@ interface AppViewsProps {
   onOpenBookmarksModal: (bookmarkId: string | null) => void;
 }
 
+import { useLocation } from 'react-router-dom';
+
 const AppViews: React.FC<AppViewsProps> = ({
   currentDate,
   records,
@@ -43,6 +45,15 @@ const AppViews: React.FC<AppViewsProps> = ({
   onCopyPatients,
   onOpenBookmarksModal,
 }) => {
+  const location = useLocation();
+
+  React.useLayoutEffect(() => {
+    if (document.startViewTransition) {
+      // @ts-ignore
+      document.startViewTransition();
+    }
+  }, [location.pathname]);
+
   return (
     <Routes>
       <Route

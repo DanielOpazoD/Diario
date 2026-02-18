@@ -133,7 +133,7 @@ export interface LogEntry {
   level: 'info' | 'warn' | 'error';
   source: string;
   message: string;
-  details?: Record<string, unknown>;
+  details?: unknown;
   sessionId?: string;
 }
 

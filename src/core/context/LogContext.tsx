@@ -4,7 +4,7 @@ import { logEvent, getSessionId, LogLevel } from '@use-cases/logger';
 
 interface LogContextType {
   logs: LogEntry[];
-  addLog: (level: LogLevel, source: string, message: string, details?: any) => void;
+  addLog: (level: LogLevel, source: string, message: string, details?: unknown) => void;
   clearLogs: () => void;
 }
 
@@ -13,7 +13,7 @@ export const LogContext = createContext<LogContextType | undefined>(undefined);
 export const LogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
-  const addLog = useCallback((level: LogLevel, source: string, message: string, details?: any) => {
+  const addLog = useCallback((level: LogLevel, source: string, message: string, details?: unknown) => {
     const structured = logEvent(level, source, message, details);
 
     const newLog: LogEntry = {

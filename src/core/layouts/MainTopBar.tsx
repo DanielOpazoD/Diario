@@ -66,34 +66,34 @@ const MainTopBar: React.FC<MainTopBarProps> = ({
 
   return (
     <div
-      className={`sticky top-0 z-30 shadow-sm border-b border-gray-200/60 dark:border-gray-800/60 ${viewMode === 'reports'
-        ? 'bg-white dark:bg-gray-950 backdrop-blur-none'
-        : 'bg-white/85 dark:bg-gray-950/85 backdrop-blur-xl'
+      className={`sticky top-0 z-30 transition-all duration-300 ${viewMode === 'reports'
+        ? 'bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-white/5 shadow-premium-sm'
+        : 'bg-white/70 dark:bg-gray-950/70 backdrop-blur-2xl border-b border-gray-200/40 dark:border-white/5 shadow-premium-sm'
         }`}
     >
-      <header className="shrink-0 transition-all glass pt-1 pb-1 md:pt-2 md:pb-1.5">
-        <div className="max-w-5xl mx-auto w-full px-3 md:px-5 flex flex-col md:flex-row items-center justify-between gap-1.5 md:gap-0">
+      <header className="shrink-0 transition-all pt-1.5 pb-1.5 md:pt-3 md:pb-2.5">
+        <div className="max-w-6xl mx-auto w-full px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-2 md:gap-0">
           <div className="flex items-center w-full md:w-auto justify-between md:justify-start">
             <div className="flex items-center">
               <button
                 onClick={onOpenSidebar}
-                className="md:hidden mr-3 p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:bg-gray-200 dark:active:bg-gray-700"
+                className="md:hidden mr-4 p-2.5 rounded-2xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all active:scale-90"
               >
                 <Menu className="w-6 h-6" />
               </button>
               {viewMode !== 'daily' && viewMode !== 'tasks' && viewMode !== 'reports' && (
-                <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight truncate">
-                  {viewMode === 'stats' && 'Estadísticas'}
-                  {viewMode === 'bookmarks' && 'Marcadores'}
-                  {viewMode === 'settings' && 'Ajustes'}
+                <h2 className="text-xl md:text-2xl font-extrabold text-gray-950 dark:text-white tracking-tightest truncate">
+                  {viewMode === 'stats' && 'Análisis Estadístico'}
+                  {viewMode === 'bookmarks' && 'Mis Marcadores'}
+                  {viewMode === 'settings' && 'Ajustes del Sistema'}
                 </h2>
               )}
               {viewMode === 'reports' && (
                 <div className="flex flex-col">
-                  <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white tracking-tight truncate">
-                    {reportContext?.patientName || 'Informe clínico'}
+                  <h2 className="text-lg md:text-xl font-extrabold text-gray-950 dark:text-white tracking-tightest truncate">
+                    {reportContext?.patientName || 'Generador de Informe'}
                   </h2>
-                  <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-[11px] md:text-xs text-gray-400 dark:text-gray-500 truncate font-semibold uppercase tracking-wider">
                     {reportSubtitle}
                   </p>
                 </div>
@@ -103,9 +103,9 @@ const MainTopBar: React.FC<MainTopBarProps> = ({
             {viewMode === 'daily' && (
               <button
                 onClick={onOpenNewPatient}
-                className="md:hidden ml-2 p-2.5 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all"
+                className="md:hidden ml-3 px-4 py-2 bg-brand-600 text-white font-bold rounded-2xl shadow-premium hover:bg-brand-700 active:scale-95 transition-all"
               >
-                +
+                + PACIENTE
               </button>
             )}
           </div>
