@@ -11,7 +11,7 @@
 
 @layer components {
   .glass {
-    @apply bg-white/82 backdrop-blur-[24px] saturate-[190%] border border-white/30;
+    @apply bg-white/[.82] backdrop-blur-[24px] saturate-[190%] border border-white/30;
   }
 
   .dark .glass {
@@ -19,7 +19,7 @@
   }
 
   .glass-card {
-    @apply bg-white/45 backdrop-blur-[14px] border border-white/45 shadow-[0_10px_35px_0_rgba(31, 38, 135, 0.06)];
+    @apply bg-white/45 backdrop-blur-[14px] border border-white/45 shadow-xl shadow-indigo-900/10;
   }
 
   .dark .glass-card {
