@@ -1,4 +1,4 @@
-import type { ReportRecord } from '@domain/report/entities';
+import type { ReportRecord } from '@features/reports/domain/entities';
 
 const normalizeText = (value: string) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 

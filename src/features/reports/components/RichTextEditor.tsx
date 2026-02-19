@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { sanitizeRichText } from '@shared/utils/richTextSanitization';
+import { sanitizeRichText } from '@features/reports/utils/richTextSanitization';
 
 interface RichTextEditorProps {
   value: string;

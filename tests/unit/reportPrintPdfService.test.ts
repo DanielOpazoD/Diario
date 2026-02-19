@@ -50,7 +50,7 @@ describe('reportPrintPdfService', () => {
     const payload = JSON.parse(String(init?.body || '{}')) as { html?: string };
 
     expect(payload.html).toContain('id="logoLeft"');
-    expect(payload.html).toContain('width: 18mm;');
+    expect(payload.html).toContain('width: 15mm;');
     expect(payload.html).toContain('id="logoRight"');
   });
 

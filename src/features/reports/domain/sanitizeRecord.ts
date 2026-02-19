@@ -1,12 +1,12 @@
-import { sanitizeText } from '@shared/utils/sanitization';
-import { sanitizeRichText } from '@shared/utils/richTextSanitization';
+import { sanitizeText } from '@features/reports/utils/sanitization';
+import { sanitizeRichText } from '@features/reports/utils/richTextSanitization';
 import {
   DEFAULT_REPORT_PATIENT_FIELDS,
   DEFAULT_REPORT_SECTIONS,
   DEFAULT_REPORT_TEMPLATE_ID,
   REPORT_TEMPLATES,
-} from '@domain/report/rules';
-import type { ReportPatientField, ReportRecord, ReportSection } from '@domain/report/entities';
+} from '@features/reports/domain/rules';
+import type { ReportPatientField, ReportRecord, ReportSection } from '@features/reports/domain/entities';
 
 export const sanitizeReportRecord = (record: ReportRecord): ReportRecord => {
   const templateId = REPORT_TEMPLATES[record.templateId] ? record.templateId : DEFAULT_REPORT_TEMPLATE_ID;

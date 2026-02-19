@@ -4,7 +4,7 @@ import {
   buildReportFileNameBaseFromRecord,
   buildReportPatientPayload,
   getReportHeaderContext,
-} from '@use-cases/reportPatient';
+} from '@features/reports/utils/reportPatient';
 
 describe('reportPatient use-cases', () => {
   const patientTypes = [
@@ -22,6 +22,7 @@ describe('reportPatient use-cases', () => {
       patientTypes,
       selectedTypeId: 'policlinico',
       now: new Date('2026-02-18T12:00:00Z'),
+      utils: { normalizeBirthDateInput: (v: string) => v }
     });
 
     expect(result).toBeNull();
@@ -41,6 +42,7 @@ describe('reportPatient use-cases', () => {
       patientTypes,
       selectedTypeId: 'hospitalizado',
       now: new Date('2026-02-18T12:00:00Z'),
+      utils: { normalizeBirthDateInput: (v: string) => v.split('-').reverse().join('-') }
     });
 
     expect(result).not.toBeNull();

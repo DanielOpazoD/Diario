@@ -1,7 +1,8 @@
 import { getAuthInstance } from './firebase/auth';
 import { getFirestoreInstance } from './firebase/firestore';
 import { emitStructuredLog } from './logger';
-import type { ReportRecord } from '@domain/report/entities';
+// eslint-disable-next-line boundaries/element-types
+import type { ReportRecord } from '@features/reports/domain/entities';
 
 const REPORTS_COLLECTION = 'reportDrafts';
 

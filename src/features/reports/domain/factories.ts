@@ -3,8 +3,8 @@ import {
   DEFAULT_REPORT_SECTIONS,
   DEFAULT_REPORT_TEMPLATE_ID,
   REPORT_TEMPLATES,
-} from '@domain/report/rules';
-import type { ReportRecord } from '@domain/report/entities';
+} from '@features/reports/domain/rules';
+import type { ReportRecord } from '@features/reports/domain/entities';
 
 export const createTemplateBaseline = (templateId: string): ReportRecord => {
   const selectedTemplateId = REPORT_TEMPLATES[templateId] ? templateId : DEFAULT_REPORT_TEMPLATE_ID;

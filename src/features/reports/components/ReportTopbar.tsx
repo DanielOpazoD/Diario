@@ -1,6 +1,6 @@
 import React from 'react';
-import { Plus, Printer, Save, SlidersHorizontal, PencilRuler, CalendarDays, UserRound, Link2, RotateCcw } from 'lucide-react';
-import type { ReportTemplate } from '@domain/report';
+import { Plus, Printer, Save, SlidersHorizontal, PencilRuler, CalendarDays, UserRound, RotateCcw } from 'lucide-react';
+import type { ReportTemplate } from '@features/reports/domain';
 
 type ReportTopbarProps = {
   patientName: string;
@@ -12,13 +12,11 @@ type ReportTopbarProps = {
   isSavingLinkedJson: boolean;
   hasLinkedJsonSource: boolean;
   linkedJsonFileName?: string;
-  canOpenLinkedJsonFile: boolean;
   onTemplateChange: (templateId: string) => void;
   onAddClinicalUpdateSection: () => void;
   onToggleAdvancedEditing: () => void;
   onToggleStructureEditing: () => void;
   onToolbarCommand: (command: string) => void;
-  onOpenLinkedJsonFile: () => void;
   onOpenResetTemplateModal: () => void;
   onPrint: () => void;
   onUpdateLinkedJson: () => void;
@@ -35,13 +33,11 @@ const ReportTopbar: React.FC<ReportTopbarProps> = ({
   isSavingLinkedJson,
   hasLinkedJsonSource,
   linkedJsonFileName,
-  canOpenLinkedJsonFile,
   onTemplateChange,
   onAddClinicalUpdateSection,
   onToggleAdvancedEditing,
   onToggleStructureEditing,
   onToolbarCommand,
-  onOpenLinkedJsonFile,
   onOpenResetTemplateModal,
   onPrint,
   onUpdateLinkedJson,
@@ -129,16 +125,6 @@ const ReportTopbar: React.FC<ReportTopbarProps> = ({
         </div>
       )}
       <div className="action-group compact report-group report-group-right">
-        <button
-          type="button"
-          className="action-btn"
-          onClick={onOpenLinkedJsonFile}
-          disabled={!canOpenLinkedJsonFile}
-          title={canOpenLinkedJsonFile ? 'Abrir JSON vinculado en nueva pestaña' : 'No hay URL disponible'}
-        >
-          <Link2 />
-          Abrir JSON
-        </button>
         <button type="button" className="action-btn" onClick={onOpenResetTemplateModal} title="Restablecer planilla en blanco">
           <RotateCcw />
           Reiniciar planilla

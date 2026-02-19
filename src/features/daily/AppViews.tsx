@@ -18,7 +18,7 @@ const PatientsHistoryView = lazy(() => import('@features/history/PatientsHistory
 const BookmarksView = lazy(() => import('@features/bookmarks/BookmarksView'));
 const TaskDashboard = lazy(() => import('@features/daily/TaskDashboard'));
 const Settings = lazy(() => import('@features/settings/Settings'));
-const MedicalReportView = lazy(() => import('@features/reports/MedicalReportView'));
+const ReportAppAdapter = lazy(() => import('@features/daily/components/ReportAppAdapter'));
 
 interface AppViewsProps {
   currentDate: Date;
@@ -49,7 +49,6 @@ const AppViews: React.FC<AppViewsProps> = ({
 
   React.useLayoutEffect(() => {
     if (document.startViewTransition) {
-      // @ts-ignore
       document.startViewTransition();
     }
   }, [location.pathname]);
@@ -132,9 +131,7 @@ const AppViews: React.FC<AppViewsProps> = ({
         path={VIEW_ROUTES.reports}
         element={(
           <FeatureErrorBoundary featureName="Informes">
-            <Suspense fallback={<ViewSkeleton />}>
-              <MedicalReportView />
-            </Suspense>
+            <ReportAppAdapter />
           </FeatureErrorBoundary>
         )}
       />

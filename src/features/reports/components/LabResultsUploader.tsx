@@ -1,12 +1,12 @@
 import React, { useRef, useState } from 'react';
 import { FileUp, Loader2 } from 'lucide-react';
-import { extractLabResultsUseCase } from '@use-cases/patient/extractLabResultsUseCase';
-import type { AttachedFile } from '@shared/types';
+import type { ReportAttachedFile as AttachedFile } from '../types';
 
 interface LabResultsUploaderProps {
     patientId?: string;
     onExtractionComplete: (text: string) => void;
     uploadPatientFile: (file: File, patientId: string) => Promise<AttachedFile>;
+    extractLabText: (file: File) => Promise<string>;
     addToast: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
@@ -14,6 +14,7 @@ const LabResultsUploader: React.FC<LabResultsUploaderProps> = ({
     patientId,
     onExtractionComplete,
     uploadPatientFile,
+    extractLabText,
     addToast,
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,8 +41,8 @@ const LabResultsUploader: React.FC<LabResultsUploaderProps> = ({
                     }
                 }
 
-                // 2. Extract with IA
-                const result = await extractLabResultsUseCase(file);
+                // 2. Extract with AI
+                const result = await extractLabText(file);
                 combinedResults += (combinedResults ? '\n\n' : '') + result;
             }
 

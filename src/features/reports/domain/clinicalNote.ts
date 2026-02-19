@@ -1,6 +1,6 @@
-import { sanitizeRichText } from '@shared/utils/richTextSanitization';
-import type { ReportRecord } from '@domain/report/entities';
-import { findReportSectionContent } from '@domain/report/utils';
+import { sanitizeRichText } from '@features/reports/utils/richTextSanitization';
+import type { ReportRecord } from '@features/reports/domain/entities';
+import { findReportSectionContent } from '@features/reports/domain/utils';
 
 export const buildClinicalNote = (sections: ReportRecord['sections']) => {
   const antecedentes = sanitizeRichText(findReportSectionContent(sections, ['antecedente']));

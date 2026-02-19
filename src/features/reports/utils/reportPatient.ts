@@ -1,11 +1,17 @@
 import { format } from 'date-fns';
-import { buildClinicalNote, findReportSectionContent, formatDateDMY, REPORT_TEMPLATES } from '@domain/report';
-import { sanitizeFileName } from '@shared/utils/fileNames';
-import type { PatientCreateInput, PatientTypeConfig } from '@shared/types';
-import { DEFAULT_PATIENT_TYPE_LABEL } from '@shared/constants/patientDefaults';
-import type { ReportPatientField, ReportSection } from '@domain/report/entities';
-import type { ReportRecord } from '@domain/report';
-import { normalizeBirthDateInput } from '@shared/utils/dateUtils';
+import { buildClinicalNote, findReportSectionContent, formatDateDMY, REPORT_TEMPLATES } from '../domain';
+import type { ReportPatientCreateInput, ReportPatientTypeConfig } from '../types';
+import type { ReportPatientField, ReportSection } from '../domain/entities';
+import type { ReportRecord } from '../domain';
+
+export const sanitizeFileName = (value: string) =>
+  value
+    .trim()
+    .replace(/[\s\/_\\]+/g, '_')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase();
 
 const normalizeFileToken = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -16,13 +22,16 @@ const getFieldValueFrom = (fields: ReportPatientField[], fieldId: string): strin
 type BuildReportPatientPayloadParams = {
   patientFields: ReportPatientField[];
   sections: ReportSection[];
-  patientTypes: PatientTypeConfig[];
+  patientTypes: ReportPatientTypeConfig[];
   selectedTypeId: string;
   now?: Date;
+  utils: {
+    normalizeBirthDateInput: (value: string) => string;
+  }
 };
 
 type ReportPatientPayloadResult =
-  | { patientData: PatientCreateInput; typeLabel: string }
+  | { patientData: ReportPatientCreateInput; typeLabel: string }
   | null;
 
 export const buildReportPatientPayload = ({
@@ -31,10 +40,11 @@ export const buildReportPatientPayload = ({
   patientTypes,
   selectedTypeId,
   now = new Date(),
+  utils,
 }: BuildReportPatientPayloadParams): ReportPatientPayloadResult => {
   const name = getFieldValueFrom(patientFields, 'nombre');
   const rut = getFieldValueFrom(patientFields, 'rut');
-  const birthDate = normalizeBirthDateInput(getFieldValueFrom(patientFields, 'fecnac'));
+  const birthDate = utils.normalizeBirthDateInput(getFieldValueFrom(patientFields, 'fecnac'));
   const gender = getFieldValueFrom(patientFields, 'genero') || '';
 
   if (!name || !rut) {
@@ -45,9 +55,9 @@ export const buildReportPatientPayload = ({
   const clinicalNote = buildClinicalNote(sections);
 
   const typeConfig = patientTypes.find((type) => type.id === selectedTypeId) || patientTypes[0];
-  const typeLabel = typeConfig?.label || DEFAULT_PATIENT_TYPE_LABEL;
+  const typeLabel = typeConfig?.label || 'Hospitalizado';
 
-  const patientData: PatientCreateInput = {
+  const patientData: ReportPatientCreateInput = {
     name,
     rut,
     birthDate,

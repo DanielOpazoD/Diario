@@ -1,14 +1,13 @@
-[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
 
-/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/DailyView.tsx
-   2:8   warning  'ExecutivePatientRow' is defined but never used       @typescript-eslint/no-unused-vars
-  26:5   warning  'selectedCount' is assigned a value but never used    @typescript-eslint/no-unused-vars
-  27:5   warning  'onEditPatient' is assigned a value but never used    @typescript-eslint/no-unused-vars
-  28:5   warning  'onDeletePatient' is assigned a value but never used  @typescript-eslint/no-unused-vars
-  29:20  warning  '_unused' is assigned a value but never used          @typescript-eslint/no-unused-vars
+> medidiario-ai@1.0.0 lint
+> ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts,.tsx --rule "boundaries/entry-points:off" --rule "react-hooks/set-state-in-effect:warn" --rule "react-hooks/preserve-manual-memoization:warn" --rule "no-useless-escape:warn"
 
-/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/DateNavigator.tsx
-  29:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/components/Login.tsx
+  20:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/components/UpdateBanner.tsx
+  9:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
 
 Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
 * Update external systems with the latest state from React.
@@ -16,17 +15,243 @@ Effects are intended to synchronize state between React and external systems suc
 
 Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
 
-/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/DateNavigator.tsx:29:5
-  27 |       newDays.push(addDays(currentDate, i));
-  28 |     }
-> 29 |     setDays(newDays);
-     |     ^^^^^^^ Avoid calling setState() directly within an effect
-  30 |   }, [currentDate]);
-  31 |
-  32 |   // Center the selected date (which is always in the middle of the array)  react-hooks/set-state-in-effect
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/components/UpdateBanner.tsx:9:7
+   7 |   useEffect(() => {
+   8 |     if (consumeUpdateNotice()) {
+>  9 |       setMessage('Actualización detectada. Recargando…');
+     |       ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  10 |     }
+  11 |
+  12 |     const handler = (event: CustomEvent<{ message?: string }>) => {  react-hooks/set-state-in-effect
 
-/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/FilterBar.tsx
-  15:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/context/LogContext.tsx
+  11:14  warning  Fast refresh only works when a file only exports components. Move your React context(s) to a separate file                      react-refresh/only-export-components
+  38:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/hooks/useAutoLock.ts
+  58:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/hooks/useAutoLock.ts:58:7
+  56 |   useEffect(() => {
+  57 |     if (!hasPin || autoLockMinutes <= 0) {
+> 58 |       setIsLocked(false);
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  59 |       return;
+  60 |     }
+  61 |                                       react-hooks/set-state-in-effect
+  74:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/hooks/useAutoLock.ts:74:7
+  72 |   useEffect(() => {
+  73 |     if (hasPin) {
+> 74 |       setIsLocked(true);
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  75 |       lastActivityRef.current = Date.now();
+  76 |     } else {
+  77 |       setIsLocked(false);  react-hooks/set-state-in-effect
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/hooks/useFirebaseSync.ts
+  200:8  warning  React Hook useEffect has a missing dependency: 'recoverMissingAttachments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/layouts/MainLayout.tsx
+  39:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/layouts/MainLayout.tsx:39:7
+  37 |   useEffect(() => {
+  38 |     if (isMobile) {
+> 39 |       setIsSidebarOpen(false);
+     |       ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  40 |     }
+  41 |   }, [viewMode, isMobile]);
+  42 |  react-hooks/set-state-in-effect
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/layouts/MainSidebar.tsx
+  3:30  error  Core cannot import from App or non-files Features (circular dependency risk)  boundaries/element-types
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/layouts/MainTopBar.tsx
+  28:12  warning  '_error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  43:7   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/layouts/MainTopBar.tsx:43:7
+  41 |   useEffect(() => {
+  42 |     if (viewMode !== 'reports') {
+> 43 |       setReportContext(null);
+     |       ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  44 |       return;
+  45 |     }
+  46 |  react-hooks/set-state-in-effect
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/components/CompactPatientCard.tsx
+   9:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  17:12  warning  'e' is defined but never used                                                                                                   @typescript-eslint/no-unused-vars
+  22:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/components/ExecutivePatientRow.tsx
+  18:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/components/PatientForm.tsx
+  64:9  warning  The 'attachedFiles' logical expression could make the dependencies of useEffect Hook (at line 97) change on every render. To fix this, wrap the initialization of 'attachedFiles' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/exhaustive-deps
+  91:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/components/PatientForm.tsx:91:7
+  89 |   useEffect(() => {
+  90 |     if (!attachedFiles.length) {
+> 91 |       setSelectedAttachmentId('');
+     |       ^^^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  92 |       return;
+  93 |     }
+  94 |     if (!attachedFiles.find((file: AttachedFile) => file.id === selectedAttachmentId)) {  react-hooks/set-state-in-effect
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/components/PatientHistoryModal.tsx
+  44:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/components/PatientHistoryModal.tsx:44:5
+  42 |     const nextFiles = record.attachedFiles || [];
+  43 |
+> 44 |     setPendingTasks(prev => (
+     |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  45 |       JSON.stringify(prev) === JSON.stringify(nextTasks) ? prev : nextTasks
+  46 |     ));
+  47 |     setAttachedFiles(prev => (  react-hooks/set-state-in-effect
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/context/PatientModalContext.tsx
+  88:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  96:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/hooks/usePatientDataExtraction.ts
+   77:18  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+   89:22  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+  100:20  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+  115:14  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+  157:24  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+  240:14  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/hooks/usePatientModalState.ts
+  48:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/hooks/usePatientModalState.ts:48:7
+  46 |
+  47 |     if (initialData) {
+> 48 |       setPatientId(initialData.id);
+     |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  49 |       setName(initialData.name);
+  50 |       setRut(initialData.rut);
+  51 |       setBirthDate(initialData.birthDate || '');  react-hooks/set-state-in-effect
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/patient/hooks/usePdfPatientImport.ts
+  52:30  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+  67:38  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+  81:34  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/core/providers/QueryProvider.tsx
+  21:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/data/ports/reportDraftPort.ts
+  1:35  error  Data layer cannot import from UI layers  boundaries/element-types
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/domain/bookmarks.ts
+  13:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/domain/patient/dates.ts
+   5:41  warning  Unnecessary escape character: \/  no-useless-escape
+   5:56  warning  Unnecessary escape character: \/  no-useless-escape
+  11:43  warning  Unnecessary escape character: \/  no-useless-escape
+  11:58  warning  Unnecessary escape character: \/  no-useless-escape
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/domain/patient/patientTextExtraction.ts
+   77:69  warning  Unnecessary escape character: \-  no-useless-escape
+   79:59  warning  Unnecessary escape character: \-  no-useless-escape
+   83:46  warning  Unnecessary escape character: \-  no-useless-escape
+   84:34  warning  Unnecessary escape character: \-  no-useless-escape
+   85:19  warning  Unnecessary escape character: \-  no-useless-escape
+   89:22  warning  Unnecessary escape character: \-  no-useless-escape
+   94:34  warning  Unnecessary escape character: \-  no-useless-escape
+   95:24  warning  Unnecessary escape character: \-  no-useless-escape
+   96:21  warning  Unnecessary escape character: \-  no-useless-escape
+   99:15  warning  Unnecessary escape character: \-  no-useless-escape
+  100:20  warning  Unnecessary escape character: \-  no-useless-escape
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/ai/AIAttachmentAssistant.tsx
+  134:6  warning  React Hook useCallback has an unnecessary dependency: 'patientName'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/bookmarks/BookmarksModal.tsx
+  49:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/bookmarks/BookmarksModal.tsx:49:5
+  47 |
+  48 |   useEffect(() => {
+> 49 |     setEditingId(editingBookmarkId || null);
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  50 |   }, [editingBookmarkId]);
+  51 |
+  52 |   useEffect(() => {    react-hooks/set-state-in-effect
+  54:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/bookmarks/BookmarksModal.tsx:54:7
+  52 |   useEffect(() => {
+  53 |     if (!editingId) {
+> 54 |       setForm(defaultFormState);
+     |       ^^^^^^^ Avoid calling setState() directly within an effect
+  55 |       setError(null);
+  56 |       return;
+  57 |     }  react-hooks/set-state-in-effect
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/AppViews.tsx
+  52:7  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
 
 /Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/VirtualizedPatientList.tsx
   22:25  warning  Compilation Skipped: Use of incompatible library
@@ -42,11 +267,180 @@ This API returns functions which cannot be memoized without leading to stale UI.
   24 |         getScrollElement: () => parentRef.current,
   25 |         estimateSize: () => ESTIMATED_ROW_HEIGHT,  react-hooks/incompatible-library
 
-/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/context/DailyViewContext.tsx
-  22:19  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
-  47:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/daily/components/ReportAppAdapter.tsx
+  14:61  error    Features cannot import from other Features directly. Use Shared/Core/AppStore                                                   boundaries/element-types
+  20:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  40:33  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  44:50  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  45:56  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  49:53  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  55:61  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  56:53  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
 
-✖ 10 problems (0 errors, 10 warnings)
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/files/FileAttachmentManager.tsx
+  118:16  warning  'err' is defined but never used     @typescript-eslint/no-unused-vars
+  173:14  warning  'err' is defined but never used     @typescript-eslint/no-unused-vars
+  196:16  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+  301:14  warning  'error' is defined but never used   @typescript-eslint/no-unused-vars
 
-(node:25397) ESLintRCWarning: You are using an eslintrc configuration file, which is deprecated and support will be removed in v10.0.0. Please migrate to an eslint.config.js file. See https://eslint.org/docs/latest/use/configure/migration-guide for details. An eslintrc configuration file is used because you have the ESLINT_USE_FLAT_CONFIG environment variable set to false. If you want to use an eslint.config.js file, remove the environment variable. If you want to find the location of the eslintrc configuration file, use the --debug flag.
-(Use `node --trace-warnings ...` to show where the warning was created)
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/files/FilePreviewModal.tsx
+  33:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/files/FilePreviewModal.tsx:33:7
+  31 |   useEffect(() => {
+  32 |     if (file) {
+> 33 |       setTitle(file.customTitle || file.name);
+     |       ^^^^^^^^ Avoid calling setState() directly within an effect
+  34 |       setDescription(file.description || '');
+  35 |       setTagsInput((file.tags || []).join(', '));
+  36 |       setCategory(file.category || 'other');  react-hooks/set-state-in-effect
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/reports/hooks/useDebouncedCallback.ts
+  3:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/reports/hooks/useLinkedJsonImport.ts
+  58:12  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/reports/hooks/useMedicalReportController.ts
+  135:7   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/reports/hooks/useMedicalReportController.ts:135:7
+  133 |   useEffect(() => {
+  134 |     if (!selectedTypeId && patientTypes.length > 0) {
+> 135 |       setSelectedTypeId(patientTypes[0].id);
+      |       ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  136 |     }
+  137 |   }, [patientTypes, selectedTypeId]);
+  138 |                                                                                                                                                                                                                                                                                                                              react-hooks/set-state-in-effect
+  164:43  warning  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `host.utils`, but the source dependencies were [addToast, patientTypes, record.patientFields, record.sections, selectedTypeId]. Inferred different dependency than source.
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/reports/hooks/useMedicalReportController.ts:164:43
+  162 |   } = useReportHeaderViewModel(record);
+  163 |
+> 164 |   const buildPatientPayload = useCallback(() => {
+      |                                           ^^^^^^^
+> 165 |     const payload = buildReportPatientPayload({
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 166 |       patientFields: record.patientFields,
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 176 |     return payload;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 177 |   }, [addToast, patientTypes, record.patientFields, record.sections, selectedTypeId]);
+      | ^^^^ Could not preserve existing manual memoization
+  178 |
+  179 |   const resolvedLinkedJsonSource = useMemo(
+  180 |     () => linkedJsonSource || resolveLinkedJsonSource(),  react-hooks/preserve-manual-memoization
+  177:6   warning  React Hook useCallback has a missing dependency: 'host.utils'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/exhaustive-deps
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/reports/hooks/useReportDraft.ts
+  68:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/reports/hooks/useReportDraft.ts:68:7
+  66 |     );
+  67 |     if (parsed?.record) {
+> 68 |       setRecord(sanitizeReportRecord(parsed.record));
+     |       ^^^^^^^^^ Avoid calling setState() directly within an effect
+  69 |     }
+  70 |   }, []);
+  71 |  react-hooks/set-state-in-effect
+  94:6  warning  React Hook useEffect has a missing dependency: 'options'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/exhaustive-deps
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/reports/services/reportJsonService.ts
+  129:12  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/reports/services/reportPrintPdfService.ts
+  159:12  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/reports/utils/reportPatient.ts
+  10:18  warning  Unnecessary escape character: \/  no-useless-escape
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/settings/PatientTypesSettings.tsx
+  27:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/settings/Settings.tsx
+  11:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/features/settings/StorageSettings.tsx
+  27:14  warning  'error' is defined but never used   @typescript-eslint/no-unused-vars
+  58:14  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/pwa-register.d.ts
+  2:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/services/firebaseConfig.ts
+  15:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/services/firebaseStorageService.ts
+   89:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   90:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  161:14  warning  '_error' is defined but never used        @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/services/googleService.ts
+  78:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/services/httpClient.ts
+  17:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/services/logger.ts
+  99:12  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/services/reportDraftService.ts
+  4:35  error  Services cannot import from UI layers (Core/Features)  boundaries/element-types
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/services/storage.ts
+  57:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:88  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:82  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:77  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  85:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  85:85  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  86:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  86:77  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/shared/hooks/useDebouncedCallback.ts
+  3:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/shared/hooks/usePrefetch.ts
+  23:60  warning  Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  61:38  warning  Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  82:6   warning  React Hook useEffect has a missing dependency: 'currentView'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/shared/utils/dateUtils.ts
+   99:14  warning  'error' is defined but never used       @typescript-eslint/no-unused-vars
+  110:16  warning  '_' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  112:14  warning  'error' is defined but never used       @typescript-eslint/no-unused-vars
+
+/Users/danielopazodamiani/Downloads/Medidiario/Diario/src/shared/utils/fileNames.ts
+  4:18  warning  Unnecessary escape character: \/  no-useless-escape
+
+✖ 113 problems (5 errors, 108 warnings)
+

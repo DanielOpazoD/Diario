@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { calculateAge, normalizeBirthDateInput } from '@shared/utils/dateUtils';
-import { REPORT_TEMPLATES, formatDateDMY } from '@domain/report';
-import type { ReportRecord, ReportSection } from '@domain/report';
+import { REPORT_TEMPLATES, formatDateDMY } from '@features/reports/domain';
+import type { ReportRecord, ReportSection } from '@features/reports/domain';
 import { useReportToolbarCommands } from '@features/reports/hooks/useReportToolbarCommands';
 
 export type ReportEditTarget =

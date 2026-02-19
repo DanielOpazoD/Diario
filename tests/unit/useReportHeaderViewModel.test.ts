@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useReportHeaderViewModel } from '@features/reports/hooks/useReportHeaderViewModel';
-import type { ReportRecord } from '@domain/report';
+import type { ReportRecord } from '@features/reports/domain';
 
 const buildRecord = (): ReportRecord => ({
   version: '1',

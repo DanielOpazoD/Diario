@@ -1,5 +1,5 @@
 import type { AttachedFile, PatientRecord } from '@shared/types';
-import type { ReportRecord } from '@domain/report';
+import type { ReportRecord } from '@features/reports/domain';
 import { stringifyClinicalReportJsonPayload } from '@features/reports/services/reportJsonService';
 import type { LinkedJsonSource } from '@features/reports/types';
 
@@ -24,14 +24,12 @@ type BuildReportAssetsParams = {
   record: ReportRecord;
   fileNameBase: string;
   uploadPatientFile: UploadPatientFile;
-  generatePdfAsBlob: () => Promise<Blob>;
 };
 
 type BuildReportAssetsResult = {
   attachments: AttachedFile[];
   failedCount: number;
   totalUploads: number;
-  pdfGenerationFailed: boolean;
 };
 
 export const buildReportAssetUploads = async ({
@@ -39,18 +37,7 @@ export const buildReportAssetUploads = async ({
   record,
   fileNameBase,
   uploadPatientFile,
-  generatePdfAsBlob,
 }: BuildReportAssetsParams): Promise<BuildReportAssetsResult> => {
-  let pdfFile: File | null = null;
-  let pdfGenerationFailed = false;
-
-  try {
-    const blob = await generatePdfAsBlob();
-    pdfFile = new File([blob], `${fileNameBase}.pdf`, { type: 'application/pdf' });
-  } catch (_error) {
-    pdfGenerationFailed = true;
-  }
-
   const jsonPayload = stringifyClinicalReportJsonPayload({
     report: record,
     patient,
@@ -58,7 +45,6 @@ export const buildReportAssetUploads = async ({
   const jsonFile = new File([jsonPayload], `${fileNameBase}.json`, { type: 'application/json' });
 
   const uploadEntries: Array<{ kind: 'pdf' | 'json'; file: File }> = [];
-  if (pdfFile) uploadEntries.push({ kind: 'pdf', file: pdfFile });
   uploadEntries.push({ kind: 'json', file: jsonFile });
 
   const uploadResults = await Promise.allSettled(
@@ -87,7 +73,6 @@ export const buildReportAssetUploads = async ({
     attachments,
     failedCount: uploadResults.length - attachments.length,
     totalUploads: uploadEntries.length,
-    pdfGenerationFailed,
   };
 };
 

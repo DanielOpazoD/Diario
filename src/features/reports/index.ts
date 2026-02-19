@@ -1,4 +1,4 @@
-export { default as MedicalReportView, MedicalReportViewContent } from './MedicalReportView';
+export { MedicalReportViewContent } from './MedicalReportView';
 export { useLinkedJsonImport } from './hooks/useLinkedJsonImport';
 export { useReportEditorState } from './hooks/useReportEditorState';
 export { useReportPersistenceActions } from './hooks/useReportPersistenceActions';

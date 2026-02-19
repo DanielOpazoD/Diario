@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import ReportSheet from '@features/reports/components/ReportSheet';
-import type { ReportRecord } from '@domain/report';
+import type { ReportRecord } from '@features/reports/domain';
 
 const buildRecord = (): ReportRecord => ({
   version: '1',
@@ -43,6 +43,7 @@ describe('ReportSheet', () => {
         onEspecialidadChange={vi.fn()}
         addToast={vi.fn()}
         uploadPatientFile={vi.fn().mockResolvedValue({} as any)}
+        extractLabText={vi.fn()}
       />
     );
 

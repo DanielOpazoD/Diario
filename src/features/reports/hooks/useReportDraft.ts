@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { STORAGE_KEYS } from '@shared/constants/storageKeys';
-import { safeGetItem, safeSetItem } from '@shared/utils/safeStorage';
-import { loadDraftReport, saveDraftReport } from '@use-cases/reports';
-import { loadJson, saveJson } from '@shared/utils/storageJson';
-import { useDebouncedCallback } from '@shared/hooks/useDebouncedCallback';
-import { sanitizeReportRecord } from '@domain/report/sanitizeRecord';
-import type { ReportRecord } from '@domain/report/entities';
+import { safeGetItem, safeSetItem } from '@features/reports/utils/safeStorage';
+
+import { loadJson, saveJson } from '@features/reports/utils/storageJson';
+import { useDebouncedCallback } from '@features/reports/hooks/useDebouncedCallback';
+import { sanitizeReportRecord } from '@features/reports/domain/sanitizeRecord';
+import type { ReportRecord } from '@features/reports/domain/entities';
 
 type UserLike = {
   uid?: string;
@@ -20,6 +20,8 @@ const writeLocal = (key: string, value: string) => safeSetItem(key, value);
 
 type UseReportDraftOptions = {
   skipRemoteLoad?: boolean;
+  saveDraftReport?: (draftId: string, record: ReportRecord) => Promise<void>;
+  loadDraftReport?: (draftId: string) => Promise<{ record: ReportRecord; updatedAt: number } | null>;
 };
 
 const createDraftId = () => (
@@ -41,8 +43,8 @@ export const useReportDraft = (
       const sanitizedRecord = sanitizeReportRecord(nextRecord);
       const payload = { record: sanitizedRecord, updatedAt: Date.now() };
       saveJson(STORAGE_KEYS.REPORT_DRAFT, payload);
-      if (nextUser) {
-        saveDraftReport(draftIdRef.current, sanitizedRecord);
+      if (nextUser && options?.saveDraftReport) {
+        options.saveDraftReport(draftIdRef.current, sanitizedRecord);
       }
     },
     800
@@ -74,7 +76,8 @@ export const useReportDraft = (
     let cancelled = false;
 
     (async () => {
-      const remote = await loadDraftReport(draftId);
+      if (!options?.loadDraftReport) return;
+      const remote = await options.loadDraftReport(draftId);
       if (!remote || cancelled) return;
       const parsed = loadJson<{ updatedAt?: number } | null>(STORAGE_KEYS.REPORT_DRAFT, null);
       const localUpdatedAt = parsed?.updatedAt || 0;

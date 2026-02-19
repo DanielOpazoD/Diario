@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findReportSectionContent, formatDateDMY } from '@domain/report/utils';
+import { findReportSectionContent, formatDateDMY } from '@features/reports/domain/utils';
 
 describe('report utils', () => {
   it('formats ISO date to DMY', () => {

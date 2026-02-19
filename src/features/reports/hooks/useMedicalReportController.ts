@@ -3,23 +3,23 @@ import {
   DEFAULT_REPORT_TEMPLATE_ID,
   REPORT_TEMPLATES,
   createTemplateBaseline,
-} from '@domain/report';
-import type { ReportRecord } from '@domain/report';
+} from '@features/reports/domain';
+import type { ReportRecord } from '@features/reports/domain';
 import { useReportDraft } from '@features/reports/hooks/useReportDraft';
 import { useLinkedJsonImport } from '@features/reports/hooks/useLinkedJsonImport';
 import { useReportPersistenceActions } from '@features/reports/hooks/useReportPersistenceActions';
 import { useReportTopbarContext } from '@features/reports/hooks/useReportTopbarContext';
 import { useReportEditorState, type ReportEditTarget } from '@features/reports/hooks/useReportEditorState';
 import { useReportHeaderViewModel } from '@features/reports/hooks/useReportHeaderViewModel';
-import { generateReportPdfBlob } from '@features/reports/services/reportPdfService';
-import type { ReportHostContext } from '@features/reports/host/reportHost';
-import { buildReportPatientPayload } from '@use-cases/reportPatient';
-import { DEFAULT_PATIENT_TYPE_ID } from '@shared/constants/patientDefaults';
+import type { ReportHostContext } from '../host/reportHost';
+import { buildReportPatientPayload } from '../utils/reportPatient';
 import {
   emitReportJsonConsoleError,
   isCompatibleJsonAttachment,
-} from '@features/reports/utils/reportJsonImport';
-import { AttachedFile } from '@shared/types';
+} from '../utils/reportJsonImport';
+import type { ReportAttachedFile as AttachedFile } from '../types';
+
+const DEFAULT_PATIENT_TYPE_ID = 'Hospitalizado';
 
 const createTemplate = (templateId: string): ReportRecord => createTemplateBaseline(templateId);
 
@@ -35,13 +35,11 @@ type UseMedicalReportControllerResult = {
     isSavingLinkedJson: boolean;
     hasLinkedJsonSource: boolean;
     linkedJsonFileName?: string;
-    canOpenLinkedJsonFile: boolean;
     onTemplateChange: (templateId: string) => void;
     onAddClinicalUpdateSection: () => void;
     onToggleAdvancedEditing: () => void;
     onToggleStructureEditing: () => void;
     onToolbarCommand: (command: string) => void;
-    onOpenLinkedJsonFile: () => void;
     onOpenResetTemplateModal: () => void;
     onPrint: () => void;
     onUpdateLinkedJson: () => Promise<void>;
@@ -67,6 +65,7 @@ type UseMedicalReportControllerResult = {
     patientId?: string;
     addToast: (type: 'success' | 'error' | 'info', message: string) => void;
     uploadPatientFile: (file: File, patientId: string) => Promise<AttachedFile>;
+    extractLabText: (file: File) => Promise<string>;
   };
   isGlobalStructureEditing: boolean;
   onAddSection: () => void;
@@ -83,6 +82,9 @@ export const useMedicalReportController = (host: ReportHostContext): UseMedicalR
     downloadPatientFileBlobById,
     updatePatientFileById,
     uploadPatientFile,
+    saveDraftReport,
+    loadDraftReport,
+    extractLabText,
   } = host.data;
   const {
     getLinkedJsonRaw,
@@ -101,7 +103,7 @@ export const useMedicalReportController = (host: ReportHostContext): UseMedicalR
   const { record, setRecord } = useReportDraft(
     user,
     createTemplate(DEFAULT_REPORT_TEMPLATE_ID),
-    { skipRemoteLoad: hasLinkedImportParams }
+    { skipRemoteLoad: hasLinkedImportParams, saveDraftReport, loadDraftReport }
   );
   const {
     activeEditTarget,
@@ -165,6 +167,7 @@ export const useMedicalReportController = (host: ReportHostContext): UseMedicalR
       sections: record.sections,
       patientTypes,
       selectedTypeId,
+      utils: host.utils,
     });
     if (!payload) {
       addToast('error', 'Ingresa nombre completo y RUT para crear el paciente.');
@@ -178,15 +181,6 @@ export const useMedicalReportController = (host: ReportHostContext): UseMedicalR
     [linkedJsonSource, resolveLinkedJsonSource]
   );
 
-  const handleOpenLinkedJsonFile = useCallback(() => {
-    const source = resolvedLinkedJsonSource;
-    if (!source?.driveUrl) {
-      addToast('info', 'No hay URL disponible para abrir el JSON vinculado.');
-      return;
-    }
-    host.openExternal(source.driveUrl);
-  }, [addToast, host, resolvedLinkedJsonSource]);
-
   const hasLinkedJsonSource = useMemo(() => Boolean(resolvedLinkedJsonSource), [resolvedLinkedJsonSource]);
 
   useReportTopbarContext({
@@ -198,8 +192,6 @@ export const useMedicalReportController = (host: ReportHostContext): UseMedicalR
     clearTopbarContext,
     emitReportContextChanged: host.emitReportContextChanged,
   });
-
-  const generatePdfAsBlob = useCallback(async (): Promise<Blob> => generateReportPdfBlob(record), [record]);
 
   const handleOpenResetTemplateModal = useCallback(() => {
     setIsResetTemplateModalOpen(true);
@@ -228,7 +220,6 @@ export const useMedicalReportController = (host: ReportHostContext): UseMedicalR
     updatePatientFileById,
     buildPatientPayload,
     buildDefaultReportFileNameBase,
-    generatePdfAsBlob,
     record,
     linkedJsonSource,
     setLinkedJsonSource,
@@ -277,13 +268,11 @@ export const useMedicalReportController = (host: ReportHostContext): UseMedicalR
       isSavingLinkedJson,
       hasLinkedJsonSource,
       linkedJsonFileName: linkedJsonSource?.fileName,
-      canOpenLinkedJsonFile: Boolean(resolvedLinkedJsonSource?.driveUrl),
       onTemplateChange: handleTemplateChange,
       onAddClinicalUpdateSection: handleAddClinicalUpdateSection,
       onToggleAdvancedEditing: () => setIsAdvancedEditing((prev) => !prev),
       onToggleStructureEditing: () => setIsGlobalStructureEditing((prev) => !prev),
       onToolbarCommand: handleToolbarCommand,
-      onOpenLinkedJsonFile: handleOpenLinkedJsonFile,
       onOpenResetTemplateModal: handleOpenResetTemplateModal,
       onPrint: handlePrint,
       onUpdateLinkedJson: handleUpdateLinkedJson,
@@ -309,6 +298,7 @@ export const useMedicalReportController = (host: ReportHostContext): UseMedicalR
       patientId: resolvedLinkedJsonSource?.patientId,
       addToast,
       uploadPatientFile,
+      extractLabText,
     },
     isGlobalStructureEditing,
     onAddSection: handleAddSection,

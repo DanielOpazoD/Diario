@@ -1,6 +1,6 @@
 import type { PatientRecord } from '@shared/types';
-import type { ReportRecord } from '@domain/report/entities';
-import { sanitizeReportRecord } from '@domain/report/sanitizeRecord';
+import type { ReportRecord } from '@features/reports/domain/entities';
+import { sanitizeReportRecord } from '@features/reports/domain/sanitizeRecord';
 
 export const CLINICAL_REPORT_JSON_KIND = 'clinical-report';
 export const CLINICAL_REPORT_JSON_SCHEMA_VERSION = '1.0.0';

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ReportRecord } from '@domain/report';
+import type { ReportRecord } from '@features/reports/domain';
 import {
   buildReportAssetUploads,
   updateLinkedReportJsonAttachment,

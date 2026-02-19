@@ -1,43 +1,36 @@
-import { useCallback, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useAppActions } from '@core/app/state/useAppActions';
-import { safeSessionGetItem, safeSessionRemoveItem, safeSessionSetItem } from '@shared/utils/safeSessionStorage';
-import { SESSION_KEYS } from '@shared/constants/sessionKeys';
+
 import type {
-  AttachedFile,
-  PatientCreateInput,
-  PatientRecord,
-  PatientTypeConfig,
-  User,
-} from '@shared/types';
-import { savePatientRecord } from '@use-cases/patient/save';
-import {
-  downloadPatientFileBlob,
-  downloadPatientFileBlobById,
-  updatePatientFileById,
-  uploadPatientFile,
-} from '@use-cases/attachments';
+  ReportAttachedFile,
+  ReportPatientCreateInput,
+  ReportPatientRecord,
+  ReportPatientTypeConfig,
+  ReportUser,
+} from '../types';
+import type { ReportRecord } from '../domain/entities';
 
 export type ReportToastType = 'success' | 'error' | 'info';
 
 export type ReportHostState = {
-  user: User | null;
-  records: PatientRecord[];
-  patientTypes: PatientTypeConfig[];
+  user: ReportUser | null;
+  records: ReportPatientRecord[];
+  patientTypes: ReportPatientTypeConfig[];
 };
 
 export type ReportHostActions = {
-  addPatient: (patient: PatientRecord) => void;
-  updatePatient: (patient: PatientRecord) => void;
+  addPatient: (patient: ReportPatientRecord) => void;
+  updatePatient: (patient: ReportPatientRecord) => void;
   addToast: (type: ReportToastType, message: string) => void;
 };
 
 export type ReportDataPort = {
-  savePatientRecord: (patientData: PatientCreateInput, existing: PatientRecord | null) => {
-    patient: PatientRecord;
+  savePatientRecord: (patientData: ReportPatientCreateInput, existing: ReportPatientRecord | null) => {
+    patient: ReportPatientRecord;
     isUpdate: boolean;
     message: string;
   };
+  saveDraftReport: (draftId: string, record: ReportRecord) => Promise<void>;
+  loadDraftReport: (draftId: string) => Promise<{ record: ReportRecord; updatedAt: number } | null>;
+  extractLabText: (file: File) => Promise<string>;
   downloadPatientFileBlob: (url: string) => Promise<Blob>;
   downloadPatientFileBlobById: (patientId: string, fileId: string, existingFileName?: string) => Promise<Blob>;
   updatePatientFileById: (
@@ -45,8 +38,14 @@ export type ReportDataPort = {
     patientId: string,
     fileId: string,
     existingFileName?: string
-  ) => Promise<AttachedFile>;
-  uploadPatientFile: (file: File, patientId: string) => Promise<AttachedFile>;
+  ) => Promise<ReportAttachedFile>;
+  uploadPatientFile: (file: File, patientId: string) => Promise<ReportAttachedFile>;
+};
+
+export type ReportUtilsPort = {
+  calculateAge: (birthDate: string | undefined, refDate?: Date) => string;
+  normalizeBirthDateInput: (value: string) => string;
+  sanitizeRichText: (html: string) => string;
 };
 
 export type ReportSessionPort = {
@@ -62,6 +61,7 @@ export type ReportHostContext = {
   actions: ReportHostActions;
   data: ReportDataPort;
   session: ReportSessionPort;
+  utils: ReportUtilsPort;
   locationSearch: string;
   openExternal: (url: string) => void;
   emitReportContextChanged: () => void;
@@ -88,6 +88,9 @@ export const createFallbackReportHost = (): ReportHostContext => ({
   },
   data: {
     savePatientRecord: () => missingHostAction('data.savePatientRecord'),
+    saveDraftReport: async () => missingHostAction('data.saveDraftReport'),
+    loadDraftReport: async () => null,
+    extractLabText: async () => '',
     downloadPatientFileBlob: async () => missingHostAction('data.downloadPatientFileBlob'),
     downloadPatientFileBlobById: async () => missingHostAction('data.downloadPatientFileBlobById'),
     updatePatientFileById: async () => missingHostAction('data.updatePatientFileById'),
@@ -100,67 +103,12 @@ export const createFallbackReportHost = (): ReportHostContext => ({
     setTopbarContextRaw: noop,
     clearTopbarContext: noop,
   },
+  utils: {
+    calculateAge: () => 'N/A',
+    normalizeBirthDateInput: (v) => v,
+    sanitizeRichText: (v) => v,
+  },
   locationSearch: '',
   openExternal: noop,
   emitReportContextChanged: noop,
 });
-
-import { useUser, useRecords, usePatientTypes } from '@core/app/state/useAppState';
-
-export const useDefaultReportHostContext = (): ReportHostContext => {
-  const location = useLocation();
-  const user = useUser();
-  const records = useRecords();
-  const patientTypes = usePatientTypes();
-  const appActions = useAppActions();
-
-  const openExternal = useCallback((url: string) => {
-    if (typeof window === 'undefined') return;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }, []);
-
-  const emitReportContextChanged = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    window.dispatchEvent(new CustomEvent('medidiario:report-context'));
-  }, []);
-
-  return useMemo(() => ({
-    state: {
-      user,
-      records,
-      patientTypes,
-    },
-    actions: {
-      addPatient: appActions.addPatient,
-      updatePatient: appActions.updatePatient,
-      addToast: appActions.addToast,
-    },
-    data: {
-      savePatientRecord,
-      downloadPatientFileBlob,
-      downloadPatientFileBlobById,
-      updatePatientFileById,
-      uploadPatientFile,
-    },
-    session: {
-      getLinkedJsonRaw: () => safeSessionGetItem(SESSION_KEYS.REPORT_LINKED_JSON),
-      setLinkedJsonRaw: (value: string) => safeSessionSetItem(SESSION_KEYS.REPORT_LINKED_JSON, value),
-      getTopbarContextRaw: () => safeSessionGetItem(SESSION_KEYS.REPORT_TOPBAR_CONTEXT),
-      setTopbarContextRaw: (value: string) => safeSessionSetItem(SESSION_KEYS.REPORT_TOPBAR_CONTEXT, value),
-      clearTopbarContext: () => safeSessionRemoveItem(SESSION_KEYS.REPORT_TOPBAR_CONTEXT),
-    },
-    locationSearch: location.search,
-    openExternal,
-    emitReportContextChanged,
-  }), [
-    appActions.addPatient,
-    appActions.updatePatient,
-    appActions.addToast,
-    user,
-    records,
-    patientTypes,
-    location.search,
-    openExternal,
-    emitReportContextChanged,
-  ]);
-};

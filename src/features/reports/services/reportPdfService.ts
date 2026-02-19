@@ -1,8 +1,8 @@
 import jsPDF from 'jspdf';
-import { sanitizeRichText } from '@shared/utils/richTextSanitization';
-import { REPORT_TEMPLATES } from '@domain/report/rules';
-import { formatDateDMY } from '@domain/report';
-import type { ReportRecord } from '@domain/report/entities';
+import { sanitizeRichText } from '@features/reports/utils/richTextSanitization';
+import { REPORT_TEMPLATES } from '@features/reports/domain/rules';
+import { formatDateDMY } from '@features/reports/domain';
+import type { ReportRecord } from '@features/reports/domain/entities';
 import { generatePrintStyledPdfBlob } from '@features/reports/services/reportPrintPdfService';
 import type { ReportPrintOptions } from '@features/reports/services/reportPrintPdfService';
 

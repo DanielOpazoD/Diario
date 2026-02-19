@@ -1,6 +1,6 @@
 import React from 'react';
-import type { ReportRecord, ReportSection } from '@domain/report';
-import { logoUrls } from '@domain/report/institutionConfig';
+import type { ReportRecord, ReportSection } from '@features/reports/domain';
+import { logoUrls } from '@features/reports/domain/institutionConfig';
 import PatientInfo from '@features/reports/components/PatientInfo';
 import ClinicalSection from '@features/reports/components/ClinicalSection';
 import Footer from '@features/reports/components/Footer';
@@ -31,6 +31,7 @@ type ReportSheetProps = {
   patientId?: string;
   addToast: (type: 'success' | 'error' | 'info', message: string) => void;
   uploadPatientFile: (file: File, patientId: string) => Promise<AttachedFile>;
+  extractLabText: (file: File) => Promise<string>;
 };
 
 const ReportSheet: React.FC<ReportSheetProps> = ({
@@ -54,6 +55,7 @@ const ReportSheet: React.FC<ReportSheetProps> = ({
   patientId,
   addToast,
   uploadPatientFile,
+  extractLabText,
 }) => {
   return (
     <div
@@ -129,6 +131,7 @@ const ReportSheet: React.FC<ReportSheetProps> = ({
             patientId={patientId}
             addToast={addToast}
             uploadPatientFile={uploadPatientFile}
+            extractLabText={extractLabText}
           />
         ))}
       </div>

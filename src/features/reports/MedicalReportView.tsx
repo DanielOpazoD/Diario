@@ -5,7 +5,6 @@ import ReportResetTemplateModal from '@features/reports/components/ReportResetTe
 import {
   createFallbackReportHost,
   ReportHostContext,
-  useDefaultReportHostContext,
 } from '@features/reports/host/reportHost';
 import { useMedicalReportController } from '@features/reports/hooks/useMedicalReportController';
 import { useReportStyleMount } from '@features/reports/hooks/useReportStyleMount';
@@ -33,13 +32,11 @@ export const MedicalReportViewContent: React.FC<MedicalReportViewProps> = ({ hos
         isSavingLinkedJson={controller.topbar.isSavingLinkedJson}
         hasLinkedJsonSource={controller.topbar.hasLinkedJsonSource}
         linkedJsonFileName={controller.topbar.linkedJsonFileName}
-        canOpenLinkedJsonFile={controller.topbar.canOpenLinkedJsonFile}
         onTemplateChange={controller.topbar.onTemplateChange}
         onAddClinicalUpdateSection={controller.topbar.onAddClinicalUpdateSection}
         onToggleAdvancedEditing={controller.topbar.onToggleAdvancedEditing}
         onToggleStructureEditing={controller.topbar.onToggleStructureEditing}
         onToolbarCommand={controller.topbar.onToolbarCommand}
-        onOpenLinkedJsonFile={controller.topbar.onOpenLinkedJsonFile}
         onOpenResetTemplateModal={controller.topbar.onOpenResetTemplateModal}
         onPrint={controller.topbar.onPrint}
         onUpdateLinkedJson={controller.topbar.onUpdateLinkedJson}
@@ -70,6 +67,7 @@ export const MedicalReportViewContent: React.FC<MedicalReportViewProps> = ({ hos
               patientId={controller.sheet.patientId}
               addToast={controller.sheet.addToast}
               uploadPatientFile={controller.sheet.uploadPatientFile}
+              extractLabText={controller.sheet.extractLabText}
             />
           </div>
           {controller.isGlobalStructureEditing && (
@@ -88,9 +86,4 @@ export const MedicalReportViewContent: React.FC<MedicalReportViewProps> = ({ hos
   );
 };
 
-const MedicalReportView: React.FC = () => {
-  const host = useDefaultReportHostContext();
-  return <MedicalReportViewContent host={host} />;
-};
 
-export default MedicalReportView;

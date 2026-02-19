@@ -5,7 +5,7 @@ import type {
   PatientRecord,
   User,
 } from '@shared/types';
-import type { ReportRecord } from '@domain/report';
+import type { ReportRecord } from '@features/reports/domain';
 import {
   buildReportAssetUploads,
   updateLinkedReportJsonAttachment,
@@ -30,7 +30,6 @@ type UseReportPersistenceActionsParams = {
   ) => Promise<AttachedFile>;
   buildPatientPayload: () => { patientData: PatientCreateInput; typeLabel: string } | null;
   buildDefaultReportFileNameBase: (patientNameOverride?: string) => string;
-  generatePdfAsBlob: () => Promise<Blob>;
   record: ReportRecord;
   linkedJsonSource: LinkedJsonSource | null;
   setLinkedJsonSource: (source: LinkedJsonSource) => void;
@@ -57,7 +56,6 @@ export const useReportPersistenceActions = ({
   updatePatientFileById,
   buildPatientPayload,
   buildDefaultReportFileNameBase,
-  generatePdfAsBlob,
   record,
   linkedJsonSource,
   setLinkedJsonSource,
@@ -84,7 +82,6 @@ export const useReportPersistenceActions = ({
       attachments: attachedFiles,
       failedCount,
       totalUploads,
-      pdfGenerationFailed,
     } = await buildReportAssetUploads({
       patient: {
         id: result.patient.id,
@@ -95,12 +92,7 @@ export const useReportPersistenceActions = ({
       record,
       fileNameBase,
       uploadPatientFile,
-      generatePdfAsBlob,
     });
-
-    if (pdfGenerationFailed) {
-      addToast('error', 'Paciente creado, pero no se pudo generar el PDF estilo impresion.');
-    }
 
     if (attachedFiles.length > 0) {
       updatePatient({
@@ -110,20 +102,19 @@ export const useReportPersistenceActions = ({
     }
 
     if (failedCount === 0 && attachedFiles.length === totalUploads) {
-      addToast('success', 'Paciente creado y adjuntos PDF/JSON guardados.');
+      addToast('success', 'Paciente creado y registro JSON guardado exitosamente.');
       return;
     }
     if (attachedFiles.length > 0) {
-      addToast('info', 'Paciente creado con adjuntos parciales (revisa PDF/JSON en archivos).');
+      addToast('info', 'Paciente creado, pero hubo un error anexando el archivo.');
       return;
     }
-    addToast('error', 'Paciente creado, pero no se pudieron adjuntar PDF/JSON.');
+    addToast('error', 'Paciente creado, pero no se pudo adjuntar el archivo JSON.');
   }, [
     addPatient,
     addToast,
     buildDefaultReportFileNameBase,
     buildPatientPayload,
-    generatePdfAsBlob,
     record,
     savePatientRecord,
     updatePatient,

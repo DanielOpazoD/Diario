@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { generateReportPdfBlob } from '@features/reports/services/reportPdfService';
-import type { ReportRecord } from '@domain/report/entities';
+import type { ReportRecord } from '@features/reports/domain/entities';
 
 const mockDoc = {
   internal: { pageSize: { getWidth: vi.fn(() => 216), getHeight: vi.fn(() => 279) } },

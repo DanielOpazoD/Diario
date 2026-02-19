@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useMemo } from 'react';
-import type { ReportSection } from '@domain/report/entities';
+import type { ReportSection } from '@features/reports/domain/entities';
 import RichTextEditor from '@features/reports/components/RichTextEditor';
 import type { AttachedFile } from '@shared/types';
 import LabResultsUploader from '@features/reports/components/LabResultsUploader';
@@ -19,6 +19,7 @@ interface ClinicalSectionProps {
   patientId?: string;
   addToast: (type: 'success' | 'error' | 'info', message: string) => void;
   uploadPatientFile: (file: File, patientId: string) => Promise<AttachedFile>;
+  extractLabText: (file: File) => Promise<string>;
 }
 
 const ClinicalSection: React.FC<ClinicalSectionProps> = ({
@@ -36,6 +37,7 @@ const ClinicalSection: React.FC<ClinicalSectionProps> = ({
   patientId,
   addToast,
   uploadPatientFile,
+  extractLabText,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const isClinicalUpdate = section.kind === 'clinical-update';
@@ -63,6 +65,7 @@ const ClinicalSection: React.FC<ClinicalSectionProps> = ({
       patientId={patientId}
       onExtractionComplete={(text) => onSectionContentChange(index, (section.content || '') + (section.content ? '\n\n' : '') + text)}
       uploadPatientFile={uploadPatientFile}
+      extractLabText={extractLabText}
       addToast={addToast}
     />
   );

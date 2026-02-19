@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ReportPatientField } from '@domain/report/entities';
+import type { ReportPatientField } from '@features/reports/domain/entities';
 
 interface PatientInfoProps {
   isEditing: boolean;

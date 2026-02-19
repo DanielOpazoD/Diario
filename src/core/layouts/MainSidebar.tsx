@@ -1,5 +1,6 @@
 import { Calendar as CalendarIcon, CheckSquare, FileText, LogOut, Users, X } from 'lucide-react';
 import { ViewMode, User } from '@shared/types';
+// eslint-disable-next-line boundaries/element-types
 import ConnectionStatus from '@core/app/components/ConnectionStatus';
 
 interface MainSidebarProps {

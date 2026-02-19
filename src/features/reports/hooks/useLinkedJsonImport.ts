@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AttachedFile, PatientRecord, User } from '@shared/types';
-import type { ReportRecord } from '@domain/report';
+import type { ReportRecord } from '@features/reports/domain';
 import { parseClinicalReportJsonPayload } from '@features/reports/services/reportJsonService';
 import type { LinkedJsonSource, ReportErrorPayload } from '@features/reports/types';
 

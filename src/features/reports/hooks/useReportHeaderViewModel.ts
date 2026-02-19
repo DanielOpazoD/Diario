@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from 'react';
-import type { ReportRecord } from '@domain/report';
+import type { ReportRecord } from '@features/reports/domain';
 import {
   buildReportFileNameBaseFromRecord,
   getReportHeaderContext,
-} from '@use-cases/reportPatient';
+} from '../utils/reportPatient';
 
 export const useReportHeaderViewModel = (record: ReportRecord) => {
   const metadata = useMemo(() => getReportHeaderContext(record), [record]);

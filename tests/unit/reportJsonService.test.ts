@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ReportRecord } from '@domain/report/entities';
+import type { ReportRecord } from '@features/reports/domain/entities';
 import {
   buildClinicalReportJsonPayload,
   parseClinicalReportJsonPayload,

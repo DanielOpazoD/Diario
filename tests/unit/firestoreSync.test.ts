@@ -26,7 +26,7 @@ describe('firestoreSync helpers', () => {
     addPendingDeletion('patient-1');
     expect(isPendingDeletion('patient-1')).toBe(true);
 
-    now.mockReturnValue(40_001);
+    now.mockReturnValue(61_001);
     expect(isPendingDeletion('patient-1')).toBe(false);
 
     now.mockRestore();
@@ -52,7 +52,7 @@ describe('firestoreSync helpers', () => {
     })).resolves.toBeUndefined();
     await expect(deletePatientFromFirebase('p1')).resolves.toBeUndefined();
 
-    const unsubscribe = subscribeToPatients(() => {});
+    const unsubscribe = subscribeToPatients(() => { });
     expect(typeof unsubscribe).toBe('function');
     unsubscribe();
   });
