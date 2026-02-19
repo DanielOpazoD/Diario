@@ -131,7 +131,9 @@ const AppViews: React.FC<AppViewsProps> = ({
         path={VIEW_ROUTES.reports}
         element={(
           <FeatureErrorBoundary featureName="Informes">
-            <ReportAppAdapter />
+            <Suspense fallback={<ViewSkeleton />}>
+              <ReportAppAdapter />
+            </Suspense>
           </FeatureErrorBoundary>
         )}
       />
