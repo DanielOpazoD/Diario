@@ -1,10 +1,7 @@
-import React, { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useRef, useCallback } from 'react';
 
-import { ViewMode } from '@shared/types';
 import { useLogger } from '@core/context/LogContext';
 import useAutoLock from '@core/hooks/useAutoLock';
-import useModalManager from '@shared/hooks/useModalManager';
-import { usePatientCrud } from '@core/patient';
 import useViewLifecycle from '@shared/hooks/useViewLifecycle';
 import { usePrefetch } from '@shared/hooks/usePrefetch';
 import useAppStartup from '@core/hooks/useAppStartup';
@@ -18,79 +15,34 @@ import UpdateBanner from '@core/components/UpdateBanner';
 import { AppViews, AppModals, DateNavigator } from '@features/daily';
 import { BookmarksBar } from '@features/bookmarks';
 import { useAppActions } from '@core/app/state/useAppActions';
-import { useUser, useRecords, usePatientTypes, useShowBookmarkBar, useSecurityConfig } from '@core/app/state/useAppState';
-import { pathFromView, viewFromPath } from '@shared/routes';
+import { useUser, useRecords, useShowBookmarkBar, useSecurityConfig, useCurrentDate } from '@core/app/state/useAppState';
+import { useNavigation } from '@shared/hooks/useNavigation';
 import AIChatEntry from '@features/ai/AIChatEntry';
 import { getDebugModeFlag } from '@shared/utils/storageFlags';
 import useRouteGuard from '@core/app/shell/useRouteGuard';
 
 const DebugConsole = lazy(() => import('@core/components/DebugConsole'));
+
 const AppShell: React.FC = () => {
   const { addLog } = useLogger();
   const showDebugConsole = getDebugModeFlag();
 
   const user = useUser();
   const records = useRecords();
-  const patientTypes = usePatientTypes();
   const showBookmarkBar = useShowBookmarkBar();
   const { securityPinHash, securityPinSalt, autoLockMinutes } = useSecurityConfig();
+  const currentDate = useCurrentDate();
 
   const {
-    logout,
+    setCurrentDate,
+    openNewPatientModal,
+    openBookmarksModal,
+    openAppMenu,
     addToast,
-    setRecords,
-    addPatient,
-    updatePatient,
-    deletePatient,
   } = useAppActions();
 
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const { location, navigate } = useRouteGuard();
-  const viewMode = useMemo<ViewMode>(() => viewFromPath(location.pathname), [location.pathname]);
-
-  const {
-    isPatientModalOpen,
-    editingPatient,
-    patientToDelete,
-    isBookmarksModalOpen,
-    editingBookmarkId,
-    isAppMenuOpen,
-    openNewPatientModal,
-    openEditPatientModal,
-    closePatientModal,
-    requestDeletePatient,
-    closeDeleteConfirmation,
-    openBookmarksModal,
-    closeBookmarksModal,
-    openAppMenu,
-    closeAppMenu,
-    setEditingPatient,
-    setPatientToDelete,
-    initialTab,
-    patientModalMode,
-  } = useModalManager();
-
-  const {
-    handleSavePatient,
-    handleAutoSavePatient,
-    handleSaveMultiplePatients,
-    confirmDeletePatient,
-    handleMovePatientsToDate,
-    handleCopyPatientsToDate,
-  } = usePatientCrud({
-    records,
-    editingPatient,
-    patientToDelete,
-    setEditingPatient,
-    setPatientToDelete,
-    setRecords,
-    addPatient,
-    updatePatient,
-    deletePatient,
-    addToast,
-  });
-
-
+  const { currentView: viewMode } = useNavigation();
+  useRouteGuard();
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const { isLocked, handleUnlock: unlockWithPin } = useAutoLock({
@@ -105,35 +57,19 @@ const AppShell: React.FC = () => {
     onUnlock: () => addToast('success', 'Sesión desbloqueada')
   });
 
+  const handleUnlock = useCallback(async (pinAttempt: string) => {
+    const success = await unlockWithPin(pinAttempt);
+    if (!success) {
+      addToast('error', 'PIN incorrecto');
+    }
+    return success;
+  }, [addToast, unlockWithPin]);
+
   const { prefetchOnHover } = usePrefetch(viewMode);
   useViewLifecycle(viewMode, mainScrollRef);
   useAppStartup(addLog);
   useStorageMigration(addLog);
   useStorageHydration(addLog);
-
-
-  const handleLogout = useCallback(async () => {
-    logout();
-  }, [logout]);
-
-
-
-  const handleUnlock = useCallback(async (pinAttempt: string) => {
-    const success = await unlockWithPin(pinAttempt);
-
-    if (!success) {
-      addToast('error', 'PIN incorrecto');
-    }
-
-    return success;
-  }, [addToast, unlockWithPin]);
-
-  const handleNavigation = useCallback((view: ViewMode) => {
-    const target = pathFromView(view);
-    if (location.pathname !== target) {
-      navigate(target);
-    }
-  }, [location.pathname, navigate]);
 
   if (!user) return <Login />;
 
@@ -151,54 +87,20 @@ const AppShell: React.FC = () => {
       )}
 
       <MainLayout
-        viewMode={viewMode}
-        onNavigate={handleNavigation}
-        user={user}
         onOpenNewPatient={openNewPatientModal}
         onOpenAppMenu={openAppMenu}
-        onLogout={handleLogout}
         contentRef={mainScrollRef}
         showBookmarkBar={showBookmarkBar}
-        bookmarkBar={<BookmarksBar onOpenManager={openBookmarksModal} />}
+        bookmarkBar={<BookmarksBar onOpenManager={() => openBookmarksModal()} />}
         dailyDateNavigator={(
           <DateNavigator currentDate={currentDate} onSelectDate={setCurrentDate} records={records} />
         )}
         onPrefetchView={prefetchOnHover}
       >
-        <AppViews
-          currentDate={currentDate}
-          records={records}
-          patientTypes={patientTypes}
-          onAddPatient={openNewPatientModal}
-          onEditPatient={openEditPatientModal}
-          onDeletePatient={requestDeletePatient}
-          onMovePatients={handleMovePatientsToDate}
-          onCopyPatients={handleCopyPatientsToDate}
-          onOpenBookmarksModal={openBookmarksModal}
-        />
+        <AppViews />
       </MainLayout>
 
-      <AppModals
-        currentDate={currentDate}
-        isPatientModalOpen={isPatientModalOpen}
-        editingPatient={editingPatient}
-        initialTab={initialTab}
-        patientToDelete={patientToDelete}
-        isBookmarksModalOpen={isBookmarksModalOpen}
-        editingBookmarkId={editingBookmarkId}
-        onToast={addToast}
-        onClosePatientModal={closePatientModal}
-        onSavePatient={handleSavePatient}
-        onAutoSavePatient={handleAutoSavePatient}
-        onSaveMultiplePatients={handleSaveMultiplePatients}
-        onCloseDeleteConfirmation={closeDeleteConfirmation}
-        onConfirmDelete={confirmDeletePatient}
-        onCloseBookmarksModal={closeBookmarksModal}
-        isAppMenuOpen={isAppMenuOpen}
-        onCloseAppMenu={closeAppMenu}
-        onNavigate={handleNavigation}
-        patientModalMode={patientModalMode}
-      />
+      <AppModals />
 
       <AIChatEntry />
     </div>

@@ -3,30 +3,46 @@ import { renderHook, act } from '@testing-library/react';
 import { usePatientCrud } from '@core/patient';
 import type { PatientCreateInput } from '@shared/types';
 
+// Mock the state and actions hooks
+vi.mock('@core/app/state/useAppState', () => ({
+    useRecords: vi.fn(),
+    useModalState: vi.fn(),
+}));
+
+vi.mock('@core/app/state/useAppActions', () => ({
+    useAppActions: vi.fn(),
+}));
+
+import { useRecords, useModalState } from '@core/app/state/useAppState';
+import { useAppActions } from '@core/app/state/useAppActions';
+
 describe('usePatientCrud', () => {
     const mockAddPatient = vi.fn();
     const mockUpdatePatient = vi.fn();
     const mockDeletePatient = vi.fn();
     const mockSetRecords = vi.fn();
     const mockAddToast = vi.fn();
-    const mockSetEditingPatient = vi.fn();
-    const mockSetPatientToDelete = vi.fn();
-
-    const baseParams = {
-        records: [],
-        editingPatient: null,
-        patientToDelete: null,
-        setEditingPatient: mockSetEditingPatient,
-        setPatientToDelete: mockSetPatientToDelete,
-        setRecords: mockSetRecords,
-        addPatient: mockAddPatient,
-        updatePatient: mockUpdatePatient,
-        deletePatient: mockDeletePatient,
-        addToast: mockAddToast,
-    };
+    const mockClosePatientModal = vi.fn();
+    const mockCloseDeleteConfirmation = vi.fn();
 
     beforeEach(() => {
         vi.clearAllMocks();
+
+        // Default mock implementations
+        (useRecords as any).mockReturnValue([]);
+        (useModalState as any).mockReturnValue({
+            editingPatient: null,
+            patientToDelete: null,
+        });
+        (useAppActions as any).mockReturnValue({
+            setRecords: mockSetRecords,
+            addPatient: mockAddPatient,
+            updatePatient: mockUpdatePatient,
+            deletePatient: mockDeletePatient,
+            addToast: mockAddToast,
+            closePatientModal: mockClosePatientModal,
+            closeDeleteConfirmation: mockCloseDeleteConfirmation,
+        });
     });
 
     const buildPatientFormData = (overrides: Partial<PatientCreateInput> = {}): PatientCreateInput => ({
@@ -42,7 +58,7 @@ describe('usePatientCrud', () => {
     });
 
     it('handles saving a new patient', () => {
-        const { result } = renderHook(() => usePatientCrud(baseParams));
+        const { result } = renderHook(() => usePatientCrud());
 
         const patientData = buildPatientFormData({ name: 'PEDRO PICAPIEDRA' });
 
@@ -51,16 +67,20 @@ describe('usePatientCrud', () => {
         });
 
         expect(mockAddPatient).toHaveBeenCalled();
-        // Verify title case conversion
         const addedPatient = mockAddPatient.mock.calls[0][0];
         expect(addedPatient.name).toBe('Pedro Picapiedra');
         expect(mockAddToast).toHaveBeenCalledWith('success', 'Nuevo paciente registrado');
-        expect(mockSetEditingPatient).toHaveBeenCalledWith(null);
+        expect(mockClosePatientModal).toHaveBeenCalled();
     });
 
     it('handles updating an existing patient', () => {
         const editingPatient = { id: '1', name: 'Old Name', createdAt: 123 } as any;
-        const { result } = renderHook(() => usePatientCrud({ ...baseParams, editingPatient }));
+        (useModalState as any).mockReturnValue({
+            editingPatient,
+            patientToDelete: null,
+        });
+
+        const { result } = renderHook(() => usePatientCrud());
 
         act(() => {
             result.current.handleSavePatient(buildPatientFormData({ name: 'new name' }));
@@ -74,7 +94,12 @@ describe('usePatientCrud', () => {
     });
 
     it('confirms deletion when patientToDelete is set', () => {
-        const { result } = renderHook(() => usePatientCrud({ ...baseParams, patientToDelete: 'id-to-delete' }));
+        (useModalState as any).mockReturnValue({
+            editingPatient: null,
+            patientToDelete: 'id-to-delete',
+        });
+
+        const { result } = renderHook(() => usePatientCrud());
 
         act(() => {
             result.current.confirmDeletePatient();
@@ -82,11 +107,11 @@ describe('usePatientCrud', () => {
 
         expect(mockDeletePatient).toHaveBeenCalledWith('id-to-delete');
         expect(mockAddToast).toHaveBeenCalledWith('info', 'Registro eliminado');
-        expect(mockSetPatientToDelete).toHaveBeenCalledWith(null);
+        expect(mockCloseDeleteConfirmation).toHaveBeenCalled();
     });
 
     it('does nothing on confirmDelete if no patientToDelete', () => {
-        const { result } = renderHook(() => usePatientCrud(baseParams));
+        const { result } = renderHook(() => usePatientCrud());
 
         act(() => {
             result.current.confirmDeletePatient();
@@ -100,7 +125,9 @@ describe('usePatientCrud', () => {
             { id: 'p1', name: 'P1', date: '2024-01-01' },
             { id: 'p2', name: 'P2', date: '2024-01-01' }
         ] as any;
-        const { result } = renderHook(() => usePatientCrud({ ...baseParams, records }));
+        (useRecords as any).mockReturnValue(records);
+
+        const { result } = renderHook(() => usePatientCrud());
 
         act(() => {
             result.current.handleMovePatientsToDate(['p1'], '2024-01-02');
@@ -116,7 +143,9 @@ describe('usePatientCrud', () => {
         const records = [
             { id: 'p1', name: 'P1', date: '2024-01-01', pendingTasks: [], attachedFiles: [] }
         ] as any;
-        const { result } = renderHook(() => usePatientCrud({ ...baseParams, records }));
+        (useRecords as any).mockReturnValue(records);
+
+        const { result } = renderHook(() => usePatientCrud());
 
         act(() => {
             result.current.handleCopyPatientsToDate(['p1'], '2024-01-02');

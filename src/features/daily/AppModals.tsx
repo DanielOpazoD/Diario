@@ -1,7 +1,9 @@
 import React, { Suspense, lazy } from 'react';
-import { PatientCreateInput, PatientRecord, PatientUpdateInput, ViewMode } from '@shared/types';
 import { formatLocalYMD } from '@shared/utils/dateUtils';
 import { ModalSkeleton } from '@core/ui';
+import { useCurrentDate, useModalState } from '@core/app/state/useAppState';
+import { useAppActions } from '@core/app/state/useAppActions';
+import { usePatientCrud } from '@core/patient';
 
 const PatientModal = lazy(() => import('@core/patient/components/PatientModal'));
 const PatientHistoryModal = lazy(() => import('@core/patient/components/PatientHistoryModal'));
@@ -9,49 +11,34 @@ const ConfirmationModal = lazy(() => import('@core/ui').then(m => ({ default: m.
 const BookmarksModal = lazy(() => import('@features/bookmarks/BookmarksModal'));
 const AppMenuModal = lazy(() => import('./AppMenuModal'));
 
-interface AppModalsProps {
-  currentDate: Date;
-  isPatientModalOpen: boolean;
-  editingPatient: PatientRecord | null;
-  initialTab?: 'clinical' | 'files';
-  patientToDelete: string | null;
-  isBookmarksModalOpen: boolean;
-  editingBookmarkId: string | null;
-  isAppMenuOpen: boolean;
-  patientModalMode?: 'daily' | 'history';
-  onToast: (type: 'success' | 'error' | 'info', message: string) => void;
-  onClosePatientModal: () => void;
-  onSavePatient: (patientData: PatientCreateInput | PatientUpdateInput) => void;
-  onAutoSavePatient: (patientData: PatientCreateInput | PatientUpdateInput) => void;
-  onSaveMultiplePatients: (patientsData: PatientCreateInput[]) => void;
-  onCloseDeleteConfirmation: () => void;
-  onConfirmDelete: () => void;
-  onCloseBookmarksModal: () => void;
-  onCloseAppMenu: () => void;
-  onNavigate: (view: ViewMode) => void;
-}
+const AppModals: React.FC = () => {
+  const currentDate = useCurrentDate();
+  const {
+    isPatientModalOpen,
+    editingPatient,
+    patientToDelete,
+    isBookmarksModalOpen,
+    editingBookmarkId,
+    isAppMenuOpen,
+    initialTab,
+    patientModalMode
+  } = useModalState();
 
-const AppModals: React.FC<AppModalsProps> = ({
-  currentDate,
-  isPatientModalOpen,
-  editingPatient,
-  patientToDelete,
-  isBookmarksModalOpen,
-  editingBookmarkId,
-  onToast,
-  onClosePatientModal,
-  onSavePatient,
-  onAutoSavePatient,
-  onSaveMultiplePatients,
-  onCloseDeleteConfirmation,
-  onConfirmDelete,
-  onCloseBookmarksModal,
-  onCloseAppMenu,
-  onNavigate,
-  isAppMenuOpen,
-  initialTab,
-  patientModalMode = 'daily',
-}) => {
+  const {
+    addToast,
+    closePatientModal,
+    closeDeleteConfirmation,
+    closeBookmarksModal,
+    closeAppMenu,
+  } = useAppActions();
+
+  const {
+    handleSavePatient,
+    handleAutoSavePatient,
+    handleSaveMultiplePatients,
+    confirmDeletePatient,
+  } = usePatientCrud();
+
   const selectedDate = formatLocalYMD(currentDate);
 
   return (
@@ -61,18 +48,18 @@ const AppModals: React.FC<AppModalsProps> = ({
           {patientModalMode === 'history' ? (
             <PatientHistoryModal
               isOpen={isPatientModalOpen}
-              onClose={onClosePatientModal}
+              onClose={closePatientModal}
               record={editingPatient}
               initialTab={initialTab}
             />
           ) : (
             <PatientModal
               isOpen={isPatientModalOpen}
-              onClose={onClosePatientModal}
-              onSave={onSavePatient}
-              onAutoSave={onAutoSavePatient}
-              onSaveMultiple={onSaveMultiplePatients}
-              addToast={onToast}
+              onClose={closePatientModal}
+              onSave={handleSavePatient}
+              onAutoSave={handleAutoSavePatient}
+              onSaveMultiple={handleSaveMultiplePatients}
+              addToast={addToast}
               initialData={editingPatient}
               selectedDate={selectedDate}
               initialTab={initialTab}
@@ -86,8 +73,8 @@ const AppModals: React.FC<AppModalsProps> = ({
         <Suspense fallback={null}>
           <ConfirmationModal
             isOpen={!!patientToDelete}
-            onClose={onCloseDeleteConfirmation}
-            onConfirm={onConfirmDelete}
+            onClose={closeDeleteConfirmation}
+            onConfirm={confirmDeletePatient}
             title="Eliminar Paciente"
             message="¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer."
             isDangerous={true}
@@ -99,7 +86,7 @@ const AppModals: React.FC<AppModalsProps> = ({
         <Suspense fallback={<ModalSkeleton />}>
           <BookmarksModal
             isOpen={isBookmarksModalOpen}
-            onClose={onCloseBookmarksModal}
+            onClose={closeBookmarksModal}
             editingBookmarkId={editingBookmarkId}
           />
         </Suspense>
@@ -109,8 +96,7 @@ const AppModals: React.FC<AppModalsProps> = ({
         <Suspense fallback={<ModalSkeleton />}>
           <AppMenuModal
             isOpen={isAppMenuOpen}
-            onClose={onCloseAppMenu}
-            onNavigate={onNavigate}
+            onClose={closeAppMenu}
           />
         </Suspense>
       )}

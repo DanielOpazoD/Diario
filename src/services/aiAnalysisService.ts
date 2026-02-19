@@ -4,15 +4,10 @@
  */
 
 import { z } from 'zod';
+import { AIAnalysisResultSchema, PendingTaskSchema } from '@shared/schemas';
 import { analyzeClinicalNote, generateClinicalSummary } from '@services/geminiService';
 import { emitStructuredLog } from '@services/logger';
 import { PendingTask } from '@shared/types';
-
-// Schema for AI analysis response
-const AIAnalysisResultSchema = z.object({
-    structuredDiagnosis: z.string(),
-    extractedTasks: z.array(z.string()),
-});
 
 export type AIAnalysisResult = z.infer<typeof AIAnalysisResultSchema>;
 
@@ -56,11 +51,15 @@ export const analyzeNote = async (
         }
 
         // Process tasks
-        const newTasks: PendingTask[] = result.extractedTasks.map((text) => ({
-            id: crypto.randomUUID(),
-            text,
-            isCompleted: false,
-        }));
+        const newTasks: PendingTask[] = result.extractedTasks.map((text) => {
+            const rawTask = {
+                id: crypto.randomUUID(),
+                text,
+                isCompleted: false,
+                createdAt: Date.now(),
+            };
+            return PendingTaskSchema.parse(rawTask) as PendingTask;
+        });
 
         if (newTasks.length > 0) {
             callbacks.onTasksExtracted(newTasks);

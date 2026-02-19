@@ -1,29 +1,21 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { ViewMode, User } from '@shared/types';
+import React, { useMemo, useState, useEffect } from 'react';
 import MainSidebar from '@core/layouts/MainSidebar';
 import MainTopBar from '@core/layouts/MainTopBar';
+import { useNavigation } from '@shared/hooks/useNavigation';
 
 interface MainLayoutProps {
-  viewMode: ViewMode;
-  onNavigate: (view: ViewMode) => void;
-  user: User;
   onOpenNewPatient: () => void;
-  onLogout: () => void;
   onOpenAppMenu: () => void;
   contentRef?: React.RefObject<HTMLDivElement>;
   showBookmarkBar?: boolean;
   bookmarkBar?: React.ReactNode;
   dailyDateNavigator?: React.ReactNode;
   children: React.ReactNode;
-  onPrefetchView?: (view: ViewMode) => void;
+  onPrefetchView?: (view: any) => void;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({
-  viewMode,
-  onNavigate,
-  user,
   onOpenNewPatient,
-  onLogout,
   onOpenAppMenu,
   contentRef,
   showBookmarkBar = false,
@@ -32,20 +24,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   children,
   onPrefetchView,
 }) => {
+  const { currentView: viewMode } = useNavigation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isMobile = useMemo(() => typeof window !== 'undefined' && window.innerWidth < 768, []);
+
   useEffect(() => {
     if (isMobile) {
       setIsSidebarOpen(false);
     }
   }, [viewMode, isMobile]);
-
-  const handleNavigation = useCallback((view: ViewMode) => {
-    onNavigate(view);
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
-  }, [isMobile, onNavigate]);
 
   const bookmarkBarOffset = showBookmarkBar ? 52 : 0;
 
@@ -59,12 +46,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
         <MainSidebar
           isSidebarOpen={isSidebarOpen}
-          viewMode={viewMode}
-          user={user}
           onOpenAppMenu={onOpenAppMenu}
           onCloseSidebar={() => setIsSidebarOpen(false)}
-          onNavigate={handleNavigation}
-          onLogout={onLogout}
           onPrefetchView={onPrefetchView}
         />
 

@@ -1,65 +1,73 @@
 import { useCallback } from 'react';
 import { PatientRecord, PatientCreateInput, PatientUpdateInput } from '@shared/types';
-import { savePatientRecord } from '@use-cases/patient/save';
-import { createPatientsBatch } from '@use-cases/patient/batch';
 import { movePatients } from '@use-cases/patient/move';
 import { copyPatients } from '@use-cases/patient/copy';
 import { deletePatientWithSync } from '@use-cases/patient/delete';
+import { useRecords, useModalState } from '@core/app/state/useAppState';
+import { useAppActions } from '@core/app/state/useAppActions';
+import { PatientRepository } from '@core/patient/repository/PatientRepository';
 
-interface UsePatientCrudParams {
-  records: PatientRecord[];
-  editingPatient: PatientRecord | null;
-  patientToDelete: string | null;
-  setEditingPatient: (patient: PatientRecord | null) => void;
-  setPatientToDelete: (patientId: string | null) => void;
-  setRecords: (records: PatientRecord[]) => void;
-  addPatient: (patient: PatientRecord) => void;
-  updatePatient: (patient: PatientRecord) => void;
-  deletePatient: (patientId: string) => void;
-  addToast: (type: 'success' | 'error' | 'info', message: string) => void;
-}
+const usePatientCrud = () => {
+  const records = useRecords();
+  const { editingPatient, patientToDelete } = useModalState();
+  const {
+    setRecords,
+    addPatient,
+    updatePatient,
+    deletePatient,
+    addToast,
+    closePatientModal,
+    closeDeleteConfirmation,
+  } = useAppActions();
 
-const usePatientCrud = ({
-  records,
-  editingPatient,
-  patientToDelete,
-  setEditingPatient,
-  setPatientToDelete,
-  setRecords,
-  addPatient,
-  updatePatient,
-  deletePatient,
-  addToast,
-}: UsePatientCrudParams) => {
   const handleSavePatient = useCallback(
     (patientData: PatientCreateInput | PatientUpdateInput) => {
       const patientId = (patientData as PatientRecord).id;
       const existing = editingPatient || records.find((record) => record.id === patientId) || null;
-      const result = savePatientRecord(patientData, existing);
 
-      if (result.isUpdate) {
-        updatePatient(result.patient);
+      let result;
+      if (existing) {
+        result = PatientRepository.update(existing, patientData as PatientUpdateInput);
       } else {
-        addPatient(result.patient);
+        result = PatientRepository.create(patientData as PatientCreateInput);
       }
-      addToast('success', result.message);
-      setEditingPatient(null);
+
+      if (!result.success) {
+        addToast('error', `Error de validación: ${result.error}`);
+        return;
+      }
+
+      if (existing) {
+        updatePatient(result.data);
+        addToast('success', 'Paciente actualizado');
+      } else {
+        addPatient(result.data);
+        addToast('success', 'Nuevo paciente registrado');
+      }
+
+      closePatientModal();
     },
-    [addPatient, addToast, editingPatient, records, setEditingPatient, updatePatient]
+    [addPatient, addToast, closePatientModal, editingPatient, records, updatePatient]
   );
 
   const handleAutoSavePatient = useCallback(
     (patientData: PatientCreateInput | PatientUpdateInput) => {
       const patientId = (patientData as PatientRecord).id;
-      // Use the latest records from the editingPatient or passed props
-      // Note: we keep editingPatient in deps to ensure we have the context of what's being edited
       const existing = editingPatient || (patientId ? records.find((record) => record.id === patientId) : null) || null;
-      const result = savePatientRecord(patientData, existing);
 
-      if (result.isUpdate) {
-        updatePatient(result.patient);
+      let result;
+      if (existing) {
+        result = PatientRepository.update(existing, patientData as PatientUpdateInput);
       } else {
-        addPatient(result.patient);
+        result = PatientRepository.create(patientData as PatientCreateInput);
+      }
+
+      if (result.success) {
+        if (existing) {
+          updatePatient(result.data);
+        } else {
+          addPatient(result.data);
+        }
       }
     },
     [addPatient, editingPatient, records, updatePatient]
@@ -67,9 +75,27 @@ const usePatientCrud = ({
 
   const handleSaveMultiplePatients = useCallback(
     (patientsData: PatientCreateInput[]) => {
-      const newPatients = createPatientsBatch(patientsData);
-      newPatients.forEach(addPatient);
-      addToast('success', `${newPatients.length} pacientes registrados`);
+      const validPatients: PatientRecord[] = [];
+      const errors: string[] = [];
+
+      patientsData.forEach((data, index) => {
+        const result = PatientRepository.create(data);
+        if (result.success) {
+          validPatients.push(result.data);
+        } else {
+          errors.push(`Paciente ${index + 1}: ${result.error}`);
+        }
+      });
+
+      validPatients.forEach(addPatient);
+
+      if (validPatients.length > 0) {
+        addToast('success', `${validPatients.length} pacientes registrados`);
+      }
+
+      if (errors.length > 0) {
+        addToast('error', `Errores en ${errors.length} registros: ${errors[0]}`);
+      }
     },
     [addPatient, addToast]
   );
@@ -79,9 +105,9 @@ const usePatientCrud = ({
       deletePatient(patientToDelete);
       deletePatientWithSync(patientToDelete).catch(() => undefined);
       addToast('info', 'Registro eliminado');
-      setPatientToDelete(null);
+      closeDeleteConfirmation();
     }
-  }, [addToast, deletePatient, patientToDelete, setPatientToDelete]);
+  }, [addToast, deletePatient, patientToDelete, closeDeleteConfirmation]);
 
   const handleMovePatientsToDate = useCallback(
     (patientIds: string[], targetDate: string) => {

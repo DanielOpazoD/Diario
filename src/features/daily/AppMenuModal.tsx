@@ -1,19 +1,23 @@
 import React from 'react';
 import { X, Settings, Bookmark, BarChart2, FileText } from 'lucide-react';
 import { ViewMode } from '@shared/types';
+import { useNavigation } from '@shared/hooks/useNavigation';
+import { useAppActions } from '@core/app/state/useAppActions';
 
 interface AppMenuModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onNavigate: (view: ViewMode) => void;
 }
 
-const AppMenuModal: React.FC<AppMenuModalProps> = ({ isOpen, onClose, onNavigate }) => {
+const AppMenuModal: React.FC<AppMenuModalProps> = ({ isOpen, onClose }) => {
+    const { navigate } = useNavigation();
+    const { closeAppMenu } = useAppActions();
+
     if (!isOpen) return null;
 
     const handleNavigation = (view: ViewMode) => {
-        onNavigate(view);
-        onClose();
+        navigate(view);
+        closeAppMenu();
     };
 
     const menuItems = [

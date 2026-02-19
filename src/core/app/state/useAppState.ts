@@ -13,3 +13,16 @@ export const useSecurityConfig = () => useAppStore(useShallow(state => ({
   securityPinSalt: state.securityPinSalt,
   autoLockMinutes: state.autoLockMinutes,
 })));
+
+export const useCurrentDate = () => useAppStore(state => state.currentDate);
+export const useModalState = () => useAppStore(useShallow(state => ({
+  isPatientModalOpen: state.isPatientModalOpen,
+  editingPatient: state.editingPatient,
+  patientToDelete: state.patientToDelete,
+  initialTab: state.initialTab,
+  isBookmarksModalOpen: state.isBookmarksModalOpen,
+  editingBookmarkId: state.editingBookmarkId,
+  isAppMenuOpen: state.isAppMenuOpen,
+  patientModalMode: state.patientModalMode,
+})));
+

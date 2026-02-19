@@ -8,10 +8,11 @@ import { createSecuritySlice, SecuritySlice } from '@core/stores/slices/security
 import { createPreferencesSlice, PreferencesSlice } from '@core/stores/slices/preferencesSlice';
 import { BookmarksSlice, createBookmarkSlice } from '@core/stores/slices/bookmarkSlice';
 import { createUiSlice, UiSlice } from '@core/stores/slices/uiSlice';
+import { createNavigationSlice, NavigationSlice } from '@core/stores/slices/navigationSlice';
 import { buildInitialState } from '@core/stores/initialState';
 import { applyThemeClass } from '@shared/utils/theme';
 
-type AppStore = PatientSlice & TaskSlice & UserSlice & PatientTypesSlice & SecuritySlice & PreferencesSlice & BookmarksSlice & UiSlice;
+type AppStore = PatientSlice & TaskSlice & UserSlice & PatientTypesSlice & SecuritySlice & PreferencesSlice & BookmarksSlice & UiSlice & NavigationSlice;
 
 const {
   initialRecords,
@@ -38,6 +39,7 @@ const useAppStore = create<AppStore>()(
         ...createBookmarkSlice(set, get, api),
 
         ...createUiSlice(set, get, api),
+        ...createNavigationSlice(set, get, api),
 
         // Overwrite initial state with loaded data if available
         records: initialRecords,
@@ -62,7 +64,7 @@ const useAppStore = create<AppStore>()(
 
 applyThemeClass(useAppStore.getState().theme);
 
-        // Side effects are now handled by core/app/persistence.ts
+// Side effects are now handled by core/app/persistence.ts
 
 // Subscriber logic removed from here as per Phase 3 Consolidation.
 

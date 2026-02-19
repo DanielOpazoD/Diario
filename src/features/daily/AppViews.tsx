@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { PatientRecord, PatientTypeConfig } from '@shared/types';
 import { DEFAULT_ROUTE, VIEW_ROUTES } from '@shared/routes';
 import {
   ViewSkeleton,
@@ -11,6 +10,10 @@ import {
   HistorySkeleton,
   FeatureErrorBoundary,
 } from '@core/ui';
+import { useCurrentDate, useRecords, usePatientTypes } from '@core/app/state/useAppState';
+import { useAppActions } from '@core/app/state/useAppActions';
+import { usePatientCrud } from '@core/patient';
+import { useLocation } from 'react-router-dom';
 
 const DailyView = lazy(() => import('@features/daily/DailyView'));
 const StatsView = lazy(() => import('@features/stats/Stats'));
@@ -20,32 +23,23 @@ const TaskDashboard = lazy(() => import('@features/daily/TaskDashboard'));
 const Settings = lazy(() => import('@features/settings/Settings'));
 const ReportAppAdapter = lazy(() => import('@features/daily/components/ReportAppAdapter'));
 
-interface AppViewsProps {
-  currentDate: Date;
-  records: PatientRecord[];
-  patientTypes: PatientTypeConfig[];
-  onAddPatient: () => void;
-  onEditPatient: (patient: PatientRecord, initialTab?: 'clinical' | 'files', mode?: 'daily' | 'history') => void;
-  onDeletePatient: (patientId: string) => void;
-  onMovePatients: (patientIds: string[], targetDate: string) => void;
-  onCopyPatients: (patientIds: string[], targetDate: string) => void;
-  onOpenBookmarksModal: (bookmarkId: string | null) => void;
-}
-
-import { useLocation } from 'react-router-dom';
-
-const AppViews: React.FC<AppViewsProps> = ({
-  currentDate,
-  records,
-  patientTypes,
-  onAddPatient,
-  onEditPatient,
-  onDeletePatient,
-  onMovePatients,
-  onCopyPatients,
-  onOpenBookmarksModal,
-}) => {
+const AppViews: React.FC = () => {
   const location = useLocation();
+  const currentDate = useCurrentDate();
+  const records = useRecords();
+  const patientTypes = usePatientTypes();
+
+  const {
+    openNewPatientModal,
+    openEditPatientModal,
+    requestDeletePatient,
+    openBookmarksModal,
+  } = useAppActions();
+
+  const {
+    handleMovePatientsToDate,
+    handleCopyPatientsToDate,
+  } = usePatientCrud();
 
   React.useLayoutEffect(() => {
     if (document.startViewTransition) {
@@ -64,11 +58,11 @@ const AppViews: React.FC<AppViewsProps> = ({
                 currentDate={currentDate}
                 records={records}
                 patientTypes={patientTypes}
-                onAddPatient={onAddPatient}
-                onEditPatient={onEditPatient}
-                onDeletePatient={onDeletePatient}
-                onMovePatients={onMovePatients}
-                onCopyPatients={onCopyPatients}
+                onAddPatient={openNewPatientModal}
+                onEditPatient={openEditPatientModal}
+                onDeletePatient={requestDeletePatient}
+                onMovePatients={handleMovePatientsToDate}
+                onCopyPatients={handleCopyPatientsToDate}
               />
             </Suspense>
           </FeatureErrorBoundary>
@@ -79,7 +73,7 @@ const AppViews: React.FC<AppViewsProps> = ({
         element={(
           <FeatureErrorBoundary featureName="Historial">
             <Suspense fallback={<HistorySkeleton />}>
-              <PatientsHistoryView onEditPatient={onEditPatient} />
+              <PatientsHistoryView onEditPatient={openEditPatientModal} />
             </Suspense>
           </FeatureErrorBoundary>
         )}
@@ -99,7 +93,7 @@ const AppViews: React.FC<AppViewsProps> = ({
         element={(
           <FeatureErrorBoundary featureName="Tareas">
             <Suspense fallback={<TasksSkeleton />}>
-              <TaskDashboard onNavigateToPatient={onEditPatient} />
+              <TaskDashboard onNavigateToPatient={openEditPatientModal} />
             </Suspense>
           </FeatureErrorBoundary>
         )}
@@ -110,8 +104,8 @@ const AppViews: React.FC<AppViewsProps> = ({
           <FeatureErrorBoundary featureName="Marcadores">
             <Suspense fallback={<BookmarksSkeleton />}>
               <BookmarksView
-                onAdd={() => onOpenBookmarksModal(null)}
-                onEdit={(bookmarkId) => onOpenBookmarksModal(bookmarkId)}
+                onAdd={() => openBookmarksModal(null)}
+                onEdit={(bookmarkId) => openBookmarksModal(bookmarkId)}
               />
             </Suspense>
           </FeatureErrorBoundary>

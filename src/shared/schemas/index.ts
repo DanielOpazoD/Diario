@@ -134,7 +134,7 @@ const normalizeAttachedFile = (value: unknown, index: number) => {
 };
 
 // Patient Record (The Core Entity)
-export const PatientRecordSchema = z.object({
+export const PatientRecordBaseSchema = z.object({
     id: z.string(),
     name: z.string().nullable().catch('').transform(v => v ?? ''),
     rut: z.string().nullable().catch('').transform(v => v ?? ''),
@@ -174,7 +174,9 @@ export const PatientRecordSchema = z.object({
             updatedAt: z.number().optional(),
         })
         .optional(),
-}).transform((record) => ({
+});
+
+export const PatientRecordSchema = PatientRecordBaseSchema.transform((record) => ({
     ...record,
     typeId: record.typeId || inferPatientTypeId(record.type),
 }));
@@ -192,11 +194,45 @@ export const SecuritySettingsSchema = z.object({
     autoLockMinutes: z.number().min(1).max(60),
 });
 
-// Inferred Types (to replace manual interfaces eventually)
-export type PatientRecord = z.infer<typeof PatientRecordSchema>;
-export type PendingTask = z.infer<typeof PendingTaskSchema>;
-export type AttachedFile = z.infer<typeof AttachedFileSchema>;
-export type User = z.infer<typeof UserSchema>;
-export type GeneralTask = z.infer<typeof GeneralTaskSchema>;
-export type Bookmark = z.infer<typeof BookmarkSchema>;
-export type BookmarkCategory = z.infer<typeof BookmarkCategorySchema>;
+// Export schemas for inferred types and external use
+export const PatientCreateSchema = PatientRecordBaseSchema.omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+});
+
+export const PatientUpdateSchema = PatientRecordBaseSchema.omit({
+    createdAt: true,
+    updatedAt: true,
+}).extend({
+    id: z.string(),
+});
+
+// AI Analysis Result
+export const AIAnalysisResultSchema = z.object({
+    structuredDiagnosis: z.string(),
+    extractedTasks: z.array(z.string()),
+});
+
+// Extracted Data from IA or other sources
+export const ExtractedPatientDataSchema = z.object({
+    name: z.string().min(1),
+    rut: z.string(),
+    birthDate: z.string(),
+    gender: z.string(),
+    diagnosis: z.string().optional(),
+    clinicalNote: z.string().optional(),
+});
+
+// Utilities
+export const RutSchema = z.string().regex(/^[0-9]+-[0-9kK]{1}$|^[0-9]{1,2}(\.[0-9]{3}){2}-[0-9kK]{1}$/, 'Formato de RUT inválido');
+
+// Inferred Types
+export type PatientRecordValidated = z.infer<typeof PatientRecordSchema>;
+export type PatientCreateInputValidated = z.infer<typeof PatientCreateSchema>;
+export type PendingTaskValidated = z.infer<typeof PendingTaskSchema>;
+export type AttachedFileValidated = z.infer<typeof AttachedFileSchema>;
+export type UserValidated = z.infer<typeof UserSchema>;
+export type GeneralTaskValidated = z.infer<typeof GeneralTaskSchema>;
+export type BookmarkValidated = z.infer<typeof BookmarkSchema>;
+export type BookmarkCategoryValidated = z.infer<typeof BookmarkCategorySchema>;
