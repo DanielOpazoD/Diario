@@ -26,14 +26,14 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
   <>
     {isSidebarOpen && (
       <div
-        className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 md:hidden transition-opacity"
+        className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 md:hidden transition-opacity print:hidden"
         onClick={onCloseSidebar}
       />
     )}
 
     <aside
       key="main-sidebar"
-      className={`fixed inset-y-0 left-0 z-50 w-72 transform transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col h-full ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+      className={`fixed inset-y-0 left-0 z-50 w-72 transform transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col h-full print:hidden ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         } md:translate-x-0 md:bg-white/90 md:dark:bg-gray-900/90 md:backdrop-blur-2xl md:h-screen md:z-40 md:border-r md:border-gray-200/50 md:dark:border-white/5 md:shadow-sm flex-shrink-0`}
     >
       <div className="pt-8 px-7 pb-4 flex items-center justify-between">

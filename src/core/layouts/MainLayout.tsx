@@ -51,7 +51,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
   return (
     <div
-      className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500"
+      className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500 print:h-auto print:overflow-visible"
       style={{ paddingTop: bookmarkBarOffset ? `${bookmarkBarOffset}px` : undefined }}
     >
       {showBookmarkBar && bookmarkBar}
@@ -69,7 +69,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         />
 
         <main
-          className="flex-1 flex flex-col h-full relative bg-gray-50/50 dark:bg-gray-950 overflow-hidden md:ml-72 min-h-0"
+          className="flex-1 flex flex-col h-full relative bg-gray-50/50 dark:bg-gray-950 overflow-hidden md:ml-72 print:ml-0 print:h-auto print:overflow-visible min-h-0"
         >
           <MainTopBar
             viewMode={viewMode}
@@ -80,7 +80,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
           <div
             ref={contentRef}
-            className="flex-1 overflow-y-auto custom-scrollbar px-1 md:px-2 pt-2 md:pt-3 pb-4 md:pb-6 relative scroll-smooth min-h-0"
+            className="flex-1 overflow-y-auto custom-scrollbar px-1 md:px-2 pt-2 md:pt-3 pb-4 md:pb-6 relative scroll-smooth min-h-0 print:p-0 print:overflow-visible"
           >
             {children}
           </div>

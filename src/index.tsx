@@ -1,4 +1,5 @@
 import './shared/utils/cryptoPolyfill';
+import './index.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -43,14 +44,14 @@ if (import.meta.env.DEV && 'serviceWorker' in navigator) {
 const shouldRegisterPwa = import.meta.env.PROD && import.meta.env.VITE_DISABLE_PWA !== 'true';
 const updateSW = shouldRegisterPwa
   ? registerSW({
-      onNeedRefresh: () => {
-        clearServiceWorkerCaches()
-          .catch(() => undefined)
-          .finally(() => {
-            scheduleReload(updateSW);
-          });
-      },
-    })
+    onNeedRefresh: () => {
+      clearServiceWorkerCaches()
+        .catch(() => undefined)
+        .finally(() => {
+          scheduleReload(updateSW);
+        });
+    },
+  })
   : () => undefined;
 
 const currentVersion = import.meta.env.VITE_APP_VERSION || 'dev';

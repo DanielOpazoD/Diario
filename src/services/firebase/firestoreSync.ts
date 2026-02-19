@@ -89,17 +89,32 @@ export const syncIncrementalPatientsToFirebase = async (patients: PatientRecord[
     for (let i = 0; i < patients.length; i += CHUNK_SIZE) {
       const chunk = patients.slice(i, i + CHUNK_SIZE);
       const batch = deps.writeBatch(deps.db);
+      let validCount = 0;
 
       chunk.forEach((patient) => {
-        const docRef = deps.doc(userPatientsRef, patient.id);
-        batch.set(docRef, sanitizeForFirestore(withSyncMeta(patient, 'local')));
+        // Outbound validation to prevent "data poisoning"
+        const result = PatientRecordSchema.safeParse(patient);
+        if (!result.success) {
+          emitStructuredLog('error', 'Firebase', 'Outbound validation failed - skipping sync for record', {
+            id: patient.id,
+            errors: result.error.flatten().fieldErrors,
+          });
+          return;
+        }
+
+        const validPatient = result.data;
+        const docRef = deps.doc(userPatientsRef, validPatient.id);
+        batch.set(docRef, sanitizeForFirestore(withSyncMeta(validPatient, 'local')));
+        validCount++;
       });
 
-      await batch.commit();
-      emitStructuredLog('info', 'Firebase', 'Incremental batch synced successfully', {
-        index: i / CHUNK_SIZE + 1,
-        count: chunk.length,
-      });
+      if (validCount > 0) {
+        await batch.commit();
+        emitStructuredLog('info', 'Firebase', 'Incremental batch synced successfully', {
+          index: i / CHUNK_SIZE + 1,
+          count: validCount,
+        });
+      }
     }
   } catch (error) {
     emitStructuredLog('error', 'Firebase', 'Error during incremental sync', { error });
@@ -220,9 +235,19 @@ export const savePatientToFirebase = async (patient: PatientRecord) => {
   const user = deps.auth.currentUser;
   if (!user) return;
 
+  // Outbound validation
+  const result = PatientRecordSchema.safeParse(patient);
+  if (!result.success) {
+    emitStructuredLog('error', 'Firebase', 'Outbound validation failed for single save', {
+      id: patient.id,
+      errors: result.error.flatten().fieldErrors,
+    });
+    return;
+  }
+
   try {
     const docRef = deps.doc(deps.db, 'users', user.uid, PATIENTS_COLLECTION, patient.id);
-    await deps.setDoc(docRef, sanitizeForFirestore(patient));
+    await deps.setDoc(docRef, sanitizeForFirestore(result.data));
   } catch (error) {
     emitStructuredLog('error', 'Firebase', 'Error saving patient', { error });
   }

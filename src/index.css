@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans antialiased bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300 selection:bg-blue-500 selection:text-white;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/82 backdrop-blur-[24px] saturate-[190%] border border-white/30;
+  }
+
+  .dark .glass {
+    @apply bg-slate-900/75 backdrop-blur-[24px] saturate-[170%] border border-white/10;
+  }
+
+  .glass-card {
+    @apply bg-white/45 backdrop-blur-[14px] border border-white/45 shadow-[0_10px_35px_0_rgba(31, 38, 135, 0.06)];
+  }
+
+  .dark .glass-card {
+    @apply bg-slate-800/35 border border-white/5;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-[7px] h-[7px];
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-400/40 rounded-full border-2 border-transparent bg-clip-padding;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-600/40;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-blue-500/50;
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0) 100%);
+    background-size: 200% 100%;
+  }
+
+  .dark .shimmer-bg {
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0) 100%);
+    background-size: 200% 100%;
+  }
+
+  .mesh-bg {
+    @apply bg-white;
+    background-image:
+      radial-gradient(at 0% 0%, hsla(217, 33%, 95%, 1) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(210, 100%, 96%, 1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(217, 33%, 95%, 1) 0, transparent 50%);
+  }
+
+  .dark .mesh-bg {
+    @apply bg-slate-950;
+    background-image:
+      radial-gradient(at 0% 0%, hsla(222, 47%, 11%, 1) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(217, 91%, 60%, 0.1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(222, 47%, 11%, 1) 0, transparent 50%);
+  }
+}
+
+/* Transitions */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}

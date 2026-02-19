@@ -10,12 +10,14 @@ export const sanitizeText = (input: string): string => {
     if (!input) return '';
 
     return input
-        // Remove HTML/script tags
+        // Remove script, iframe, object, embed, style tags
+        .replace(/<(script|iframe|object|embed|style)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi, '')
+        // Remove other HTML tags
         .replace(/<[^>]*>/g, '')
-        // Remove javascript: protocols
-        .replace(/javascript:/gi, '')
-        // Remove event handlers
-        .replace(/on\w+\s*=/gi, '')
+        // Remove dangerous protocols
+        .replace(/(javascript|data|vbscript):/gi, '')
+        // Remove ALL event handlers (on...)
+        .replace(/\bon\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, '')
         // Normalize whitespace
         .replace(/\s+/g, ' ')
         .trim();
@@ -28,14 +30,14 @@ export const sanitizeClinicalNote = (input: string): string => {
     if (!input) return '';
 
     return input
-        // Remove HTML/script tags but preserve newlines
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        // Remove dangerous tags but preserve content structure
+        .replace(/<(script|iframe|object|embed|style)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi, '')
         .replace(/<[^>]*>/g, '')
-        // Remove javascript: protocols
-        .replace(/javascript:/gi, '')
-        // Remove event handlers
-        .replace(/on\w+\s*=/gi, '')
-        // Preserve line breaks (important for clinical notes)
+        // Remove dangerous protocols
+        .replace(/(javascript|data|vbscript):/gi, '')
+        // Remove ALL event handlers
+        .replace(/\bon\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+        // Preserve line breaks
         .replace(/\r\n/g, '\n')
         .trim();
 };

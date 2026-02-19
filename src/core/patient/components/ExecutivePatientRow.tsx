@@ -238,4 +238,14 @@ const ExecutivePatientRow: React.FC<ExecutivePatientRowProps> = ({
     );
 };
 
-export default React.memo(ExecutivePatientRow);
+export default React.memo(ExecutivePatientRow, (prevProps, nextProps) => {
+    return (
+        prevProps.selected === nextProps.selected &&
+        prevProps.selectionMode === nextProps.selectionMode &&
+        prevProps.selectedDate === nextProps.selectedDate &&
+        prevProps.patient === nextProps.patient &&
+        prevProps.onDelete === nextProps.onDelete &&
+        prevProps.onEdit === nextProps.onEdit &&
+        prevProps.onToggleSelect === nextProps.onToggleSelect
+    );
+});

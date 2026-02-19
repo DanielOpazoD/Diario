@@ -66,7 +66,7 @@ const MainTopBar: React.FC<MainTopBarProps> = ({
 
   return (
     <div
-      className={`sticky top-0 z-30 transition-all duration-300 ${viewMode === 'reports'
+      className={`sticky top-0 z-30 transition-all duration-300 print:hidden ${viewMode === 'reports'
         ? 'bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-white/5 shadow-premium-sm'
         : 'bg-white/70 dark:bg-gray-950/70 backdrop-blur-2xl border-b border-gray-200/40 dark:border-white/5 shadow-premium-sm'
         }`}

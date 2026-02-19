@@ -18,7 +18,7 @@ import UpdateBanner from '@core/components/UpdateBanner';
 import { AppViews, AppModals, DateNavigator } from '@features/daily';
 import { BookmarksBar } from '@features/bookmarks';
 import { useAppActions } from '@core/app/state/useAppActions';
-import { useAppState } from '@core/app/state/useAppState';
+import { useUser, useRecords, usePatientTypes, useShowBookmarkBar, useSecurityConfig } from '@core/app/state/useAppState';
 import { pathFromView, viewFromPath } from '@shared/routes';
 import AIChatEntry from '@features/ai/AIChatEntry';
 import { getDebugModeFlag } from '@shared/utils/storageFlags';
@@ -28,15 +28,12 @@ const DebugConsole = lazy(() => import('@core/components/DebugConsole'));
 const AppShell: React.FC = () => {
   const { addLog } = useLogger();
   const showDebugConsole = getDebugModeFlag();
-  const {
-    user,
-    records,
-    patientTypes,
-    showBookmarkBar,
-    securityPinHash,
-    securityPinSalt,
-    autoLockMinutes,
-  } = useAppState();
+
+  const user = useUser();
+  const records = useRecords();
+  const patientTypes = usePatientTypes();
+  const showBookmarkBar = useShowBookmarkBar();
+  const { securityPinHash, securityPinSalt, autoLockMinutes } = useSecurityConfig();
 
   const {
     logout,

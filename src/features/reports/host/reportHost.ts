@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppActions } from '@core/app/state/useAppActions';
-import { useAppState } from '@core/app/state/useAppState';
 import { safeSessionGetItem, safeSessionRemoveItem, safeSessionSetItem } from '@shared/utils/safeSessionStorage';
 import { SESSION_KEYS } from '@shared/constants/sessionKeys';
 import type {
@@ -106,9 +105,13 @@ export const createFallbackReportHost = (): ReportHostContext => ({
   emitReportContextChanged: noop,
 });
 
+import { useUser, useRecords, usePatientTypes } from '@core/app/state/useAppState';
+
 export const useDefaultReportHostContext = (): ReportHostContext => {
   const location = useLocation();
-  const appState = useAppState();
+  const user = useUser();
+  const records = useRecords();
+  const patientTypes = usePatientTypes();
   const appActions = useAppActions();
 
   const openExternal = useCallback((url: string) => {
@@ -123,9 +126,9 @@ export const useDefaultReportHostContext = (): ReportHostContext => {
 
   return useMemo(() => ({
     state: {
-      user: appState.user,
-      records: appState.records,
-      patientTypes: appState.patientTypes,
+      user,
+      records,
+      patientTypes,
     },
     actions: {
       addPatient: appActions.addPatient,
@@ -153,9 +156,9 @@ export const useDefaultReportHostContext = (): ReportHostContext => {
     appActions.addPatient,
     appActions.updatePatient,
     appActions.addToast,
-    appState.user,
-    appState.records,
-    appState.patientTypes,
+    user,
+    records,
+    patientTypes,
     location.search,
     openExternal,
     emitReportContextChanged,

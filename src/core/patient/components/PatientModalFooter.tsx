@@ -1,4 +1,5 @@
 import React from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@core/stores/useAppStore';
 import { Button } from '@core/ui';
 
@@ -17,10 +18,10 @@ const PatientModalFooter: React.FC<PatientModalFooterProps> = ({
     cancelLabel = 'Cancelar',
     showSave = true,
 }) => {
-    const { syncStatus, lastSyncAt } = useAppStore(state => ({
+    const { syncStatus, lastSyncAt } = useAppStore(useShallow(state => ({
         syncStatus: state.syncStatus,
         lastSyncAt: state.lastSyncAt,
-    }));
+    })));
 
     const syncLabel = syncStatus === 'saving'
         ? 'Guardando...'
@@ -35,15 +36,14 @@ const PatientModalFooter: React.FC<PatientModalFooterProps> = ({
             <button
                 type="button"
                 title={lastSyncAt ? `Última sincronización: ${new Date(lastSyncAt).toLocaleTimeString()}` : 'Estado de sincronización'}
-                className={`flex items-center gap-2 px-3 h-10 rounded-xl text-[11px] font-bold tracking-widest uppercase border transition-colors ${
-                    syncStatus === 'saving'
-                        ? 'bg-amber-50 text-amber-700 border-amber-200'
-                        : syncStatus === 'error'
-                            ? 'bg-red-50 text-red-700 border-red-200'
-                            : syncStatus === 'synced'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-gray-50 text-gray-500 border-gray-200'
-                }`}
+                className={`flex items-center gap-2 px-3 h-10 rounded-xl text-[11px] font-bold tracking-widest uppercase border transition-colors ${syncStatus === 'saving'
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    : syncStatus === 'error'
+                        ? 'bg-red-50 text-red-700 border-red-200'
+                        : syncStatus === 'synced'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-gray-50 text-gray-500 border-gray-200'
+                    }`}
             >
                 {syncStatus === 'saving' && (
                     <span className="inline-block w-3 h-3 rounded-full border-2 border-amber-600 border-t-transparent animate-spin"></span>

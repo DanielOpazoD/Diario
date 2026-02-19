@@ -51,7 +51,9 @@ const usePatientCrud = ({
   const handleAutoSavePatient = useCallback(
     (patientData: PatientCreateInput | PatientUpdateInput) => {
       const patientId = (patientData as PatientRecord).id;
-      const existing = editingPatient || records.find((record) => record.id === patientId) || null;
+      // Use the latest records from the editingPatient or passed props
+      // Note: we keep editingPatient in deps to ensure we have the context of what's being edited
+      const existing = editingPatient || (patientId ? records.find((record) => record.id === patientId) : null) || null;
       const result = savePatientRecord(patientData, existing);
 
       if (result.isUpdate) {

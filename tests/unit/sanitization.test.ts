@@ -19,8 +19,8 @@ describe('Sanitization Utilities', () => {
             expect(sanitizeText('javascript:alert(1)')).toBe('alert(1)');
         });
 
-        it('should remove event handlers', () => {
-            expect(sanitizeText('onclick=alert(1)')).toBe('alert(1)');
+        it('should remove event handlers entirely', () => {
+            expect(sanitizeText('onclick=alert(1)')).toBe('');
         });
 
         it('should normalize whitespace', () => {

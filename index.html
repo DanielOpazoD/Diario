@@ -23,28 +23,12 @@
   <!-- Google Identity Services & GAPI -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://apis.google.com/js/api.js" async defer></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-          },
-          spacing: {
-            gutter: '0.75rem',
-            panel: '1.25rem',
-            section: '1.5rem'
-          },
-          borderRadius: {
-            pill: '999px',
-            card: '18px',
-            panel: '24px',
-            control: '14px'
-          },
           colors: {
             brand: {
               50: '#f0f7ff',
@@ -60,47 +44,14 @@
               950: '#082a49',
             },
           },
-          boxShadow: {
-            'premium-sm': '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
-            'premium': '0 12px 20px -5px rgba(0,0,0,0.06), 0 5px 10px -2px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.1)',
-            'premium-lg': '0 25px 35px -8px rgba(0,0,0,0.1), 0 12px 15px -5px rgba(0,0,0,0.03), inset 0 1px 1px rgba(255,255,255,0.15)',
-            'premium-xl': '0 30px 60px -15px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
-            'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.08), inset 0 0 0 1px rgba(255,255,255,0.15)',
-            'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255,255,255,0.05)',
-          },
-          animation: {
-            'fade-in': 'fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-            'slide-down': 'slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-            'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-            'bounce-subtle': 'bounceSubtle 2s infinite ease-in-out',
-            'shimmer': 'shimmer 2s infinite linear',
-          },
-          keyframes: {
-            fadeIn: {
-              '0%': { opacity: '0' },
-              '100%': { opacity: '1' },
-            },
-            slideDown: {
-              '0%': { transform: 'translateY(-12px)', opacity: '0' },
-              '100%': { transform: 'translateY(0)', opacity: '1' },
-            },
-            slideUp: {
-              '0%': { transform: 'translateY(24px)', opacity: '0' },
-              '100%': { transform: 'translateY(0)', opacity: '1' },
-            },
-            bounceSubtle: {
-              '0%, 100%': { transform: 'translateY(0)' },
-              '50%': { transform: 'translateY(-3px)' },
-            },
-            shimmer: {
-              '0%': { backgroundPosition: '-200% 0' },
-              '100%': { backgroundPosition: '200% 0' },
-            }
-          }
         }
       }
     }
   </script>
+
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://www.svgrepo.com https://iili.io; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasestorage.app; frame-src 'self' https://accounts.google.com https://medidiario-9a2b4.firebaseapp.com;">
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -211,27 +162,6 @@
         radial-gradient(at 100% 0%, hsla(222, 47%, 11%, 1) 0, transparent 50%);
     }
   </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
-    "date-fns": "https://aistudiocdn.com/date-fns@^4.1.0",
-    "date-fns/": "https://aistudiocdn.com/date-fns@^4.1.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "jspdf": "https://aistudiocdn.com/jspdf@^3.0.4",
-    "vite": "https://aistudiocdn.com/vite@^7.2.4",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
-    "buffer": "https://aistudiocdn.com/buffer@^6.0.3",
-    "zustand/": "https://aistudiocdn.com/zustand@^5.0.8/",
-    "zustand": "https://aistudiocdn.com/zustand@^5.0.8",
-    "vite-plugin-pwa": "https://aistudiocdn.com/vite-plugin-pwa@^1.1.0"
-  }
-}
-</script>
 </head>
 
 <body

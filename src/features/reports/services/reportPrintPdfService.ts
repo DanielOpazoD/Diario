@@ -53,7 +53,7 @@ const buildReportPrintPatchCss = (options?: ReportPrintOptions) => {
     width: calc(100% / ${normalized.scale}) !important;
     max-width: calc(100% / ${normalized.scale}) !important;
     margin: 0 auto !important;
-    padding: 6mm 12mm 10mm !important;
+    padding: 10mm 12mm 10mm !important;
     transform: scale(${normalized.scale}) !important;
     transform-origin: top center !important;
   }
@@ -61,9 +61,9 @@ const buildReportPrintPatchCss = (options?: ReportPrintOptions) => {
   body.reports-print #logoLeft,
   body.reports-print #logoRight {
     position: absolute !important;
-    top: 1mm !important;
-    width: 18mm !important;
-    max-width: 18mm !important;
+    top: 0mm !important;
+    width: 15mm !important;
+    max-width: 15mm !important;
     height: auto !important;
     display: block !important;
     opacity: 0.6 !important;
@@ -89,10 +89,10 @@ const applyLogoLayoutStyles = (sheetClone: HTMLElement) => {
 
   if (leftLogo) {
     leftLogo.style.position = 'absolute';
-    leftLogo.style.top = '1mm';
+    leftLogo.style.top = '0mm';
     leftLogo.style.left = '1.5mm';
-    leftLogo.style.width = '18mm';
-    leftLogo.style.maxWidth = '18mm';
+    leftLogo.style.width = '15mm';
+    leftLogo.style.maxWidth = '15mm';
     leftLogo.style.height = 'auto';
     leftLogo.style.opacity = '0.6';
     leftLogo.style.zIndex = '2';
@@ -101,10 +101,10 @@ const applyLogoLayoutStyles = (sheetClone: HTMLElement) => {
 
   if (rightLogo) {
     rightLogo.style.position = 'absolute';
-    rightLogo.style.top = '1mm';
+    rightLogo.style.top = '0mm';
     rightLogo.style.right = '1.5mm';
-    rightLogo.style.width = '18mm';
-    rightLogo.style.maxWidth = '18mm';
+    rightLogo.style.width = '15mm';
+    rightLogo.style.maxWidth = '15mm';
     rightLogo.style.height = 'auto';
     rightLogo.style.opacity = '0.6';
     rightLogo.style.zIndex = '2';

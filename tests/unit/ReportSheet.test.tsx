@@ -41,6 +41,8 @@ describe('ReportSheet', () => {
         onUpdateSectionMeta={vi.fn()}
         onMedicoChange={vi.fn()}
         onEspecialidadChange={vi.fn()}
+        addToast={vi.fn()}
+        uploadPatientFile={vi.fn().mockResolvedValue({} as any)}
       />
     );
 

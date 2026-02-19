@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
     PatientRecord,
     PatientCreateInput,
@@ -117,7 +118,7 @@ export const PatientModalProvider: React.FC<PatientModalProviderProps> = ({
     onSaveMultiple,
     addToast,
 }) => {
-    const patientTypes = useAppStore(state => state.patientTypes);
+    const patientTypes = useAppStore(useShallow(state => state.patientTypes));
     const defaultTypeId = useMemo(
         () => patientTypes.find(t => t.id === DEFAULT_PATIENT_TYPE_ID)?.id || patientTypes[0]?.id || '',
         [patientTypes]
