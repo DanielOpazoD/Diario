@@ -13,36 +13,36 @@ import {
 describe('LoadingSkeletons', () => {
   it('renders view skeleton', () => {
     const { container } = render(<ViewSkeleton />);
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.animate-shimmer').length).toBeGreaterThan(0);
   });
 
   it('renders modal skeleton', () => {
     const { container } = render(<ModalSkeleton />);
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.animate-shimmer').length).toBeGreaterThan(0);
   });
 
   it('renders stats skeleton', () => {
     const { container } = render(<StatsSkeleton />);
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.animate-shimmer').length).toBeGreaterThan(0);
   });
 
   it('renders settings skeleton', () => {
     const { container } = render(<SettingsSkeleton />);
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.animate-shimmer').length).toBeGreaterThan(0);
   });
 
   it('renders tasks skeleton', () => {
     const { container } = render(<TasksSkeleton />);
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.animate-shimmer').length).toBeGreaterThan(0);
   });
 
   it('renders bookmarks skeleton', () => {
     const { container } = render(<BookmarksSkeleton />);
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.animate-shimmer').length).toBeGreaterThan(0);
   });
 
   it('renders history skeleton', () => {
     const { container } = render(<HistorySkeleton />);
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.animate-shimmer').length).toBeGreaterThan(0);
   });
 });

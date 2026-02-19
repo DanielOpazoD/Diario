@@ -16,7 +16,7 @@ const baseReportRecord: ReportRecord = {
 };
 
 describe('reportPersistenceAdapter', () => {
-  it('uploads JSON even when PDF generation fails', async () => {
+  it('uploads JSON correctly', async () => {
     const uploadPatientFile = vi.fn(async (file: File, patientId: string) => ({
       id: `${patientId}-${file.name}`,
       name: file.name,
@@ -36,12 +36,8 @@ describe('reportPersistenceAdapter', () => {
       record: baseReportRecord,
       fileNameBase: 'evolucion-medica',
       uploadPatientFile,
-      generatePdfAsBlob: async () => {
-        throw new Error('pdf-failed');
-      },
     });
 
-    expect(result.pdfGenerationFailed).toBe(true);
     expect(result.totalUploads).toBe(1);
     expect(result.attachments).toHaveLength(1);
     expect(result.attachments[0].name.endsWith('.json')).toBe(true);

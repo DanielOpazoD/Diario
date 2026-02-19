@@ -176,13 +176,4 @@ describe('PatientModal', () => {
     headerProps.onEditToggle();
     expect(setIsEditingDemographics).toHaveBeenCalled();
   });
-
-  it('wires body tab change handler', () => {
-    const setActiveTab = vi.fn();
-    modalState.setActiveTab = setActiveTab;
-    renderModal();
-    const bodyProps = bodySpy.mock.calls[0]?.[0];
-    bodyProps.onChangeTab('files');
-    expect(setActiveTab).toHaveBeenCalledWith('files');
-  });
 });

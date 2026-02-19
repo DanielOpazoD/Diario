@@ -92,7 +92,7 @@ describe('ExecutivePatientRow', () => {
   it('copies RUT to clipboard and shows toast', async () => {
     const addToast = vi.fn();
     const writeText = vi.fn();
-    Object.assign(navigator, { clipboard: { writeText } });
+    Object.assign(global.navigator, { clipboard: { writeText } });
 
     render(
       <ExecutivePatientRow
@@ -106,7 +106,7 @@ describe('ExecutivePatientRow', () => {
 
     fireEvent.click(screen.getByTitle('Copiar RUT'));
     expect(writeText).toHaveBeenCalledWith('12.345.678-9');
-    expect(addToast).toHaveBeenCalledWith('success', 'RUT copiado');
+    expect(addToast).toHaveBeenCalledWith('success', 'RUT copiado al portapapeles');
   });
 
   it('shows attachment count badge', () => {
@@ -135,7 +135,7 @@ describe('ExecutivePatientRow', () => {
       />
     );
 
-    fireEvent.click(screen.getByTitle('Eliminar Paciente'));
+    fireEvent.click(screen.getByTitle('Eliminar registro'));
     expect(onDelete).toHaveBeenCalledWith('patient-1');
   });
 
