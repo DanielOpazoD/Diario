@@ -1,13 +1,8 @@
 import React, { lazy, Suspense, useRef, useCallback } from 'react';
 
-import { useLogger } from '@core/context/LogContext';
 import useAutoLock from '@core/hooks/useAutoLock';
 import useViewLifecycle from '@shared/hooks/useViewLifecycle';
 import { usePrefetch } from '@shared/hooks/usePrefetch';
-import useAppStartup from '@core/hooks/useAppStartup';
-import { useStorageHydration } from '@core/hooks/useStorageHydration';
-import { useStorageMigration } from '@core/hooks/useStorageMigration';
-import Login from '@core/components/Login';
 import MainLayout from '@core/layouts/MainLayout';
 import { Toast } from '@core/ui';
 import LockScreen from '@core/components/LockScreen';
@@ -15,19 +10,18 @@ import UpdateBanner from '@core/components/UpdateBanner';
 import { AppViews, AppModals, DateNavigator } from '@features/daily';
 import { BookmarksBar } from '@features/bookmarks';
 import { useAppActions } from '@core/app/state/useAppActions';
-import { useUser, useRecords, useShowBookmarkBar, useSecurityConfig, useCurrentDate } from '@core/app/state/useAppState';
+import { useRecords, useShowBookmarkBar, useSecurityConfig, useCurrentDate } from '@core/app/state/useAppState';
 import { useNavigation } from '@shared/hooks/useNavigation';
 import AIChatEntry from '@features/ai/AIChatEntry';
 import { getDebugModeFlag } from '@shared/utils/storageFlags';
 import useRouteGuard from '@core/app/shell/useRouteGuard';
+import { AuthBoundary } from '@core/app/shell/AuthBoundary';
+import { useAppBootstrap } from '@core/app/shell/useAppBootstrap';
 
 const DebugConsole = lazy(() => import('@core/components/DebugConsole'));
 
-const AppShell: React.FC = () => {
-  const { addLog } = useLogger();
+const AuthenticatedShell: React.FC = () => {
   const showDebugConsole = getDebugModeFlag();
-
-  const user = useUser();
   const records = useRecords();
   const showBookmarkBar = useShowBookmarkBar();
   const { securityPinHash, securityPinSalt, autoLockMinutes } = useSecurityConfig();
@@ -67,11 +61,7 @@ const AppShell: React.FC = () => {
 
   const { prefetchOnHover } = usePrefetch(viewMode);
   useViewLifecycle(viewMode, mainScrollRef);
-  useAppStartup(addLog);
-  useStorageMigration(addLog);
-  useStorageHydration(addLog);
-
-  if (!user) return <Login />;
+  useAppBootstrap();
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-500">
@@ -101,9 +91,16 @@ const AppShell: React.FC = () => {
       </MainLayout>
 
       <AppModals />
-
       <AIChatEntry />
     </div>
+  );
+};
+
+const AppShell: React.FC = () => {
+  return (
+    <AuthBoundary>
+      <AuthenticatedShell />
+    </AuthBoundary>
   );
 };
 

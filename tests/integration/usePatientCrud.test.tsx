@@ -15,7 +15,6 @@ vi.mock('@core/app/state/useAppActions', () => ({
 
 import { useRecords, useModalState } from '@core/app/state/useAppState';
 import { useAppActions } from '@core/app/state/useAppActions';
-import { PatientRepository } from '@core/patient/repository/PatientRepository';
 
 vi.mock('@core/patient/repository/PatientRepository', () => {
     const capitalizeWords = (str: string) => str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());

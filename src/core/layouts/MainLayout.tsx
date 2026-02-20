@@ -1,7 +1,8 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React from 'react';
 import MainSidebar from '@core/layouts/MainSidebar';
 import MainTopBar from '@core/layouts/MainTopBar';
 import { useNavigation } from '@shared/hooks/useNavigation';
+import { useResponsiveSidebar } from '@core/layouts/hooks/useResponsiveSidebar';
 import { ViewMode } from '@shared/types';
 
 interface MainLayoutProps {
@@ -26,14 +27,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   onPrefetchView,
 }) => {
   const { currentView: viewMode } = useNavigation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isMobile = useMemo(() => typeof window !== 'undefined' && window.innerWidth < 768, []);
-
-  useEffect(() => {
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
-  }, [viewMode, isMobile]);
+  const { isSidebarOpen, openSidebar, closeSidebar } = useResponsiveSidebar(viewMode);
 
   const bookmarkBarOffset = showBookmarkBar ? 52 : 0;
 
@@ -48,7 +42,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         <MainSidebar
           isSidebarOpen={isSidebarOpen}
           onOpenAppMenu={onOpenAppMenu}
-          onCloseSidebar={() => setIsSidebarOpen(false)}
+          onCloseSidebar={closeSidebar}
           onPrefetchView={onPrefetchView}
         />
 
@@ -58,7 +52,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           <MainTopBar
             viewMode={viewMode}
             onOpenNewPatient={onOpenNewPatient}
-            onOpenSidebar={() => setIsSidebarOpen(true)}
+            onOpenSidebar={openSidebar}
             dailyDateNavigator={dailyDateNavigator}
           />
 
