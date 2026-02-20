@@ -83,11 +83,13 @@ const inferFileIdFromStorageObjectName = (storageObjectName: string, scopeKey?: 
     return toDeterministicId(`${scopeKey || 'global'}:${storageObjectName}`);
 };
 
+import type { StorageReference, FullMetadata } from "firebase/storage";
+
 const mapStorageRefToAttachedFile = async (
-    itemRef: { name: string },
+    itemRef: StorageReference,
     patientId: string,
-    getDownloadURLFn: (itemRef: any) => Promise<string>,
-    getMetadataFn: (itemRef: any) => Promise<{ contentType?: string | null; size?: string | number | null; timeCreated?: string | null; }>
+    getDownloadURLFn: (ref: StorageReference) => Promise<string>,
+    getMetadataFn: (ref: StorageReference) => Promise<FullMetadata>
 ): Promise<AttachedFile | null> => {
     try {
         const [downloadUrl, metadata] = await Promise.all([

@@ -6,6 +6,12 @@ export enum PatientType {
   TURNO = 'Turno',
 }
 
+export interface GeminiStatus {
+  status: string;
+  length: number;
+  keyPreview: string;
+}
+
 export interface PatientTypeConfig {
   id: string;
   label: string; // The text stored in the record (e.g. "Hospitalizado")

@@ -38,23 +38,23 @@ export const useAppReportHostContext = (): ReportHostContext => {
     return useMemo(() => ({
         state: {
             user,
-            records: records as any,
+            records,
             patientTypes,
         },
         actions: {
-            addPatient: appActions.addPatient as any,
-            updatePatient: appActions.updatePatient as any,
+            addPatient: appActions.addPatient,
+            updatePatient: appActions.updatePatient,
             addToast: appActions.addToast,
         },
         data: {
-            savePatientRecord: savePatientRecord as any,
+            savePatientRecord,
             saveDraftReport,
             loadDraftReport,
             extractLabText: extractLabResultsUseCase,
             downloadPatientFileBlob,
             downloadPatientFileBlobById,
-            updatePatientFileById: updatePatientFileById as any,
-            uploadPatientFile: uploadPatientFile as any,
+            updatePatientFileById,
+            uploadPatientFile,
         },
         session: {
             getLinkedJsonRaw: () => safeSessionGetItem(SESSION_KEYS.REPORT_LINKED_JSON),

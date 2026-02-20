@@ -53,14 +53,14 @@ const normalizeGeneralTasks = (tasks: unknown[]): GeneralTask[] => {
   const normalized = tasks.flatMap((task, index) => {
     const candidate = task && typeof task === 'object'
       ? {
-          ...task,
-          text: typeof (task as any).text === 'string' ? (task as any).text : (task as any).title ?? '',
-          isCompleted: typeof (task as any).isCompleted === 'boolean' ? (task as any).isCompleted : false,
-          createdAt: typeof (task as any).createdAt === 'number' ? (task as any).createdAt : Date.now(),
-          priority: ['low', 'medium', 'high'].includes((task as any).priority)
-            ? (task as any).priority
-            : 'medium',
-        }
+        ...task,
+        text: typeof (task as any).text === 'string' ? (task as any).text : (task as any).title ?? '',
+        isCompleted: typeof (task as any).isCompleted === 'boolean' ? (task as any).isCompleted : false,
+        createdAt: typeof (task as any).createdAt === 'number' ? (task as any).createdAt : Date.now(),
+        priority: ['low', 'medium', 'high'].includes((task as any).priority)
+          ? (task as any).priority
+          : 'medium',
+      }
       : task;
     const result = GeneralTaskSchema.safeParse(candidate);
     if (result.success) return [result.data];
@@ -79,12 +79,13 @@ const normalizeGeneralTasks = (tasks: unknown[]): GeneralTask[] => {
 const normalizeBookmarks = (bookmarks: unknown[]): Bookmark[] => {
   let invalidCount = 0;
   const normalized = bookmarks.flatMap((bookmark, index) => {
+    const b = bookmark as Record<string, unknown>;
     const candidate = bookmark && typeof bookmark === 'object'
       ? {
-          ...bookmark,
-          createdAt: typeof (bookmark as any).createdAt === 'number' ? (bookmark as any).createdAt : Date.now(),
-          order: typeof (bookmark as any).order === 'number' ? (bookmark as any).order : index,
-        }
+        ...b,
+        createdAt: typeof b.createdAt === 'number' ? b.createdAt : Date.now(),
+        order: typeof b.order === 'number' ? b.order : index,
+      }
       : bookmark;
     const result = BookmarkSchema.safeParse(candidate);
     if (result.success) return [result.data];

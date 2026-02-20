@@ -14,7 +14,7 @@ export const fetchWithRetry = async (
 ): Promise<Response> => {
   let attempt = 0;
   let lastError: unknown;
-  const fetchImpl = (globalThis as any).__fetchOverride ?? fetch;
+  const fetchImpl = (globalThis as typeof globalThis & { __fetchOverride?: typeof fetch }).__fetchOverride ?? fetch;
 
   while (attempt <= retries) {
     const controller = new AbortController();

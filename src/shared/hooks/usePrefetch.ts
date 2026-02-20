@@ -20,7 +20,7 @@ const prefetchedModules = new Set<string>();
 /**
  * Prefetch a module if it hasn't been prefetched yet
  */
-const prefetch = async (key: string, loader: () => Promise<any>) => {
+const prefetch = async (key: string, loader: () => Promise<unknown>) => {
   if (prefetchedModules.has(key)) return;
   prefetchedModules.add(key);
 
@@ -58,9 +58,9 @@ export function usePrefetch(currentView: ViewMode) {
     if (hasInitialPrefetch.current) return;
     hasInitialPrefetch.current = true;
 
-    const connection = (navigator as any).connection;
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
     const saveData = Boolean(connection?.saveData);
-    const effectiveType = connection?.effectiveType as string | undefined;
+    const effectiveType = connection?.effectiveType;
     const isSlowConnection = effectiveType === '2g' || effectiveType === 'slow-2g';
 
     canPrefetch.current = !saveData && !isSlowConnection;

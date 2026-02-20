@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 import { AIAnalysisResultSchema, PendingTaskSchema } from '@shared/schemas';
-import { analyzeClinicalNote, generateClinicalSummary } from '@services/geminiService';
+import { aiGateway } from '@services/ai/GeminiAIGateway';
 import { emitStructuredLog } from '@services/logger';
 import { PendingTask } from '@shared/types';
 
@@ -36,7 +36,7 @@ export const analyzeNote = async (
     }
 
     try {
-        const result = await analyzeClinicalNote(context.clinicalNote);
+        const result = await aiGateway.analyzeClinicalNote(context.clinicalNote);
 
         // Validate AI response with Zod
         const validation = AIAnalysisResultSchema.safeParse(result);
@@ -88,7 +88,7 @@ export const generateSummary = async (
     }
 
     try {
-        const summary = await generateClinicalSummary(patientName, notes);
+        const summary = await aiGateway.generateClinicalSummary(patientName, notes);
         callbacks.onSuccess('Resumen generado');
         return summary;
     } catch (error) {
@@ -109,7 +109,7 @@ export const batchAnalyzeNotes = async (
 
     for (const note of notes) {
         try {
-            const result = await analyzeClinicalNote(note.clinicalNote);
+            const result = await aiGateway.analyzeClinicalNote(note.clinicalNote);
             const validation = AIAnalysisResultSchema.safeParse(result);
 
             if (validation.success) {

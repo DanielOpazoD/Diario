@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import MainSidebar from '@core/layouts/MainSidebar';
 import MainTopBar from '@core/layouts/MainTopBar';
 import { useNavigation } from '@shared/hooks/useNavigation';
+import { ViewMode } from '@shared/types';
 
 interface MainLayoutProps {
   onOpenNewPatient: () => void;
@@ -11,7 +12,7 @@ interface MainLayoutProps {
   bookmarkBar?: React.ReactNode;
   dailyDateNavigator?: React.ReactNode;
   children: React.ReactNode;
-  onPrefetchView?: (view: any) => void;
+  onPrefetchView?: (view: ViewMode) => void;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({

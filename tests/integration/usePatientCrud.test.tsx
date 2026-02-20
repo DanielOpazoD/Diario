@@ -15,6 +15,18 @@ vi.mock('@core/app/state/useAppActions', () => ({
 
 import { useRecords, useModalState } from '@core/app/state/useAppState';
 import { useAppActions } from '@core/app/state/useAppActions';
+import { PatientRepository } from '@core/patient/repository/PatientRepository';
+
+vi.mock('@core/patient/repository/PatientRepository', () => {
+    const capitalizeWords = (str: string) => str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    return {
+        PatientRepository: {
+            create: vi.fn((data) => ({ success: true, data: { ...data, id: 'new-id', name: typeof data.name === 'string' ? capitalizeWords(data.name.trim()) : data.name } })),
+            update: vi.fn((existing, data) => ({ success: true, data: { ...existing, ...data, name: data.name !== undefined && typeof data.name === 'string' ? capitalizeWords(data.name.trim()) : existing.name } })),
+            delete: vi.fn(),
+        }
+    };
+});
 
 describe('usePatientCrud', () => {
     const mockAddPatient = vi.fn();

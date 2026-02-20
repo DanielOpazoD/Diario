@@ -125,12 +125,12 @@ export default defineConfig(({ mode }) => {
       }),
       isBundleReport
         ? visualizer({
-            filename: 'dist/bundle-report.html',
-            template: 'treemap',
-            gzipSize: true,
-            brotliSize: true,
-            open: false,
-          })
+          filename: 'dist/bundle-report.html',
+          template: 'treemap',
+          gzipSize: true,
+          brotliSize: true,
+          open: false,
+        })
         : null,
     ],
     define: {
@@ -149,7 +149,6 @@ export default defineConfig(({ mode }) => {
         '@data': path.resolve(__dirname, './src/data'),
         '@shared': path.resolve(__dirname, './src/shared'),
         '@services': path.resolve(__dirname, './src/services'),
-        'react-router-dom': path.resolve(process.cwd(), 'vendor/react-router-dom'),
       },
     },
     server: {

@@ -1,12 +1,6 @@
-import { AIAnalysisResult, ExtractedPatientData, FileContent } from '@shared/types';
+import { AIAnalysisResult, ExtractedPatientData, FileContent, GeminiStatus } from '@shared/types';
 import { fetchWithRetry } from "./httpClient";
 import { emitStructuredLog } from "./logger";
-
-interface GeminiStatus {
-  status: string;
-  length: number;
-  keyPreview: string;
-}
 
 const parseJsonResponse = (text: string, responseOk: boolean) => {
   if (!text) return { data: {}, parseError: null };

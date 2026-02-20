@@ -1,28 +1,20 @@
 import type { AttachmentsPort } from '@data/ports/attachmentsPort';
 import { fileToBase64, downloadUrlAsBase64, downloadUrlAsArrayBuffer } from '@services/storage';
 import { extractTextFromPdf } from '@services/pdfText';
-import {
-  uploadFileToFirebase,
-  updateFileInFirebase,
-  updateFileInFirebaseById,
-  listPatientFilesFromFirebase,
-  listAllPatientFilesFromFirebase,
-  deleteFileFromFirebase,
-  downloadFileBlobFromFirebaseUrl,
-  downloadFileBlobFromFirebaseById,
-} from '@services/firebaseStorageService';
+import { cloudStorageGateway } from '@services/storage/UnifiedCloudStorageGateway';
 
 export const attachmentsAdapter: AttachmentsPort = {
   encodeFileToBase64: fileToBase64,
   fetchUrlAsBase64: downloadUrlAsBase64,
   fetchUrlAsArrayBuffer: downloadUrlAsArrayBuffer,
   extractTextFromPdfFile: extractTextFromPdf,
-  uploadPatientFile: uploadFileToFirebase,
-  updatePatientFile: updateFileInFirebase,
-  updatePatientFileById: updateFileInFirebaseById,
-  listPatientFiles: listPatientFilesFromFirebase,
-  listAllPatientFiles: listAllPatientFilesFromFirebase,
-  deletePatientFile: deleteFileFromFirebase,
-  downloadPatientFileBlob: downloadFileBlobFromFirebaseUrl,
-  downloadPatientFileBlobById: downloadFileBlobFromFirebaseById,
+  uploadPatientFile: cloudStorageGateway.uploadFile.bind(cloudStorageGateway),
+  updatePatientFile: cloudStorageGateway.updateFile.bind(cloudStorageGateway),
+  updatePatientFileById: cloudStorageGateway.updateFile.bind(cloudStorageGateway),
+  listPatientFiles: cloudStorageGateway.listPatientFiles.bind(cloudStorageGateway),
+  listAllPatientFiles: cloudStorageGateway.listAllPatientFiles.bind(cloudStorageGateway),
+  deletePatientFile: (patientId: string, fileName: string, fileId: string) =>
+    cloudStorageGateway.deleteFile(patientId, fileId, fileName),
+  downloadPatientFileBlob: cloudStorageGateway.downloadFileAsBlob.bind(cloudStorageGateway),
+  downloadPatientFileBlobById: cloudStorageGateway.downloadFileById.bind(cloudStorageGateway),
 };

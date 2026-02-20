@@ -74,8 +74,8 @@ export const listFolderEntries = async (accessToken: string, folderId?: string) 
       continue;
     }
 
-    const error = new Error(message || 'Google Drive request failed');
-    (error as any).status = response.status;
+    const error = new Error(message || 'Google Drive request failed') as Error & { status?: number };
+    error.status = response.status;
     throw error;
   }
   return { files: [] };
